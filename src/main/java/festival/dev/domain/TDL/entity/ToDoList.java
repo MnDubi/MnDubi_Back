@@ -23,4 +23,9 @@ public class ToDoList extends BaseTime {
     private String title;
 
     private Boolean completed;
+
+    private String category;
+
+    @Column(name = "user_ID")
+    private String userID;
 }
