@@ -1,6 +1,7 @@
 package festival.dev.domain.TDL.service.impl;
 
 import festival.dev.domain.TDL.entity.ToDoList;
+import festival.dev.domain.TDL.presentation.dto.request.DeleteRequest;
 import festival.dev.domain.TDL.presentation.dto.request.InsertRequest;
 import festival.dev.domain.TDL.presentation.dto.request.UpdateRequest;
 import festival.dev.domain.TDL.repository.ToDoListRepository;
@@ -37,5 +38,13 @@ public class ToDoListServiceImpl implements ToDoListService {
         }
 
         toDoListRepository.changeTitle(request.getChange(), request.getTitle(), request.getUserID());
+    }
+
+    public void delete(DeleteRequest request) {
+        if (!toDoListRepository.existsByUserIDAndTitle(request.getUserID(),request.getTitle())){
+            throw new IllegalArgumentException("존재하지 않는 TDL입니다.");
+        }
+
+        toDoListRepository.deleteByUserIDAndTitle(request.getUserID(),request.getTitle());
     }
 }
