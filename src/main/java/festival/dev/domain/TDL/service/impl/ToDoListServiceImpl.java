@@ -9,6 +9,8 @@ import festival.dev.domain.TDL.service.ToDoListService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ToDoListServiceImpl implements ToDoListService {
@@ -46,5 +48,9 @@ public class ToDoListServiceImpl implements ToDoListService {
         if (!toDoListRepository.existsByUserIDAndTitle(userID,title)){
             throw new IllegalArgumentException("존재하지 않는 TDL입니다.");
         }
+    }
+
+    public List<ToDoList> get(String userID){
+        return toDoListRepository.findByUserID(userID);
     }
 }
