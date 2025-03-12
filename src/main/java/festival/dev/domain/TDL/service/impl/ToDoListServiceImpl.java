@@ -2,6 +2,7 @@ package festival.dev.domain.TDL.service.impl;
 
 import festival.dev.domain.TDL.entity.ToDoList;
 import festival.dev.domain.TDL.presentation.dto.request.DeleteRequest;
+import festival.dev.domain.TDL.presentation.dto.request.FinishRequest;
 import festival.dev.domain.TDL.presentation.dto.request.InsertRequest;
 import festival.dev.domain.TDL.presentation.dto.request.UpdateRequest;
 import festival.dev.domain.TDL.repository.ToDoListRepository;
@@ -32,10 +33,11 @@ public class ToDoListServiceImpl implements ToDoListService {
         toDoListRepository.save(toDoList);
     }
 
-    public void update(UpdateRequest request) {
+    public ToDoList update(UpdateRequest request) {
         checkNotExist(request.getUserID(), request.getTitle());
 
         toDoListRepository.changeTitle(request.getChange(), request.getTitle(), request.getUserID());
+        return toDoListRepository.findByUserIDAndTitle(request.getUserID(), request.getTitle());
     }
 
     public void delete(DeleteRequest request) {
@@ -52,5 +54,10 @@ public class ToDoListServiceImpl implements ToDoListService {
 
     public List<ToDoList> get(String userID){
         return toDoListRepository.findByUserID(userID);
+    }
+
+    public ToDoList success(FinishRequest request) {
+        toDoListRepository.changeCompleted(request.getCompleted(), request.getTitle(), request.getUserID());
+        return toDoListRepository.findByUserIDAndTitle(request.getUserID(),request.getTitle());
     }
 }
