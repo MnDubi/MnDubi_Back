@@ -1,9 +1,6 @@
 package festival.dev.domain.TDL.presentation;
 
-import festival.dev.domain.TDL.presentation.dto.request.DeleteRequest;
-import festival.dev.domain.TDL.presentation.dto.request.SuccessRequest;
-import festival.dev.domain.TDL.presentation.dto.request.InsertRequest;
-import festival.dev.domain.TDL.presentation.dto.request.UpdateRequest;
+import festival.dev.domain.TDL.presentation.dto.request.*;
 import festival.dev.domain.TDL.service.ToDoListService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -71,6 +68,7 @@ public class ToDoListController {
 
     @PutMapping("/success")
     public ResponseEntity<?> success(@RequestBody SuccessRequest request/*,@RequestHeader String authorization*/){
+//        String userID = getUserID(authorization);
 
         try{
             return ResponseEntity.ok(toDoListService.success(request));
@@ -79,10 +77,16 @@ public class ToDoListController {
         }
     }
 
-//    @PostMapping("/finish")
-//    public ResponseEntity<String> finish(){
-//
-//    }
+    @PostMapping("/finish") // 같은 날짜에 들어온 요청을 처리하는 로직 필요.
+    public ResponseEntity<String> finish(@RequestBody FinishRequest request/*,@RequestHeader String authorization*/){
+//        String userID = getUserID(authorization);
+        try {
+            toDoListService.finish(request);
+            return ResponseEntity.ok("Success");
+        }catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
     public String getUserID(String auth){
         String token = auth.replace("Bearer ","");
