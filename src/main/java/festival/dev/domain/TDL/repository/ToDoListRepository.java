@@ -8,12 +8,21 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Repository
+@Transactional
 public interface ToDoListRepository extends JpaRepository<ToDoList, Long> {
     boolean existsByUserIDAndTitle(String userId, String title);
+    void deleteByUserIDAndTitle(String userId, String title);
+    List<ToDoList> findByUserID(String userID);
+    ToDoList findByUserIDAndTitle(String userID, String title);
 
     @Modifying
-    @Transactional
     @Query("UPDATE ToDoList t set t.title = :change WHERE t.title = :title AND t.userID = :userID")
     void changeTitle(@Param("change") String change, @Param("title") String title, @Param("userID") String userID);
+
+    @Modifying
+    @Query("UPDATE ToDoList t set t.completed = :completed WHERE t.title = :title AND t.userID = :userID")
+    void changeCompleted(@Param("completed") Boolean completed, @Param("title") String title, @Param("userID") String userID);
 }
