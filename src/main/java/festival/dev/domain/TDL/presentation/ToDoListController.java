@@ -1,8 +1,7 @@
 package festival.dev.domain.TDL.presentation;
 
-import festival.dev.domain.TDL.entity.ToDoList;
 import festival.dev.domain.TDL.presentation.dto.request.DeleteRequest;
-import festival.dev.domain.TDL.presentation.dto.request.FinishRequest;
+import festival.dev.domain.TDL.presentation.dto.request.SuccessRequest;
 import festival.dev.domain.TDL.presentation.dto.request.InsertRequest;
 import festival.dev.domain.TDL.presentation.dto.request.UpdateRequest;
 import festival.dev.domain.TDL.service.ToDoListService;
@@ -10,14 +9,9 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/toDoList")
@@ -41,14 +35,14 @@ public class ToDoListController {
     }
 
     @PutMapping("/modify")
-    public ResponseEntity<ToDoList> modify(@Valid @RequestBody UpdateRequest request/*, @RequestHeader String authorization*/) {
+    public ResponseEntity<?> modify(@Valid @RequestBody UpdateRequest request/*, @RequestHeader String authorization*/) {
 //        String userID = getUserID(authorization);
 
         try{
             return ResponseEntity.ok(toDoListService.update(request));
         }
         catch (Exception e){
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
@@ -66,27 +60,28 @@ public class ToDoListController {
     }
 
     @GetMapping("/get")
-    public ResponseEntity<List<ToDoList>> get(/*@RequestHeader String authorization*/@RequestParam String userID){
+    public ResponseEntity<?> get(/*@RequestHeader String authorization*/@RequestParam String userID){
 //        String userID = getUserID(authorization);
         try{
             return ResponseEntity.ok(toDoListService.get(userID));
         }catch (Exception e){
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     @PutMapping("/success")
-    public ResponseEntity<ToDoList> success(@RequestBody FinishRequest request/*,@RequestHeader String authorization*/){
+    public ResponseEntity<?> success(@RequestBody SuccessRequest request/*,@RequestHeader String authorization*/){
 
         try{
             return ResponseEntity.ok(toDoListService.success(request));
         }catch (Exception e){
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
 //    @PostMapping("/finish")
-//    public ResponseEntity<String> finish(@RequestBody FinishRequest request){
+//    public ResponseEntity<String> finish(){
+//
 //    }
 
     public String getUserID(String auth){
