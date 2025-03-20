@@ -20,7 +20,7 @@ public class Calendar extends BaseTime {
 
     private String userID;
 
-    private Integer every;
+    private int every;
 
-    private Integer part;
+    private int part;
 }
