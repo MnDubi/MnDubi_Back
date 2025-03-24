@@ -32,26 +32,19 @@ public class OAuth2UserService extends DefaultOAuth2UserService {
             throw new RuntimeException("OAuth 로그인 실패: 이메일 정보를 가져올 수 없습니다.");
         }
 
-        Optional<User> existingUser = userRepository.findByEmail(userInfo.getEmail());
+        User user = userRepository.findByEmail(userInfo.getEmail())
+                .orElseGet(() -> userRepository.save(User.builder()
+                        .email(userInfo.getEmail())
+                        .name(userInfo.getName())
+                        .provider(provider)
+                        .build()
+                ));
 
-        User user;
-        if (existingUser.isPresent()) {
-            user = existingUser.get();
-        } else {
-            user = User.builder()
-                    .email(userInfo.getEmail())
-                    .name(userInfo.getName())
-                    .provider(provider)
-                    .build();
-            userRepository.save(user);
-        }
+        return new OAuth2UserWithToken(
+                oAuth2User,
+                jwtTokenProvider.createAccessToken(user.getEmail()),
+                jwtTokenProvider.createRefreshToken(user.getEmail())
+        );
 
-        // JWT 발급
-        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail());
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
-
-        return new OAuth2UserWithToken(oAuth2User, accessToken, refreshToken);
     }
-
-
 }

@@ -7,16 +7,26 @@ import festival.dev.domain.user.repository.UserRepository;
 import festival.dev.global.exception.CustomException;
 import festival.dev.global.security.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                       JwtTokenProvider jwtTokenProvider){
+        this.userRepository =userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtTokenProvider = jwtTokenProvider;
+
+    }
+
 
     public AuthResponseDto registerUser(AuthRequestDto request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {

@@ -2,7 +2,8 @@ package festival.dev.domain.user.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
@@ -24,16 +25,16 @@ public class User {
     @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String password;
 
     private String provider; // OAuth 제공자 정보 (Google, Naver, Kakao)
 
 
-    @Column(nullable = false, updatable = false)
+    @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @Column(nullable = false)
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
 
 //    @PrePersist

@@ -19,10 +19,11 @@ public class OAuthUserInfoDto {
             this.name = (String) response.get("name");
         } else if ("kakao".equals(provider)) {
             Map<String, Object> account = (Map<String, Object>) attributes.get("kakao_account");
+            Map<String, Object> properties = (Map<String, Object>) attributes.get("properties");
             this.email = (String) account.get("email");
-            this.name = (String) ((Map<String, Object>) attributes.get("properties")).get("nickname");
+            this.name = (String) properties.get("nickname");
         } else {
-            throw new RuntimeException("지원되지 않는 OAuth Provider: " + provider);
+            throw new RuntimeException("지원하지 않는 OAuth 제공자입니다: " + provider);
         }
     }
 }
