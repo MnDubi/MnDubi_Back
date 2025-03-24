@@ -7,13 +7,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping
+@RequestMapping("/calendar")
 @RequiredArgsConstructor
 public class CalendarController {
 
     private final CalendarService calendarService;
 
-    @PostMapping
+    @PostMapping("/post")
     public ResponseEntity<?> insert(@RequestBody CalendarInsertRequest request){
         try {
             return ResponseEntity.ok(calendarService.insert(request));
@@ -22,7 +22,7 @@ public class CalendarController {
         }
     }
 
-    @GetMapping
+    @GetMapping("/get")
     public ResponseEntity<?> findDate(@RequestParam String date ,@RequestParam String userID){
         try{
             return ResponseEntity.ok(calendarService.getDateCalendar(date, userID));

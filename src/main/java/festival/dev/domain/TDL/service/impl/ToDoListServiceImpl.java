@@ -2,14 +2,18 @@ package festival.dev.domain.TDL.service.impl;
 
 import festival.dev.domain.TDL.entity.ToDoList;
 import festival.dev.domain.TDL.presentation.dto.request.*;
+import festival.dev.domain.TDL.presentation.dto.response.ToDoListResponse;
 import festival.dev.domain.TDL.repository.ToDoListRepository;
 import festival.dev.domain.TDL.service.ToDoListService;
 import festival.dev.domain.calendar.entity.Calendar;
 import festival.dev.domain.calendar.repository.CalendarRepository;
+import festival.dev.domain.category.entity.Category;
+import festival.dev.domain.category.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -17,27 +21,41 @@ public class ToDoListServiceImpl implements ToDoListService {
 
     private final ToDoListRepository toDoListRepository;
     private final CalendarRepository calendarRepository;
+    private final CategoryRepository categoryRepository;
 
     public void input(InsertRequest request) {
         String userID = request.getUserID();
         String title = request.getTitle();
-        if (toDoListRepository.existsByUserIDAndTitle(userID,title)){
-            throw new IllegalArgumentException("같은 내용의 TDL이 있습니다.");
+
+        checkExist(userID, title);
+
+        Category category = categoryRepository.findByCategoryName(request.getCategory());
+        if (category == null) {
+            throw new IllegalArgumentException("존재하지 않은 카테고리입니다.");
         }
         ToDoList toDoList = ToDoList.builder()
                 .title(request.getTitle())
                 .completed(false)
                 .userID(request.getUserID())
-                .category(request.getCategory())
+                .category(category)
                 .build();
         toDoListRepository.save(toDoList);
     }
 
-    public ToDoList update(UpdateRequest request) {
+    public ToDoListResponse update(UpdateRequest request) {
         checkNotExist(request.getUserID(), request.getTitle());
 
         toDoListRepository.changeTitle(request.getChange(), request.getTitle(), request.getUserID());
-        return   toDoListRepository.findByUserIDAndTitle(request.getUserID(), request.getChange());
+
+        ToDoList toDoList = toDoListRepository.findByUserIDAndTitle(request.getUserID(), request.getChange());
+
+        return ToDoListResponse.builder()
+                .title(toDoList.getTitle())
+                .completed(toDoList.getCompleted())
+                .category(toDoList.getCategory().getCategoryName())
+                .formattedDate(toDoList.getFormattedDate())
+                .dayOfWeek(toDoList.getDayOfWeek())
+                .build();
     }
 
     public void delete(DeleteRequest request) {
@@ -58,13 +76,30 @@ public class ToDoListServiceImpl implements ToDoListService {
         }
     }
 
-    public List<ToDoList> get(String userID){
-        return toDoListRepository.findByUserID(userID);
+    public List<ToDoListResponse> get(String userID){
+        List<ToDoList> toDoList = toDoListRepository.findByUserID(userID);
+        return toDoList.stream()
+                .map(tdl -> ToDoListResponse.builder()
+                        .title(tdl.getTitle())
+                        .completed(tdl.getCompleted())
+                        .category(tdl.getCategory().getCategoryName())  // 카테고리 이름을 포함
+                        .formattedDate(tdl.getFormattedDate())
+                        .dayOfWeek(tdl.getDayOfWeek())
+                        .build())
+                .collect(Collectors.toList());
     }
 
-    public ToDoList success(SuccessRequest request) {
+    public ToDoListResponse success(SuccessRequest request) {
         toDoListRepository.changeCompleted(request.getCompleted(), request.getTitle(), request.getUserID());
-        return toDoListRepository.findByUserIDAndTitle(request.getUserID(),request.getTitle());
+        ToDoList toDoList = toDoListRepository.findByUserIDAndTitle(request.getUserID(),request.getTitle());
+
+        return ToDoListResponse.builder()
+                .title(toDoList.getTitle())
+                .completed(toDoList.getCompleted())
+                .category(toDoList.getCategory().getCategoryName())
+                .formattedDate(toDoList.getFormattedDate())
+                .dayOfWeek(toDoList.getDayOfWeek())
+                .build();
     }
 
     public void finish(FinishRequest request){

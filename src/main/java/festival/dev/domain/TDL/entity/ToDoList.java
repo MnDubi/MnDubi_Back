@@ -1,5 +1,6 @@
 package festival.dev.domain.TDL.entity;
 
+import festival.dev.domain.category.entity.Category;
 import festival.dev.global.entity.BaseTime;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -24,8 +25,9 @@ public class ToDoList extends BaseTime {
 
     private Boolean completed;
 
-    private String category;
+    @ManyToOne
+    @JoinColumn(name = "category_name")
+    private Category category;
 
-    @Column(name = "user_ID")
     private String userID;
 }
