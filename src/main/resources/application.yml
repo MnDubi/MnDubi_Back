@@ -38,16 +38,21 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
             scope: email, profile
+
+            redirect-uri: "${baseUrl}/oauth2/callback/google"
           naver:
             client-id: ${NAVER_CLIENT_ID}
             client-secret: ${NAVER_CLIENT_SECRET}
             scope: name, email
             client-name: Naver
+
+            redirect-uri: "${baseUrl}/oauth2/callback/naver"
           kakao:
             client-id: ${KAKAO_CLIENT_ID}
             client-secret: ${KAKAO_CLIENT_SECRET}
             scope: account_email, profile_nickname
             client-name: Kakao
+            redirect-uri: "${baseUrl}/oauth2/callback/kakao"
         provider:
           naver:
             authorization-uri: https://nid.naver.com/oauth2.0/authorize
@@ -65,6 +70,9 @@ jwt:
   refresh: 259200000
   secret: ${JWT_SECRET}
 
+
+frontend:
+  url: "${baseUrl}" # 프론트엔드 URL(ngork 주소)
 
 server:
   port: 8090
