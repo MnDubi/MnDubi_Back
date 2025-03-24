@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.NonNull;
 
 @Getter
-public class CategoryCreateRequest {
+public class CategoryCreateDeleteRequest {
     @NonNull
     private String category;
 }

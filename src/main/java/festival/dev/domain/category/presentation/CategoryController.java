@@ -1,6 +1,6 @@
 package festival.dev.domain.category.presentation;
 
-import festival.dev.domain.category.presentation.dto.CategoryCreateRequest;
+import festival.dev.domain.category.presentation.dto.CategoryCreateDeleteRequest;
 import festival.dev.domain.category.presentation.dto.CategoryModifyRequest;
 import festival.dev.domain.category.service.CategoryService;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +15,7 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @PostMapping("/create")
-    public ResponseEntity<?> create(@RequestBody CategoryCreateRequest request) {
+    public ResponseEntity<?> create(@RequestBody CategoryCreateDeleteRequest request) {
         try {
             return ResponseEntity.ok(categoryService.save(request));
         }
@@ -38,6 +38,17 @@ public class CategoryController {
     public ResponseEntity<?> get() {
         try {
             return ResponseEntity.ok(categoryService.findAll());
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/delete")
+    public ResponseEntity<?> delete(@RequestBody CategoryCreateDeleteRequest request){
+        try{
+            categoryService.delete(request.getCategory());
+            return ResponseEntity.ok("success");
         }
         catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

@@ -1,7 +1,7 @@
 package festival.dev.domain.category.service.impl;
 
 import festival.dev.domain.category.entity.Category;
-import festival.dev.domain.category.presentation.dto.CategoryCreateRequest;
+import festival.dev.domain.category.presentation.dto.CategoryCreateDeleteRequest;
 import festival.dev.domain.category.presentation.dto.CategoryModifyRequest;
 import festival.dev.domain.category.repository.CategoryRepository;
 import festival.dev.domain.category.service.CategoryService;
@@ -15,7 +15,7 @@ import java.util.List;
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
 
-    public Category save(CategoryCreateRequest request) {
+    public Category save(CategoryCreateDeleteRequest request) {
         Category category = Category.builder()
                 .categoryName(request.getCategory())
                 .build();
@@ -40,5 +40,9 @@ public class CategoryServiceImpl implements CategoryService {
 
     public List<Category> findAll() {
         return categoryRepository.findAll();
+    }
+
+    public void delete(String name) {
+        categoryRepository.deleteByCategoryName(name);
     }
 }
