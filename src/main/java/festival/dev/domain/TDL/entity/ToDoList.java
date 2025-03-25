@@ -2,7 +2,6 @@ package festival.dev.domain.TDL.entity;
 
 import festival.dev.domain.calendar.entity.Calendar;
 import festival.dev.domain.category.entity.Category;
-import festival.dev.global.entity.BaseTime;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
