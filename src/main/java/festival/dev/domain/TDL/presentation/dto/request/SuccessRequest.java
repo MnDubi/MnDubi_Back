@@ -6,9 +6,9 @@ import lombok.Getter;
 @Getter
 public class SuccessRequest {
     @NotNull
-    String title;
+    private String title;
     @NotNull
-    Boolean completed;
+    private Boolean completed;
     @NotNull
-    String userID;
+    private String userID;
 }
