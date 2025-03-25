@@ -15,12 +15,12 @@ import java.util.List;
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
 
-    public Category save(CategoryCreateDeleteRequest request) {
-        Category category = Category.builder()
-                .categoryName(request.getCategory())
-                .build();
-        return categoryRepository.save(category);
-    }
+//    public Category save(CategoryCreateDeleteRequest request) {
+//        Category category = Category.builder()
+//                .categoryName(request.getCategory())
+//                .build();
+//        return categoryRepository.save(category);
+//    }
 
     public Category modify(CategoryModifyRequest request) {
         if (!exist(request.getCategoryName())){
@@ -38,9 +38,9 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryRepository.findByCategoryName(categoryName) != null;
     }
 
-    public List<Category> findAll() {
-        return categoryRepository.findAll();
-    }
+//    public List<Category> findAll() {
+//        return categoryRepository.findAll();
+//    }
 
     public void delete(String name) {
         categoryRepository.deleteByCategoryName(name);

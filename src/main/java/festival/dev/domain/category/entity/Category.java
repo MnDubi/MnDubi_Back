@@ -24,6 +24,8 @@ public class Category {
 
     private String categoryName;
 
+    private String keyword;
+
     @OneToMany(mappedBy = "category")
     private List<ToDoList> toDoLists = new ArrayList<>();
 }

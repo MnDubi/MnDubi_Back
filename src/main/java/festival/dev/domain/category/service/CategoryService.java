@@ -7,8 +7,8 @@ import festival.dev.domain.category.presentation.dto.CategoryModifyRequest;
 import java.util.List;
 
 public interface CategoryService {
-    Category save(CategoryCreateDeleteRequest request);
+//    Category save(CategoryCreateDeleteRequest request);
     Category modify(CategoryModifyRequest request);
-    List<Category> findAll();
+//    List<Category> findAll();
     void delete(String name);
 }

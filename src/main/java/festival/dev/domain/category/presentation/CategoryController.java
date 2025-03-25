@@ -14,15 +14,15 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
-    @PostMapping("/create")
-    public ResponseEntity<?> create(@RequestBody CategoryCreateDeleteRequest request) {
-        try {
-            return ResponseEntity.ok(categoryService.save(request));
-        }
-        catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
+//    @PostMapping("/create")
+//    public ResponseEntity<?> create(@RequestBody CategoryCreateDeleteRequest request) {
+//        try {
+//            return ResponseEntity.ok(categoryService.save(request));
+//        }
+//        catch (Exception e) {
+//            return ResponseEntity.badRequest().body(e.getMessage());
+//        }
+//    }
 
     @PutMapping("/modify")
     public ResponseEntity<?> modify(@RequestBody CategoryModifyRequest request) {
@@ -34,15 +34,15 @@ public class CategoryController {
         }
     }
 
-    @GetMapping("/get")
-    public ResponseEntity<?> get() {
-        try {
-            return ResponseEntity.ok(categoryService.findAll());
-        }
-        catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
+//    @GetMapping("/get")
+//    public ResponseEntity<?> get() {
+//        try {
+//            return ResponseEntity.ok(categoryService.findAll());
+//        }
+//        catch (Exception e) {
+//            return ResponseEntity.badRequest().body(e.getMessage());
+//        }
+//    }
 
     @DeleteMapping("/delete")
     public ResponseEntity<?> delete(@RequestBody CategoryCreateDeleteRequest request){
@@ -54,4 +54,6 @@ public class CategoryController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+
 }
