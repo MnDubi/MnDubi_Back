@@ -1,32 +1,31 @@
-package festival.dev.domain.calendar.entity;
+package festival.dev.domain.category.entity;
 
 import festival.dev.domain.TDL.entity.ToDoList;
-import festival.dev.global.entity.BaseTime;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
-@Entity
 @Table
-@Builder(toBuilder = true)
+@Entity
+@Getter
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
-public class Calendar extends BaseTime {
+@Builder(toBuilder = true)
+public class Category {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String userID;
+    private String categoryName;
 
-    private int every;
+    private String keyword;
 
-    private int part;
-
-    @OneToMany(mappedBy = "calendar")
+    @OneToMany(mappedBy = "category")
     private List<ToDoList> toDoLists;
 }
