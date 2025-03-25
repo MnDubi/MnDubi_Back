@@ -20,7 +20,7 @@ public class ToDoListController {
     private String secret;
 
     @PostMapping("/input")
-    public ResponseEntity<String> input(@RequestBody InsertRequest request/*, @RequestHeader String authorization*/) {
+    public ResponseEntity<String> input(@Valid @RequestBody InsertRequest request/*, @RequestHeader String authorization*/) {
 //        String userID = getUserID(authorization);
 
         try {
@@ -44,7 +44,7 @@ public class ToDoListController {
     }
 
     @DeleteMapping("/delete")
-    public ResponseEntity<String> delete(@RequestBody DeleteRequest request/*, @RequestHeader String authorization*/){
+    public ResponseEntity<String> delete(@Valid @RequestBody DeleteRequest request/*, @RequestHeader String authorization*/){
 //        String userID = getUserID(authorization);
 
         try {
@@ -67,7 +67,7 @@ public class ToDoListController {
     }
 
     @PutMapping("/success")
-    public ResponseEntity<?> success(@RequestBody SuccessRequest request/*,@RequestHeader String authorization*/){
+    public ResponseEntity<?> success(@Valid @RequestBody SuccessRequest request/*,@RequestHeader String authorization*/){
 //        String userID = getUserID(authorization);
 
         try{
@@ -78,7 +78,7 @@ public class ToDoListController {
     }
 
     @PostMapping("/finish") // 같은 날짜에 들어온 요청을 처리하는 로직 필요.
-    public ResponseEntity<String> finish(@RequestBody FinishRequest request/*,@RequestHeader String authorization*/){
+    public ResponseEntity<String> finish(@Valid @RequestBody FinishRequest request/*,@RequestHeader String authorization*/){
 //        String userID = getUserID(authorization);
         try {
             toDoListService.finish(request);
