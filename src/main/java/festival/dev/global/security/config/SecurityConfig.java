@@ -3,7 +3,7 @@ package festival.dev.global.security.config;
 import festival.dev.global.security.jwt.JwtAuthenticationFilter;
 import festival.dev.domain.user.service.UserService;
 import festival.dev.global.security.oauth.CustomOAuth2UserService;
-import lombok.RequiredArgsConstructor;
+//import festival.dev.global.security.oauth.OAuth2SuccessHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -16,13 +16,13 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.stereotype.Component;
+//import org.springframework.stereotype.Component;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.List;
+//import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -38,6 +38,7 @@ public class SecurityConfig {
         this.userService = userService;
         this.customOAuth2UserService = customOAuth2UserService;
     }
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -65,6 +66,7 @@ public class SecurityConfig {
 
         return http.build();
     }
+
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
