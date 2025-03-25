@@ -12,10 +12,13 @@ public class UpdateRequest {
     private String title;
     @NonNull
     private String change;
+    @NonNull
+    private String fromDate;
+    @NonNull
+    private String changeDate;
 
-    @AssertTrue(message = "title과 change는 같을 수 없습니다.")
-    public boolean isTitleValid() {
-        return !title.equals(change);
+    @AssertTrue(message = "예전 제목과 바뀐 제목, 또는 예전 날짜와 바뀐 날짜 중 하나는 달라야 합니다.")
+    public boolean isValidUpdate() {
+        return !title.equals(change) || !fromDate.equals(changeDate);
     }
-
 }

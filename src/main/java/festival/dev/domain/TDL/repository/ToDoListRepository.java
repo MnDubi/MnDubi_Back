@@ -13,16 +13,16 @@ import java.util.List;
 @Repository
 @Transactional
 public interface ToDoListRepository extends JpaRepository<ToDoList, Long> {
-    boolean existsByUserIDAndTitle(String userId, String title);
-    void deleteByUserIDAndTitle(String userId, String title);
+    boolean existsByUserIDAndTitleAndFromDate(String userId, String title,String fromDate);
+    void deleteByUserIDAndTitleAndFromDate(String userId, String title, String fromDate);
     List<ToDoList> findByUserID(String userID);
-    ToDoList findByUserIDAndTitle(String userID, String title);
+    ToDoList findByUserIDAndTitleAndFromDate(String userID, String title, String fromDate);
 
     @Modifying
-    @Query("UPDATE ToDoList t set t.title = :change WHERE t.title = :title AND t.userID = :userID")
-    void changeTitle(@Param("change") String change, @Param("title") String title, @Param("userID") String userID);
+    @Query("UPDATE ToDoList t set t.title = :change, t.startDate = :changeDate, t.fromDate = :changeDate  WHERE t.title = :title AND t.userID = :userID AND t.fromDate = :fromDate")
+    void changeTitle(@Param("change") String change, @Param("title") String title, @Param("userID") String userID, @Param("changeDate") String changeDate, @Param("fromDate") String fromDate);
 
     @Modifying
-    @Query("UPDATE ToDoList t set t.completed = :completed WHERE t.title = :title AND t.userID = :userID")
-    void changeCompleted(@Param("completed") Boolean completed, @Param("title") String title, @Param("userID") String userID);
+    @Query("UPDATE ToDoList t set t.completed = :completed WHERE t.title = :title AND t.userID = :userID AND t.fromDate = :fromDate")
+    void changeCompleted(@Param("completed") Boolean completed, @Param("title") String title, @Param("userID") String userID,@Param("fromDate") String fromDate);
 }

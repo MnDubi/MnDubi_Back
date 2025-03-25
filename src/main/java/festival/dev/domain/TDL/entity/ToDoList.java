@@ -1,5 +1,6 @@
 package festival.dev.domain.TDL.entity;
 
+import festival.dev.domain.calendar.entity.Calendar;
 import festival.dev.domain.category.entity.Category;
 import festival.dev.global.entity.BaseTime;
 import jakarta.persistence.*;
@@ -16,7 +17,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor
-public class ToDoList extends BaseTime {
+public class ToDoList {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
@@ -25,9 +26,17 @@ public class ToDoList extends BaseTime {
 
     private Boolean completed;
 
+    private String startDate;
+
+    private String fromDate;
+
     @ManyToOne
     @JoinColumn(name = "category_name")
     private Category category;
+
+    @ManyToOne
+    @JoinColumn(name = "calendar_name")
+    private Calendar calendar;
 
     private String userID;
 }

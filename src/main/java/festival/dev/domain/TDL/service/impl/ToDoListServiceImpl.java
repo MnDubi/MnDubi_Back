@@ -12,6 +12,10 @@ import festival.dev.domain.category.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,7 +31,7 @@ public class ToDoListServiceImpl implements ToDoListService {
         String userID = request.getUserID();
         String title = request.getTitle();
 
-        checkExist(userID, title);
+        checkExist(userID, title, request.getFromDate());
 
         Category category = categoryRepository.findByCategoryName(request.getCategory());
         if (category == null) {
@@ -37,41 +41,42 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .title(request.getTitle())
                 .completed(false)
                 .userID(request.getUserID())
+                .startDate(request.getFromDate())
+                .fromDate(request.getFromDate())
                 .category(category)
                 .build();
         toDoListRepository.save(toDoList);
     }
 
     public ToDoListResponse update(UpdateRequest request) {
-        checkNotExist(request.getUserID(), request.getTitle());
+        checkNotExist(request.getUserID(), request.getTitle(), request.getFromDate());
 
-        toDoListRepository.changeTitle(request.getChange(), request.getTitle(), request.getUserID());
+        toDoListRepository.changeTitle(request.getChange(), request.getTitle(), request.getUserID(), request.getChangeDate(), request.getFromDate());
 
-        ToDoList toDoList = toDoListRepository.findByUserIDAndTitle(request.getUserID(), request.getChange());
+        ToDoList toDoList = toDoListRepository.findByUserIDAndTitleAndFromDate(request.getUserID(), request.getChange(), request.getChangeDate());
 
         return ToDoListResponse.builder()
                 .title(toDoList.getTitle())
                 .completed(toDoList.getCompleted())
                 .category(toDoList.getCategory().getCategoryName())
-                .formattedDate(toDoList.getFormattedDate())
-                .dayOfWeek(toDoList.getDayOfWeek())
+                .formattedDate(toDoList.getFromDate())
                 .build();
     }
 
     public void delete(DeleteRequest request) {
-        checkNotExist(request.getUserID(), request.getTitle());
+        checkNotExist(request.getUserID(), request.getTitle(), request.getFromDate());
 
-        toDoListRepository.deleteByUserIDAndTitle(request.getUserID(),request.getTitle());
+        toDoListRepository.deleteByUserIDAndTitleAndFromDate(request.getUserID(),request.getTitle(), request.getFromDate());
     }
 
-    public void checkNotExist(String userID, String title){
-        if (!toDoListRepository.existsByUserIDAndTitle(userID,title)){
+    public void checkNotExist(String userID, String title, String fromDate){
+        if (!toDoListRepository.existsByUserIDAndTitleAndFromDate(userID,title, fromDate)){
             throw new IllegalArgumentException("존재하지 않는 TDL입니다.");
         }
     }
 
-    public void checkExist(String userID, String title){
-        if (toDoListRepository.existsByUserIDAndTitle(userID,title)){
+    public void checkExist(String userID, String title,String fromDate){
+        if (toDoListRepository.existsByUserIDAndTitleAndFromDate(userID,title, fromDate)){
             throw new IllegalArgumentException("이미 존재하는 TDL입니다.");
         }
     }
@@ -83,22 +88,25 @@ public class ToDoListServiceImpl implements ToDoListService {
                         .title(tdl.getTitle())
                         .completed(tdl.getCompleted())
                         .category(tdl.getCategory().getCategoryName())  // 카테고리 이름을 포함
-                        .formattedDate(tdl.getFormattedDate())
-                        .dayOfWeek(tdl.getDayOfWeek())
                         .build())
                 .collect(Collectors.toList());
     }
 
     public ToDoListResponse success(SuccessRequest request) {
-        toDoListRepository.changeCompleted(request.getCompleted(), request.getTitle(), request.getUserID());
-        ToDoList toDoList = toDoListRepository.findByUserIDAndTitle(request.getUserID(),request.getTitle());
+        LocalDateTime createAt;
+        createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
+        DateTimeFormatter yearMonthDayFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
+        String yearMonthDay = createAt.format(yearMonthDayFormatter);
+        System.out.println(yearMonthDay);
+
+        toDoListRepository.changeCompleted(request.getCompleted(), request.getTitle(), request.getUserID(), yearMonthDay);
+        ToDoList toDoList = toDoListRepository.findByUserIDAndTitleAndFromDate(request.getUserID(),request.getTitle(), yearMonthDay);
 
         return ToDoListResponse.builder()
                 .title(toDoList.getTitle())
                 .completed(toDoList.getCompleted())
                 .category(toDoList.getCategory().getCategoryName())
-                .formattedDate(toDoList.getFormattedDate())
-                .dayOfWeek(toDoList.getDayOfWeek())
+                .formattedDate(toDoList.getFromDate())
                 .build();
     }
 

@@ -6,5 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CalendarRepository extends JpaRepository<Calendar, Long> {
-    Calendar findByFormattedDateAndUserID(String formattedDate, String userId);
+    Calendar findByYearMonthDayAndUserID(String formattedDate, String userId);
 }

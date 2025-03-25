@@ -13,7 +13,7 @@ public class CalendarController {
 
     private final CalendarService calendarService;
 
-    @PostMapping("/post")
+    @PostMapping
     public ResponseEntity<?> insert(@RequestBody CalendarInsertRequest request){
         try {
             return ResponseEntity.ok(calendarService.insert(request));
@@ -22,7 +22,7 @@ public class CalendarController {
         }
     }
 
-    @GetMapping("/get")
+    @GetMapping
     public ResponseEntity<?> findDate(@RequestParam String date ,@RequestParam String userID){
         try{
             return ResponseEntity.ok(calendarService.getDateCalendar(date, userID));
