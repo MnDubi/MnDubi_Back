@@ -30,6 +30,10 @@ public class User {
 
     private String provider; // OAuth 제공자 정보 (Google, Naver, Kakao)
 
+    @Column(nullable = false)
+    private String role = "USER"; // 기본값 USER
+
+
 
     @CreationTimestamp
     private LocalDateTime createdAt;

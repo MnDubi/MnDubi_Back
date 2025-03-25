@@ -4,10 +4,8 @@ import festival.dev.domain.auth.dto.AuthRequestDto;
 import festival.dev.domain.auth.dto.AuthResponseDto;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
-import festival.dev.global.exception.CustomException;
-import festival.dev.global.security.jwt.JwtTokenProvider;
+import festival.dev.global.security.jwt.JwtUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,52 +14,61 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtUtil jwtUtil;
 
-    @Autowired
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       JwtTokenProvider jwtTokenProvider){
-        this.userRepository =userRepository;
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+        this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.jwtTokenProvider = jwtTokenProvider;
-
+        this.jwtUtil = jwtUtil;
     }
 
-
-    public AuthResponseDto registerUser(AuthRequestDto request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RuntimeException("이미 가입된 이메일입니다.");
+    // 자체 회원가입
+    public User registerUser(String email, String password, String name) {
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new RuntimeException("이미 존재하는 이메일입니다.");
         }
 
-        String encodedPassword = passwordEncoder.encode(request.getPassword());
-        User user = User.builder()
-                .email(request.getEmail())
-                .name(request.getName())
-                .password(encodedPassword)
-                .provider("local")
+        User newUser = User.builder()
+                .email(email)
+                .password(passwordEncoder.encode(password))
+                .name(name)
+                .provider("LOCAL") // 자체 회원가입은 "LOCAL"
+                .role("USER")
                 .build();
 
-        userRepository.save(user);
-
-        // Access & Refresh Token 발급
-        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail());
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
-
-        return new AuthResponseDto(accessToken, refreshToken);
+        return userRepository.save(newUser);
     }
 
-    public AuthResponseDto loginUser(AuthRequestDto request) {
+    // 자체 로그인
+    public AuthResponseDto login(AuthRequestDto request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("가입되지 않은 이메일입니다."));
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 이메일입니다."));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
 
-        // Access & Refresh Token 발급
-        String accessToken = jwtTokenProvider.createAccessToken(user.getEmail());
-        String refreshToken = jwtTokenProvider.createRefreshToken(user.getEmail());
+        return generateTokenResponse(user);
+    }
 
+    // JWT 생성
+    private AuthResponseDto generateTokenResponse(User user) {
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
         return new AuthResponseDto(accessToken, refreshToken);
+    }
+
+    // Refresh 토큰을 통한 재발급
+    public AuthResponseDto refreshAccessToken(String refreshToken) {
+        if (!jwtUtil.isRefreshTokenValid(refreshToken)) {
+            throw new RuntimeException("유효하지 않은 Refresh Token입니다.");
+        }
+
+        String email = jwtUtil.validateToken(refreshToken);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        String newAccessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
+        return new AuthResponseDto(newAccessToken, refreshToken);
     }
 }
