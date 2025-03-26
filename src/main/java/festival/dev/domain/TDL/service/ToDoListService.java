@@ -12,4 +12,5 @@ public interface ToDoListService {
     List<ToDoListResponse> get(Long id);
     ToDoListResponse success(SuccessRequest request, Long id);
     void finish(FinishRequest request, Long id);
+    void input(InsertUntilRequest request, Long id);
 }

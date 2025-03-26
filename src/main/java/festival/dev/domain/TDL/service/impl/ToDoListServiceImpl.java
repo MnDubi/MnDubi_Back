@@ -33,58 +33,77 @@ public class ToDoListServiceImpl implements ToDoListService {
     public void input(InsertRequest request, Long id) {
         String title = request.getTitle();
         User user = getUser(id);
-
-        checkExist(user, title, request.getFromDate());
-
         Category category = categoryRepository.findByCategoryName(request.getCategory());
 
-        if (category == null) {
-            throw new IllegalArgumentException("존재하지 않은 카테고리입니다.");
-        }
+        inputSetting(title, user, request.getEndDate(), category);
 
         ToDoList toDoList = ToDoList.builder()
                 .title(request.getTitle())
                 .completed(false)
                 .user(user)
-                .startDate(request.getFromDate())
-                .fromDate(request.getFromDate())
+                .startDate(request.getEndDate())
+                .endDate(request.getEndDate())
                 .category(category)
                 .build();
         toDoListRepository.save(toDoList);
     }
 
+    public void input(InsertUntilRequest request, Long id) {
+        String title = request.getTitle();
+        User user = getUser(id);
+        Category category = categoryRepository.findByCategoryName(request.getCategory());
+
+        inputSetting(title, user, request.getEndDate(), category);
+
+        toDoListRepository.save(ToDoList.builder()
+                        .title(title)
+                        .completed(false)
+                        .user(user)
+                        .startDate(request.getStartDate())
+                        .endDate(request.getEndDate())
+                        .category(category)
+                .build());
+    }
+
+    public void inputSetting(String title, User user, String endDate, Category category) {
+        checkExist(user, title, endDate);
+        if (category == null) {
+            throw new IllegalArgumentException("존재하지 않은 카테고리입니다.");
+        }
+    }
+
     public ToDoListResponse update(UpdateRequest request, Long userID) {
         User user = getUser(userID);
-        checkNotExist(user, request.getTitle(), request.getFromDate());
+        checkNotExist(user, request.getTitle(), request.getEndDate());
 
-        toDoListRepository.changeTitle(request.getChange(), request.getTitle(), userID, request.getChangeDate(), request.getFromDate());
+        toDoListRepository.changeTitle(request.getChange(), request.getTitle(), userID, request.getChangeDate(), request.getEndDate());
 
-        ToDoList toDoList = toDoListRepository.findByUserAndTitleAndFromDate(user, request.getChange(), request.getChangeDate());
+        ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user, request.getChange(), request.getChangeDate());
 
         return ToDoListResponse.builder()
                 .title(toDoList.getTitle())
                 .completed(toDoList.getCompleted())
                 .category(toDoList.getCategory().getCategoryName())
                 .userID(user.getName())
-                .formattedDate(toDoList.getFromDate())
+                .formattedDate(toDoList.getEndDate())
                 .build();
     }
 
     public void delete(DeleteRequest request,Long id) {
         User user = getUser(id);
-        checkNotExist(user, request.getTitle(), request.getFromDate());
+        checkNotExist(user, request.getTitle(), request.getEndDate());
 
-        toDoListRepository.deleteByUserAndTitleAndFromDate(user,request.getTitle(), request.getFromDate());
+        toDoListRepository.deleteByUserAndTitleAndEndDate(user,request.getTitle(), request.getEndDate());
     }
 
-    public void checkNotExist(User user, String title, String fromDate){
-        if (!toDoListRepository.existsByUserAndTitleAndFromDate(user,title, fromDate)){
+    public void checkNotExist(User user, String title, String endDate){
+        if (!toDoListRepository.existsByUserAndTitleAndEndDate(user,title, endDate)){
             throw new IllegalArgumentException("존재하지 않는 TDL입니다.");
         }
     }
 
-    public void checkExist(User user, String title,String fromDate){
-        if (toDoListRepository.existsByUserAndTitleAndFromDate(user,title, fromDate)){
+    public void checkExist(User user, String title,String endDate){
+        if (toDoListRepository.existsByUserAndTitleAndEndDate(user,title, endDate)){
             throw new IllegalArgumentException("이미 존재하는 TDL입니다.");
         }
     }
@@ -97,7 +116,7 @@ public class ToDoListServiceImpl implements ToDoListService {
                         .title(tdl.getTitle())
                         .completed(tdl.getCompleted())
                         .category(tdl.getCategory().getCategoryName())  // 카테고리 이름을 포함
-                        .formattedDate(tdl.getFromDate())
+                        .formattedDate(tdl.getEndDate())
                         .userID(tdl.getUser().getName())
                         .build())
                 .collect(Collectors.toList());
@@ -111,13 +130,13 @@ public class ToDoListServiceImpl implements ToDoListService {
         User user = getUser(userID);
 
         toDoListRepository.changeCompleted(request.getCompleted(), request.getTitle(), userID, yearMonthDay);
-        ToDoList toDoList = toDoListRepository.findByUserAndTitleAndFromDate(user,request.getTitle(), yearMonthDay);
+        ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user,request.getTitle(), yearMonthDay);
 
         return ToDoListResponse.builder()
                 .title(toDoList.getTitle())
                 .completed(toDoList.getCompleted())
                 .category(toDoList.getCategory().getCategoryName())
-                .formattedDate(toDoList.getFromDate())
+                .formattedDate(toDoList.getEndDate())
                 .userID(user.getName())
                 .build();
     }

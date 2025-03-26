@@ -14,17 +14,17 @@ import java.util.List;
 @Repository
 @Transactional
 public interface ToDoListRepository extends JpaRepository<ToDoList, Long> {
-    boolean existsByUserAndTitleAndFromDate(User user, String title,String fromDate);
-    void deleteByUserAndTitleAndFromDate(User user, String title, String fromDate);
+    boolean existsByUserAndTitleAndEndDate(User user, String title,String fromDate);
+    void deleteByUserAndTitleAndEndDate(User user, String title, String fromDate);
     List<ToDoList> findByUser(User user);
-    ToDoList findByUserAndTitleAndFromDate(User user, String title, String fromDate);
-    List<ToDoList> findByUserAndFromDate(User user, String fromDate);
+    ToDoList findByUserAndTitleAndEndDate(User user, String title, String fromDate);
+    List<ToDoList> findByUserAndEndDate(User user, String fromDate);
 
     @Modifying
-    @Query("UPDATE ToDoList t set t.title = :change, t.startDate = :changeDate, t.fromDate = :changeDate  WHERE t.title = :title AND t.user.id = :userID AND t.fromDate = :fromDate")
+    @Query("UPDATE ToDoList t set t.title = :change, t.startDate = :changeDate, t.endDate = :changeDate  WHERE t.title = :title AND t.user.id = :userID AND t.endDate = :fromDate")
     void changeTitle(@Param("change") String change, @Param("title") String title, @Param("userID") Long userID, @Param("changeDate") String changeDate, @Param("fromDate") String fromDate);
 
     @Modifying
-    @Query("UPDATE ToDoList t set t.completed = :completed WHERE t.title = :title AND t.user.id = :userID AND t.fromDate = :fromDate")
+    @Query("UPDATE ToDoList t set t.completed = :completed WHERE t.title = :title AND t.user.id = :userID AND t.endDate = :fromDate")
     void changeCompleted(@Param("completed") Boolean completed, @Param("title") String title, @Param("userID") Long userID,@Param("fromDate") String fromDate);
 }

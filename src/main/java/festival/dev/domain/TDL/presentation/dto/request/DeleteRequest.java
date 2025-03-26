@@ -10,5 +10,5 @@ public class DeleteRequest {
     @NotNull
     private String title;
     @NotNull
-    private String fromDate;
+    private String endDate;
 }

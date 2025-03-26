@@ -21,7 +21,7 @@ public class ToDoListController {
     @Value("${jwt.secret}")
     private String secret;
 
-    @PostMapping("/input")
+    @PostMapping("/insert")
     public ResponseEntity<String> input(@Valid @RequestBody InsertRequest request, @RequestHeader String authorization) {
         Long userID = getUserID(authorization);
 
@@ -101,5 +101,17 @@ public class ToDoListController {
         DecodedJWT jwt = JWT.decode(token);
 
         return jwt.getClaim("userId").asLong();
+    }
+
+    @PostMapping("/insert/until")
+    public ResponseEntity<?> until(@RequestHeader String authorization, @Valid @RequestBody InsertUntilRequest request){
+        Long userID = getUserID(authorization);
+        try {
+            toDoListService.input(request,userID);
+            return ResponseEntity.ok("Success");
+        }
+        catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

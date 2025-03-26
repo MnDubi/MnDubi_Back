@@ -27,7 +27,7 @@ public class ToDoList {
 
     private String startDate;
 
-    private String fromDate;
+    private String endDate;
 
     @ManyToOne
     @JoinColumn(name = "category_name")
