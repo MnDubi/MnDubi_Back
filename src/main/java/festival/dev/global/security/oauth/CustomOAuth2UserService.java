@@ -36,6 +36,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         Optional<User> existingUser = userRepository.findByEmail(userInfo.getEmail());
         User user = existingUser.orElseGet(() -> registerOAuthUser(provider, userInfo));
 
+
         //  CustomOAuth2User를 OAuth2User 타입으로 반환
         return new CustomOAuth2User(user, attributes, jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId()));
     }
