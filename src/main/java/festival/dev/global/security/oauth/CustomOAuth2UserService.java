@@ -34,11 +34,22 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         OAuth2UserInfo userInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(provider, attributes);
 
         Optional<User> existingUser = userRepository.findByEmail(userInfo.getEmail());
-        User user = existingUser.orElseGet(() -> registerOAuthUser(provider, userInfo));
 
+        if (existingUser.isPresent()) {
+            User user = existingUser.get();
+            if (!user.getProvider().equalsIgnoreCase(provider)) {
+                // 처음 로그인한 provider와 다름
+                throw new OAuth2AuthenticationException("이미 가입된 이메일입니다. 기존 로그인 방식: " + user.getProvider());
+            }
+
+            return new CustomOAuth2User(user, attributes, jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId()));
+        }
+
+        User newUser = registerOAuthUser(provider, userInfo);
 
         //  CustomOAuth2User를 OAuth2User 타입으로 반환
-        return new CustomOAuth2User(user, attributes, jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId()));
+        return new CustomOAuth2User(newUser, attributes,
+                jwtUtil.generateAccessToken(newUser.getEmail(), newUser.getRole(), newUser.getId()));
     }
 
     private User registerOAuthUser(String provider, OAuth2UserInfo userInfo) {
