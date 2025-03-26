@@ -7,8 +7,8 @@ import lombok.Getter;
 public class InsertRequest {
     @NotNull
     private String title;
-    @NotNull
-    private String userID;
+//    @NotNull
+//    private String userID;
     @NotNull
     private String category;
     @NotNull

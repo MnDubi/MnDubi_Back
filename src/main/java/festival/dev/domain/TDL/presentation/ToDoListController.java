@@ -1,5 +1,7 @@
 package festival.dev.domain.TDL.presentation;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import festival.dev.domain.TDL.presentation.dto.request.*;
 import festival.dev.domain.TDL.service.ToDoListService;
 import io.jsonwebtoken.Claims;
@@ -20,11 +22,11 @@ public class ToDoListController {
     private String secret;
 
     @PostMapping("/input")
-    public ResponseEntity<String> input(@Valid @RequestBody InsertRequest request/*, @RequestHeader String authorization*/) {
-//        String userID = getUserID(authorization);
+    public ResponseEntity<String> input(@Valid @RequestBody InsertRequest request, @RequestHeader String authorization) {
+        Long userID = getUserID(authorization);
 
         try {
-            toDoListService.input(request);
+            toDoListService.input(request,userID);
             return ResponseEntity.ok("Success");
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -32,11 +34,11 @@ public class ToDoListController {
     }
 
     @PutMapping("/modify")
-    public ResponseEntity<?> modify(@Valid @RequestBody UpdateRequest request/*, @RequestHeader String authorization*/) {
-//        String userID = getUserID(authorization);
+    public ResponseEntity<?> modify(@Valid @RequestBody UpdateRequest request, @RequestHeader String authorization) {
+        Long userID = getUserID(authorization);
 
         try{
-            return ResponseEntity.ok(toDoListService.update(request));
+            return ResponseEntity.ok(toDoListService.update(request, userID));
         }
         catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -44,11 +46,11 @@ public class ToDoListController {
     }
 
     @DeleteMapping("/delete")
-    public ResponseEntity<String> delete(@Valid @RequestBody DeleteRequest request/*, @RequestHeader String authorization*/){
-//        String userID = getUserID(authorization);
+    public ResponseEntity<String> delete(@Valid @RequestBody DeleteRequest request, @RequestHeader String authorization){
+        Long userID = getUserID(authorization);
 
         try {
-            toDoListService.delete(request);
+            toDoListService.delete(request,userID);
             return ResponseEntity.ok("Success");
         }
         catch (Exception e){
@@ -57,8 +59,8 @@ public class ToDoListController {
     }
 
     @GetMapping("/get")
-    public ResponseEntity<?> get(/*@RequestHeader String authorization*/@RequestParam String userID){
-//        String userID = getUserID(authorization);
+    public ResponseEntity<?> get(@RequestHeader String authorization/*@RequestParam String userID*/){
+        Long userID = getUserID(authorization);
         try{
             return ResponseEntity.ok(toDoListService.get(userID));
         }catch (Exception e){
@@ -67,35 +69,37 @@ public class ToDoListController {
     }
 
     @PutMapping("/success")
-    public ResponseEntity<?> success(@Valid @RequestBody SuccessRequest request/*,@RequestHeader String authorization*/){
-//        String userID = getUserID(authorization);
+    public ResponseEntity<?> success(@Valid @RequestBody SuccessRequest request,@RequestHeader String authorization){
+        Long userID = getUserID(authorization);
 
         try{
-            return ResponseEntity.ok(toDoListService.success(request));
+            return ResponseEntity.ok(toDoListService.success(request,userID));
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     @PostMapping("/finish") // 같은 날짜에 들어온 요청을 처리하는 로직 필요.
-    public ResponseEntity<String> finish(@Valid @RequestBody FinishRequest request/*,@RequestHeader String authorization*/){
-//        String userID = getUserID(authorization);
+    public ResponseEntity<String> finish(@Valid @RequestBody FinishRequest request,@RequestHeader String authorization){
+        Long userID = getUserID(authorization);
         try {
-            toDoListService.finish(request);
+            toDoListService.finish(request, userID);
             return ResponseEntity.ok("Success");
         }catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    public String getUserID(String auth){
+    public Long getUserID(String auth){
         String token = auth.replace("Bearer ","");
+//
+//        Claims claims = Jwts.parserBuilder()
+//                .setSigningKey(secret.getBytes())
+//                .build()
+//                .parseClaimsJws(token).getBody();
 
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(secret.getBytes())
-                .build()
-                .parseClaimsJws(token).getBody();
+        DecodedJWT jwt = JWT.decode(token);
 
-        return claims.getSubject();
+        return jwt.getClaim("userId").asLong();
     }
 }

@@ -1,51 +1,46 @@
 package festival.dev.domain.calendar.service.impl;
 
-import festival.dev.domain.TDL.entity.ToDoList;
-import festival.dev.domain.TDL.repository.ToDoListRepository;
 import festival.dev.domain.calendar.entity.Calendar;
 import festival.dev.domain.calendar.presentation.dto.CalendarInsertRequest;
 import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.calendar.service.CalendarService;
+import festival.dev.domain.user.entity.User;
+import festival.dev.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class CalendarServiceImpl implements CalendarService {
 
     private final CalendarRepository calendarRepository;
-    private final ToDoListRepository toDoListRepository;
+    private final UserRepository userRepository;
 
-    public Calendar insert(CalendarInsertRequest request) {
+    public Calendar insert(CalendarInsertRequest request, Long userID) {
         try {
-            LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
-            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MM.dd");
-            String formattedDate = createAt.format(dateFormatter);
-
-//            List<ToDoList> tdl = toDoListRepository.findByFormattedDate(formattedDate);
+            User user = userGet(userID);
             Calendar calendar = Calendar.builder()
-                    .userID(request.getUserID())
+                    .user(user)
                     .every(request.getEvery())
                     .part(request.getPart())
-//                    .toDoLists(tdl)
                     .build();
+
             return calendarRepository.save(calendar);
         }catch (Exception e){
             throw new IllegalArgumentException(e.getMessage());
         }
     }
 
-    public Calendar getDateCalendar(String date, String userID){
+    public Calendar getDateCalendar(String date, Long userID){
         try{
-            return calendarRepository.findByYearMonthDayAndUserID(date, userID);
+            User user = userGet(userID);
+            return calendarRepository.findByYearMonthDayAndUser(date, user);
         }catch (Exception e){
             throw new IllegalArgumentException(e.getMessage());
         }
+    }
+
+    public User userGet(Long userID){
+        return userRepository.findById(userID).orElseThrow(() -> new IllegalArgumentException("없는 UserID 입니다."));
     }
 }

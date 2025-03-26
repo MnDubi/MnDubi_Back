@@ -1,10 +1,13 @@
 package festival.dev.domain.user.entity;
 
+import festival.dev.domain.TDL.entity.ToDoList;
+import festival.dev.domain.calendar.entity.Calendar;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter
@@ -33,7 +36,11 @@ public class User {
     @Column(nullable = false)
     private String role = "USER"; // 기본값 USER
 
+    @OneToMany(mappedBy = "user")
+    private List<ToDoList> toDoLists;
 
+    @OneToMany(mappedBy = "user")
+    private List<Calendar> calendars;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

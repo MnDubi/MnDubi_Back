@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ToDoListResponse {
     private String formattedDate;
+    private String userID;
     private String title;
     private boolean completed;
     private String category;
