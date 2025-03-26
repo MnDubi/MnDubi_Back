@@ -9,6 +9,6 @@ public class FinishRequest {
     private int part;
     @NotNull
     private int every;
-    @NotNull
-    private String userID;
+//    @NotNull
+//    private String userID;
 }

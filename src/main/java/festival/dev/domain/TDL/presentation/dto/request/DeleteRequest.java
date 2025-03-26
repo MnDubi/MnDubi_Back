@@ -5,8 +5,8 @@ import lombok.Getter;
 
 @Getter
 public class DeleteRequest {
-    @NotNull
-    private String userID;
+//    @NotNull
+//    private String userID;
     @NotNull
     private String title;
     @NotNull

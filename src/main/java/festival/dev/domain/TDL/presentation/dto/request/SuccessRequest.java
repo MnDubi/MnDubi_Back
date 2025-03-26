@@ -9,6 +9,6 @@ public class SuccessRequest {
     private String title;
     @NotNull
     private Boolean completed;
-    @NotNull
-    private String userID;
+//    @NotNull
+//    private String userID;
 }
