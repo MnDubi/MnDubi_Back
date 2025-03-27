@@ -123,10 +123,7 @@ public class ToDoListServiceImpl implements ToDoListService {
     }
 
     public ToDoListResponse success(SuccessRequest request, Long userID) {
-        LocalDateTime createAt;
-        createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
-        DateTimeFormatter yearMonthDayFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
-        String yearMonthDay = createAt.format(yearMonthDayFormatter);
+        String yearMonthDay = toDay();
         User user = getUser(userID);
 
         toDoListRepository.changeCompleted(request.getCompleted(), request.getTitle(), userID, yearMonthDay);
@@ -143,13 +140,28 @@ public class ToDoListServiceImpl implements ToDoListService {
 
     public void finish(FinishRequest request, Long userID){
         User user = getUser(userID);
-        Calendar calendar = Calendar.builder()
-                .user(user)
-                .every(request.getEvery())
-                .part(request.getPart())
-                .build();
+        if (calendarRepository.findByUserAndYearMonthDay(user,toDay()) == null) {
+            Calendar calendar = Calendar.builder()
+                    .user(user)
+                    .every(request.getEvery())
+                    .part(request.getPart())
+                    .build();
+            calendarRepository.save(calendar);
+        }
+        else{
+            Calendar calendar = calendarRepository.findByUserAndYearMonthDay(user,toDay())
+                    .toBuilder()
+                    .every(request.getEvery())
+                    .part(request.getPart())
+                    .build();
+            calendarRepository.save(calendar);
+        }
+    }
 
-        calendarRepository.save(calendar);
+    public String toDay(){
+        LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
+        DateTimeFormatter yearMonthDayFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
+        return createAt.format(yearMonthDayFormatter);
     }
 
     public User getUser(Long id){
