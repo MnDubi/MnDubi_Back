@@ -149,12 +149,7 @@ public class ToDoListServiceImpl implements ToDoListService {
             calendarRepository.save(calendar);
         }
         else{
-            Calendar calendar = calendarRepository.findByUserAndYearMonthDay(user,toDay())
-                    .toBuilder()
-                    .every(request.getEvery())
-                    .part(request.getPart())
-                    .build();
-            calendarRepository.save(calendar);
+            calendarRepository.updateEveryAndPart(request.getEvery(), request.getPart(), userID,toDay());
         }
     }
 

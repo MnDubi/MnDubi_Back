@@ -1,4 +1,4 @@
-package festival.dev.domain.calendar.presentation.dto;
+package festival.dev.domain.calendar.presentation.dto.Request;
 
 import lombok.Getter;
 
