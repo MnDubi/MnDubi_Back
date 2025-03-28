@@ -23,7 +23,7 @@ public class Calendar extends BaseTime {
 
     private int part;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 }

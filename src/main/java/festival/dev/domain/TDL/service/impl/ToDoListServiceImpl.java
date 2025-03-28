@@ -37,6 +37,8 @@ public class ToDoListServiceImpl implements ToDoListService {
 
         inputSetting(title, user, request.getEndDate(), category);
 
+        checkEndDate(request.getEndDate());
+
         ToDoList toDoList = ToDoList.builder()
                 .title(request.getTitle())
                 .completed(false)
@@ -53,7 +55,13 @@ public class ToDoListServiceImpl implements ToDoListService {
         User user = getUser(id);
         Category category = categoryRepository.findByCategoryName(request.getCategory());
 
-        inputSetting(title, user, request.getEndDate(), category);
+        if (request.getStartDate().compareTo(request.getEndDate()) > 0) {
+            throw new IllegalArgumentException("시작하는 날짜가 끝나는 날짜보다 늦을 수 없습니다.");
+        }
+
+        checkEndDate(request.getEndDate());
+        checkUntil(user, title, request.getStartDate(), request.getEndDate());
+        checkCategory(category);
 
         toDoListRepository.save(ToDoList.builder()
                         .title(title)
@@ -63,13 +71,6 @@ public class ToDoListServiceImpl implements ToDoListService {
                         .endDate(request.getEndDate())
                         .category(category)
                 .build());
-    }
-
-    public void inputSetting(String title, User user, String endDate, Category category) {
-        checkExist(user, title, endDate);
-        if (category == null) {
-            throw new IllegalArgumentException("존재하지 않은 카테고리입니다.");
-        }
     }
 
     public ToDoListResponse update(UpdateRequest request, Long userID) {
@@ -85,7 +86,8 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .completed(toDoList.getCompleted())
                 .category(toDoList.getCategory().getCategoryName())
                 .userID(user.getName())
-                .formattedDate(toDoList.getEndDate())
+                .endDate(toDoList.getEndDate())
+                .startDate(toDoList.getStartDate())
                 .build();
     }
 
@@ -96,28 +98,20 @@ public class ToDoListServiceImpl implements ToDoListService {
         toDoListRepository.deleteByUserAndTitleAndEndDate(user,request.getTitle(), request.getEndDate());
     }
 
-    public void checkNotExist(User user, String title, String endDate){
-        if (!toDoListRepository.existsByUserAndTitleAndEndDate(user,title, endDate)){
-            throw new IllegalArgumentException("존재하지 않는 TDL입니다.");
-        }
-    }
-
-    public void checkExist(User user, String title,String endDate){
-        if (toDoListRepository.existsByUserAndTitleAndEndDate(user,title, endDate)){
-            throw new IllegalArgumentException("이미 존재하는 TDL입니다.");
-        }
-    }
-
     public List<ToDoListResponse> get(Long userID){
         User user = getUser(userID);
-        List<ToDoList> toDoList = toDoListRepository.findByUser(user);
+        List<ToDoList> toDoList = toDoListRepository.findByCurrentDateAndUserID(toDay(), userID);
+        if(toDoList.isEmpty()){
+            throw new IllegalArgumentException("오늘과 관련된 ToDoList가 없습니다.");
+        }
         return toDoList.stream()
                 .map(tdl -> ToDoListResponse.builder()
                         .title(tdl.getTitle())
                         .completed(tdl.getCompleted())
                         .category(tdl.getCategory().getCategoryName())  // 카테고리 이름을 포함
-                        .formattedDate(tdl.getEndDate())
-                        .userID(tdl.getUser().getName())
+                        .endDate(tdl.getEndDate())
+                        .startDate(tdl.getStartDate())
+                        .userID(user.getName())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -133,7 +127,8 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .title(toDoList.getTitle())
                 .completed(toDoList.getCompleted())
                 .category(toDoList.getCategory().getCategoryName())
-                .formattedDate(toDoList.getEndDate())
+                .endDate(toDoList.getEndDate())
+                .startDate(toDoList.getStartDate())
                 .userID(user.getName())
                 .build();
     }
@@ -161,5 +156,40 @@ public class ToDoListServiceImpl implements ToDoListService {
 
     public User getUser(Long id){
         return userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("존재하지 않은 UserID"));
+    }
+
+    public void checkNotExist(User user, String title, String endDate){
+        if (!toDoListRepository.existsByUserAndTitleAndEndDate(user,title, endDate)){
+            throw new IllegalArgumentException("존재하지 않는 TDL입니다.");
+        }
+    }
+
+    public void checkExist(User user, String title,String endDate){
+        if (toDoListRepository.existsByUserAndTitleAndEndDate(user,title, endDate)){
+            throw new IllegalArgumentException("이미 존재하는 TDL입니다.");
+        }
+    }
+
+    public void checkUntil(User user, String title, String startDate, String endDate){
+        if (toDoListRepository.existsByUserAndTitleAndEndDateAndStartDate(user,title,endDate,startDate)){
+            throw new IllegalArgumentException("이미 존재하는 TDL입니다.");
+        }
+    }
+
+    public void inputSetting(String title, User user, String endDate, Category category) {
+        checkExist(user, title, endDate);
+        checkCategory(category);
+    }
+
+    public void checkCategory(Category category){
+        if (category == null) {
+            throw new IllegalArgumentException("존재하지 않은 카테고리입니다.");
+        }
+    }
+
+    public void checkEndDate(String endDate){
+        if (toDay().compareTo(endDate) > 0){
+            throw new IllegalArgumentException("끝나는 날짜는 현재 날짜보다 빠를 수 없습니다.");
+        }
     }
 }
