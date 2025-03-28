@@ -16,7 +16,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -49,10 +48,6 @@ public class CalendarServiceImpl implements CalendarService {
         }
     }
 
-    public User userGet(Long userID){
-        return userRepository.findById(userID).orElseThrow(() -> new IllegalArgumentException("없는 UserID 입니다."));
-    }
-
     public MonthResponse getByMonth(Long userID) {
         LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
 
@@ -75,4 +70,7 @@ public class CalendarServiceImpl implements CalendarService {
                 .build();
     }
 
+    public User userGet(Long userID){
+        return userRepository.findById(userID).orElseThrow(() -> new IllegalArgumentException("없는 UserID 입니다."));
+    }
 }

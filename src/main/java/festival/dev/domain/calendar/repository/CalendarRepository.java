@@ -4,6 +4,7 @@ import festival.dev.domain.calendar.entity.Calendar;
 import festival.dev.domain.calendar.presentation.dto.Response.MonthResponse;
 import festival.dev.domain.user.entity.User;
 import jakarta.persistence.Tuple;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -17,12 +18,15 @@ import java.util.Optional;
 @Transactional
 @Repository
 public interface CalendarRepository extends JpaRepository<Calendar, Long> {
+    @EntityGraph
     Calendar findByYearMonthDayAndUser(String formattedDate, User user);
+    @EntityGraph
     Calendar findByUserAndYearMonthDay(User user,String yearMonthDay);
     @Modifying
     @Query("UPDATE Calendar c SET c.every = :every, c.part = :part , c.toDoListId = :tdlID WHERE c.user.id = :userID AND c.yearMonthDay = :yearMonthDay")
     void updateEveryAndPart(@Param("every") int every, @Param("part") int part, @Param("userID") Long userID, @Param("yearMonthDay") String yearMonthDay, @Param("tdlID") List<Long> tdlID);
 
+    @EntityGraph
     @Query("SELECT SUM(c.every) as monthEvery, SUM(c.part) as monthPart FROM Calendar c WHERE c.user.id = :userID AND SUBSTRING(c.formattedDate, 1, 2) = :month")
     List<Tuple> findByMonth(@Param("month") String month, @Param("userID") Long userID);
 }

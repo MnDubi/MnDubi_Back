@@ -2,6 +2,7 @@ package festival.dev.domain.TDL.repository;
 
 import festival.dev.domain.TDL.entity.ToDoList;
 import festival.dev.domain.user.entity.User;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,13 +15,20 @@ import java.util.List;
 @Repository
 @Transactional
 public interface ToDoListRepository extends JpaRepository<ToDoList, Long> {
+    @EntityGraph
     boolean existsByUserAndTitleAndEndDate(User user, String title,String fromDate);
+    @EntityGraph
     void deleteByUserAndTitleAndEndDate(User user, String title, String fromDate);
+    @EntityGraph
     boolean existsByUserAndTitleAndEndDateAndStartDate(User user, String title, String fromDate, String startDate);
+    @EntityGraph
     ToDoList findByUserAndTitleAndEndDate(User user, String title, String fromDate);
+    @EntityGraph
     List<ToDoList> findByUserAndEndDate(User user, String endDate);
+    @EntityGraph
     List<ToDoList> findByUserAndEndDateAndCompleted(User user, String endDate, boolean completed);
 
+    @EntityGraph
     @Query("SELECT t FROM ToDoList t WHERE t.startDate <= :currentDate AND t.endDate >= :currentDate AND t.user.id = :userID")
     List<ToDoList> findByCurrentDateAndUserID(@Param("currentDate") String currentDate, @Param("userID") Long userID);
 
