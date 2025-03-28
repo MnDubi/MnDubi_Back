@@ -60,8 +60,12 @@ public class ToDoListServiceImpl implements ToDoListService {
         }
 
         checkEndDate(request.getEndDate());
-        checkUntil(user, title, request.getStartDate(), request.getEndDate());
-        checkCategory(category);
+
+        //이게 필요한지 생각 필요 endDate만 비교해야하지 않나??
+        //title이랑 endDate가 같으면 startDate는 필요없다고 생각함.
+//        checkUntil(user, title, request.getStartDate(), request.getEndDate());
+//        checkCategory(category);
+        inputSetting(title, user, request.getEndDate(), category);
 
         toDoListRepository.save(ToDoList.builder()
                         .title(title)
@@ -133,18 +137,23 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .build();
     }
 
-    public void finish(FinishRequest request, Long userID){
+    public void finish(Long userID){
         User user = getUser(userID);
+        List<ToDoList> tdls = toDoListRepository.findByUserAndEndDate(user,toDay());
+        int part = toDoListRepository.findByUserAndEndDateAndCompleted(user,toDay(),true).size();
+        List<Long> tdlIDs = tdls.stream().map(ToDoList::getId).toList();
+
         if (calendarRepository.findByUserAndYearMonthDay(user,toDay()) == null) {
             Calendar calendar = Calendar.builder()
                     .user(user)
-                    .every(request.getEvery())
-                    .part(request.getPart())
+                    .every(tdlIDs.size())
+                    .part(part)
+                    .toDoListId(tdlIDs)
                     .build();
             calendarRepository.save(calendar);
         }
         else{
-            calendarRepository.updateEveryAndPart(request.getEvery(), request.getPart(), userID,toDay());
+            calendarRepository.updateEveryAndPart(tdlIDs.size(), part, userID,toDay(), tdlIDs);
         }
     }
 

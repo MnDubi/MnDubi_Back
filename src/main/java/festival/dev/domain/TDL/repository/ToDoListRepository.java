@@ -18,6 +18,8 @@ public interface ToDoListRepository extends JpaRepository<ToDoList, Long> {
     void deleteByUserAndTitleAndEndDate(User user, String title, String fromDate);
     boolean existsByUserAndTitleAndEndDateAndStartDate(User user, String title, String fromDate, String startDate);
     ToDoList findByUserAndTitleAndEndDate(User user, String title, String fromDate);
+    List<ToDoList> findByUserAndEndDate(User user, String endDate);
+    List<ToDoList> findByUserAndEndDateAndCompleted(User user, String endDate, boolean completed);
 
     @Query("SELECT t FROM ToDoList t WHERE t.startDate <= :currentDate AND t.endDate >= :currentDate AND t.user.id = :userID")
     List<ToDoList> findByCurrentDateAndUserID(@Param("currentDate") String currentDate, @Param("userID") Long userID);

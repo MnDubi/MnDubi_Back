@@ -79,11 +79,11 @@ public class ToDoListController {
         }
     }
 
-    @PostMapping("/finish") // 같은 날짜에 들어온 요청을 처리하는 로직 필요.
-    public ResponseEntity<String> finish(@Valid @RequestBody FinishRequest request,@RequestHeader String authorization){
+    @PostMapping("/finish")
+    public ResponseEntity<String> finish(@RequestHeader String authorization){
         Long userID = getUserID(authorization);
         try {
-            toDoListService.finish(request, userID);
+            toDoListService.finish(userID);
             return ResponseEntity.ok("Success");
         }catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
