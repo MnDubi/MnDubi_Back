@@ -11,5 +11,6 @@ public interface ToDoListService {
     void delete(DeleteRequest request, Long id);
     List<ToDoListResponse> get(Long id);
     ToDoListResponse success(SuccessRequest request, Long id);
-    void finish(FinishRequest request, Long id);
+    void finish(Long id);
+    void input(InsertUntilRequest request, Long id);
 }

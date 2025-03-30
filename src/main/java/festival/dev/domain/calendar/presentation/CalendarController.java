@@ -2,7 +2,7 @@ package festival.dev.domain.calendar.presentation;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import festival.dev.domain.calendar.presentation.dto.CalendarInsertRequest;
+import festival.dev.domain.calendar.presentation.dto.Request.CalendarInsertRequest;
 import festival.dev.domain.calendar.service.CalendarService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +31,17 @@ public class CalendarController {
             Long userID = getUserID(authorization);
             return ResponseEntity.ok(calendarService.getDateCalendar(date, userID));
         }catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/month")
+    public ResponseEntity<?> findMonth(@RequestHeader String authorization){
+        try{
+            Long userID = getUserID(authorization);
+            return ResponseEntity.ok(calendarService.getByMonth(userID));
+        }
+        catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

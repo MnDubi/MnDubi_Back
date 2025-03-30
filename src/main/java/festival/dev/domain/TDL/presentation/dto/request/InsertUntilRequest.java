@@ -1,16 +1,11 @@
 package festival.dev.domain.TDL.presentation.dto.request;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
 @Getter
-public class InsertRequest {
-    @NotNull
+public class InsertUntilRequest {
     private String title;
-//    @NotNull
-//    private String userID;
-    @NotNull
     private String category;
-    @NotNull
+    private String startDate;
     private String endDate;
 }

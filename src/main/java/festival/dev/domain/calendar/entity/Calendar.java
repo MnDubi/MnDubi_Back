@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Entity
 @Table
 @Builder(toBuilder = true)
@@ -23,7 +25,11 @@ public class Calendar extends BaseTime {
 
     private int part;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "calendar_TDL_id")
+    private List<Long> toDoListId;
 }
