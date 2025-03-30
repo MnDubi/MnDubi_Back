@@ -74,9 +74,18 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .name(name) //  name이 항상 존재
                 .password("") //  OAuth 사용자는 비밀번호 필요 없음
                 .provider(provider.toUpperCase())
+                .userCode(generateUserCode())
                 .role("USER")
                 .build());
     }
+    private String generateUserCode() {
+        String code;
+        do {
+            code = org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric(8).toUpperCase(); // 예: AB12CD34
+        } while (userRepository.existsByUserCode(code));
+        return code;
+    }
+
 
 }
 

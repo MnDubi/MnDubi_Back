@@ -33,6 +33,8 @@ public class User {
     @Column(nullable = false)
     private String role = "USER"; // 기본값 USER
 
+    @Column(name = "user_code", unique = true, nullable = false, updatable = false)
+    private String userCode;
 
 
     @CreationTimestamp
