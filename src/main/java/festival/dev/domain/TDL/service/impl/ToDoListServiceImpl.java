@@ -77,9 +77,12 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .build());
     }
 
+    //startDate도 변경할 수 있게 service 구축
     public ToDoListResponse update(UpdateRequest request, Long userID) {
         User user = getUser(userID);
         checkNotExist(user, request.getTitle(), request.getEndDate());
+        if (request.getTitle().equals(request.getChange()))
+            checkExist(user, request.getTitle(), request.getChangeDate());
 
         toDoListRepository.changeTitle(request.getChange(), request.getTitle(), userID, request.getChangeDate(), request.getEndDate());
 

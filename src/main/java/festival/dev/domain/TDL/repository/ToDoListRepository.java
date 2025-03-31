@@ -15,23 +15,22 @@ import java.util.List;
 @Repository
 @Transactional
 public interface ToDoListRepository extends JpaRepository<ToDoList, Long> {
-    @EntityGraph
+    @EntityGraph(attributePaths = {"user"}, type = EntityGraph.EntityGraphType.LOAD)
     boolean existsByUserAndTitleAndEndDate(User user, String title,String fromDate);
-    @EntityGraph
+    @EntityGraph(attributePaths = {"user"}, type = EntityGraph.EntityGraphType.LOAD)
     void deleteByUserAndTitleAndEndDate(User user, String title, String fromDate);
-    @EntityGraph
+    @EntityGraph(attributePaths = {"user"}, type = EntityGraph.EntityGraphType.LOAD)
     boolean existsByUserAndTitleAndEndDateAndStartDate(User user, String title, String fromDate, String startDate);
-    @EntityGraph
+    @EntityGraph(attributePaths = {"user"}, type = EntityGraph.EntityGraphType.LOAD)
     ToDoList findByUserAndTitleAndEndDate(User user, String title, String fromDate);
-    @EntityGraph
+    @EntityGraph(attributePaths = {"user"}, type = EntityGraph.EntityGraphType.LOAD)
     List<ToDoList> findByUserAndEndDate(User user, String endDate);
-    @EntityGraph
+    @EntityGraph(attributePaths = {"user"}, type = EntityGraph.EntityGraphType.LOAD)
     List<ToDoList> findByUserAndEndDateAndCompleted(User user, String endDate, boolean completed);
 
-    @EntityGraph
+    @EntityGraph(attributePaths = {"user"}, type = EntityGraph.EntityGraphType.LOAD)
     @Query("SELECT t FROM ToDoList t WHERE t.startDate <= :currentDate AND t.endDate >= :currentDate AND t.user.id = :userID")
     List<ToDoList> findByCurrentDateAndUserID(@Param("currentDate") String currentDate, @Param("userID") Long userID);
-
 
     @Modifying
     @Query("UPDATE ToDoList t set t.title = :change, t.startDate = :changeDate, t.endDate = :changeDate  WHERE t.title = :title AND t.user.id = :userID AND t.endDate = :fromDate")
