@@ -90,6 +90,18 @@ public class ToDoListController {
         }
     }
 
+    @PostMapping("/insert/until")
+    public ResponseEntity<?> until(@RequestHeader String authorization, @Valid @RequestBody InsertUntilRequest request){
+        Long userID = getUserID(authorization);
+        try {
+            toDoListService.input(request,userID);
+            return ResponseEntity.ok("Success");
+        }
+        catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     public Long getUserID(String auth){
         String token = auth.replace("Bearer ","");
 //
@@ -101,17 +113,5 @@ public class ToDoListController {
         DecodedJWT jwt = JWT.decode(token);
 
         return jwt.getClaim("userId").asLong();
-    }
-
-    @PostMapping("/insert/until")
-    public ResponseEntity<?> until(@RequestHeader String authorization, @Valid @RequestBody InsertUntilRequest request){
-        Long userID = getUserID(authorization);
-        try {
-            toDoListService.input(request,userID);
-            return ResponseEntity.ok("Success");
-        }
-        catch (Exception e){
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
     }
 }

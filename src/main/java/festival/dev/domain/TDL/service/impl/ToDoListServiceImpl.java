@@ -80,6 +80,10 @@ public class ToDoListServiceImpl implements ToDoListService {
     public ToDoListResponse update(UpdateRequest request, Long userID) {
         User user = getUser(userID);
         checkNotExist(user, request.getTitle(), request.getEndDate());
+        if (request.getTitle().equals(request.getChange()))
+            checkExist(user, request.getTitle(), request.getChangeDate());
+        if(toDay().compareTo(request.getEndDate()) > 0)
+            throw new IllegalArgumentException("이미 끝난 TDL은 변경이 불가능합니다.");
 
         toDoListRepository.changeTitle(request.getChange(), request.getTitle(), userID, request.getChangeDate(), request.getEndDate());
 
@@ -175,12 +179,6 @@ public class ToDoListServiceImpl implements ToDoListService {
 
     public void checkExist(User user, String title,String endDate){
         if (toDoListRepository.existsByUserAndTitleAndEndDate(user,title, endDate)){
-            throw new IllegalArgumentException("이미 존재하는 TDL입니다.");
-        }
-    }
-
-    public void checkUntil(User user, String title, String startDate, String endDate){
-        if (toDoListRepository.existsByUserAndTitleAndEndDateAndStartDate(user,title,endDate,startDate)){
             throw new IllegalArgumentException("이미 존재하는 TDL입니다.");
         }
     }
