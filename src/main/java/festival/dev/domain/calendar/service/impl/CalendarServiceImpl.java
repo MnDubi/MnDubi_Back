@@ -1,7 +1,11 @@
 package festival.dev.domain.calendar.service.impl;
 
+import festival.dev.domain.TDL.entity.ToDoList;
+import festival.dev.domain.TDL.repository.ToDoListRepository;
 import festival.dev.domain.calendar.entity.Calendar;
 import festival.dev.domain.calendar.presentation.dto.Request.CalendarInsertRequest;
+import festival.dev.domain.calendar.presentation.dto.Response.CalendarDtoAsis;
+import festival.dev.domain.calendar.presentation.dto.Response.CalendarResponse;
 import festival.dev.domain.calendar.presentation.dto.Response.MonthResponse;
 import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.calendar.service.CalendarService;
@@ -15,6 +19,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.List;
 
 @Service
@@ -23,6 +28,7 @@ public class CalendarServiceImpl implements CalendarService {
 
     private final CalendarRepository calendarRepository;
     private final UserRepository userRepository;
+    private final ToDoListRepository toDoListRepository;
 
     public Calendar insert(CalendarInsertRequest request, Long userID) {
         try {
@@ -39,10 +45,29 @@ public class CalendarServiceImpl implements CalendarService {
         }
     }
 
-    public Calendar getDateCalendar(String date, Long userID){
+    public CalendarResponse getDateCalendar(String date, Long userID){
         try{
             User user = userGet(userID);
-            return calendarRepository.findByYearMonthDayAndUser(date, user);
+            Calendar calendar = calendarRepository.findByYearMonthDayAndUser(date, user);
+            Collection<Long> tdlIds = calendar.getToDoListId();
+            List<ToDoList> tdls =  toDoListRepository.findByIdIn(tdlIds);
+            List<CalendarDtoAsis> tdl = tdls.stream()
+                    .map(toDoList -> CalendarDtoAsis.builder()
+                            .title(toDoList.getTitle())
+                            .startDate(toDoList.getStartDate())
+                            .endDate(toDoList.getEndDate())
+                            .completed(toDoList.getCompleted())
+                            .category(toDoList.getCategory().getCategoryName())
+                            .build()).toList();
+
+            return CalendarResponse.builder()
+                    .tdl(tdl)
+                    .username(user.getName())
+                    .day_of_week(calendar.getDayOfWeek())
+                    .year_month_day(calendar.getYearMonthDay())
+                    .every(calendar.getEvery())
+                    .part(calendar.getPart())
+                    .build();
         }catch (Exception e){
             throw new IllegalArgumentException(e.getMessage());
         }

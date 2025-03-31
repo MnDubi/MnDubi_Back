@@ -61,10 +61,6 @@ public class ToDoListServiceImpl implements ToDoListService {
 
         checkEndDate(request.getEndDate());
 
-        //이게 필요한지 생각 필요 endDate만 비교해야하지 않나??
-        //title이랑 endDate가 같으면 startDate는 필요없다고 생각함.
-//        checkUntil(user, title, request.getStartDate(), request.getEndDate());
-//        checkCategory(category);
         inputSetting(title, user, request.getEndDate(), category);
 
         toDoListRepository.save(ToDoList.builder()
@@ -157,7 +153,7 @@ public class ToDoListServiceImpl implements ToDoListService {
             calendarRepository.save(calendar);
         }
         else{
-            calendarRepository.updateEveryAndPart(tdlIDs.size(), part, userID,toDay(), tdlIDs);
+            throw new IllegalArgumentException("하루에 두 번 이상 요청을 보내실 수 없습니다.");
         }
     }
 
