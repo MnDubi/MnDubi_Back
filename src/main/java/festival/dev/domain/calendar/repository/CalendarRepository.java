@@ -18,9 +18,7 @@ import java.util.Optional;
 @Transactional
 @Repository
 public interface CalendarRepository extends JpaRepository<Calendar, Long> {
-    @EntityGraph
     Calendar findByYearMonthDayAndUser(String formattedDate, User user);
-    @EntityGraph
     Calendar findByUserAndYearMonthDay(User user,String yearMonthDay);
     @Modifying
     @Query("UPDATE Calendar c SET c.every = :every, c.part = :part , c.toDoListId = :tdlID WHERE c.user.id = :userID AND c.yearMonthDay = :yearMonthDay")
