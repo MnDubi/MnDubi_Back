@@ -3,7 +3,6 @@ package festival.dev.domain.calendar.service.impl;
 import festival.dev.domain.TDL.entity.ToDoList;
 import festival.dev.domain.TDL.repository.ToDoListRepository;
 import festival.dev.domain.calendar.entity.Calendar;
-import festival.dev.domain.calendar.presentation.dto.Request.CalendarInsertRequest;
 import festival.dev.domain.calendar.presentation.dto.Response.CalendarDtoAsis;
 import festival.dev.domain.calendar.presentation.dto.Response.CalendarResponse;
 import festival.dev.domain.calendar.presentation.dto.Response.MonthResponse;
@@ -29,21 +28,6 @@ public class CalendarServiceImpl implements CalendarService {
     private final CalendarRepository calendarRepository;
     private final UserRepository userRepository;
     private final ToDoListRepository toDoListRepository;
-
-    public Calendar insert(CalendarInsertRequest request, Long userID) {
-        try {
-            User user = userGet(userID);
-            Calendar calendar = Calendar.builder()
-                    .user(user)
-                    .every(request.getEvery())
-                    .part(request.getPart())
-                    .build();
-
-            return calendarRepository.save(calendar);
-        }catch (Exception e){
-            throw new IllegalArgumentException(e.getMessage());
-        }
-    }
 
     public CalendarResponse getDateCalendar(String date, Long userID){
         try{
