@@ -24,7 +24,6 @@ public interface CalendarRepository extends JpaRepository<Calendar, Long> {
     @Query("UPDATE Calendar c SET c.every = :every, c.part = :part , c.toDoListId = :tdlID WHERE c.user.id = :userID AND c.yearMonthDay = :yearMonthDay")
     void updateEveryAndPart(@Param("every") int every, @Param("part") int part, @Param("userID") Long userID, @Param("yearMonthDay") String yearMonthDay, @Param("tdlID") List<Long> tdlID);
 
-    @EntityGraph
     @Query("SELECT SUM(c.every) as monthEvery, SUM(c.part) as monthPart FROM Calendar c WHERE c.user.id = :userID AND SUBSTRING(c.formattedDate, 1, 2) = :month")
     List<Tuple> findByMonth(@Param("month") String month, @Param("userID") Long userID);
 }

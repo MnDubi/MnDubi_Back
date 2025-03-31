@@ -17,7 +17,6 @@ import java.util.List;
 public interface ToDoListRepository extends JpaRepository<ToDoList, Long> {
     boolean existsByUserAndTitleAndEndDate(User user, String title,String fromDate);
     void deleteByUserAndTitleAndEndDate(User user, String title, String fromDate);
-    boolean existsByUserAndTitleAndEndDateAndStartDate(User user, String title, String fromDate, String startDate);
     ToDoList findByUserAndTitleAndEndDate(User user, String title, String fromDate);
     List<ToDoList> findByUserAndEndDate(User user, String endDate);
     List<ToDoList> findByUserAndEndDateAndCompleted(User user, String endDate, boolean completed);
