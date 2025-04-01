@@ -1,11 +1,14 @@
 package festival.dev.domain.TDL.presentation.dto.request;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
-import lombok.NonNull;
 
 @Getter
 public class SuccessRequest {
-    String title;
-    Boolean completed;
-    String userID;
+    @NotNull
+    private String title;
+    @NotNull
+    private Boolean completed;
+//    @NotNull
+//    private String userID;
 }

@@ -1,11 +1,14 @@
 package festival.dev.domain.TDL.presentation.dto.request;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
-import lombok.NonNull;
 
 @Getter
 public class DeleteRequest {
-    private String userID;
+//    @NotNull
+//    private String userID;
+    @NotNull
     private String title;
-    private String fromDate;
+    @NotNull
+    private String endDate;
 }

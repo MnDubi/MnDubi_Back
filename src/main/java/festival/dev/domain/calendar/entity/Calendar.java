@@ -1,6 +1,6 @@
 package festival.dev.domain.calendar.entity;
 
-import festival.dev.domain.TDL.entity.ToDoList;
+import festival.dev.domain.user.entity.User;
 import festival.dev.global.entity.BaseTime;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -21,12 +21,15 @@ public class Calendar extends BaseTime {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String userID;
-
     private int every;
 
     private int part;
 
-    @OneToMany(mappedBy = "calendar")
-    private List<ToDoList> toDoLists;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "calendar_TDL_id")
+    private List<Long> toDoListId;
 }

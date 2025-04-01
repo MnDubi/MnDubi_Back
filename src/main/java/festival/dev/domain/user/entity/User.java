@@ -1,10 +1,13 @@
 package festival.dev.domain.user.entity;
 
+import festival.dev.domain.TDL.entity.ToDoList;
+import festival.dev.domain.calendar.entity.Calendar;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter
@@ -36,22 +39,16 @@ public class User {
     @Column(name = "user_code", unique = true, nullable = false, updatable = false)
     private String userCode;
 
+    @OneToMany(mappedBy = "user")
+    private List<ToDoList> toDoLists;
+
+    @OneToMany(mappedBy = "user")
+    private List<Calendar> calendars;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-//    @PrePersist
-//    protected void onCreate() {
-//        this.createdAt = LocalDateTime.now();
-//        this.updatedAt = LocalDateTime.now();
-//    }
-//
-//    @PreUpdate
-//    protected void onUpdate() {
-//        this.updatedAt = LocalDateTime.now();
-//    }
 
 }

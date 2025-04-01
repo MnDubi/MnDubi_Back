@@ -1,8 +1,7 @@
 package festival.dev.domain.TDL.entity;
 
-import festival.dev.domain.calendar.entity.Calendar;
 import festival.dev.domain.category.entity.Category;
-import festival.dev.global.entity.BaseTime;
+import festival.dev.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,15 +27,13 @@ public class ToDoList {
 
     private String startDate;
 
-    private String fromDate;
+    private String endDate;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_name")
     private Category category;
 
-    @ManyToOne
-    @JoinColumn(name = "calendar_name")
-    private Calendar calendar;
-
-    private String userID;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 }

@@ -10,7 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ToDoListResponse {
-    private String formattedDate;
+    private String endDate;
+    private String startDate;
+    private String userID;
     private String title;
     private boolean completed;
     private String category;
