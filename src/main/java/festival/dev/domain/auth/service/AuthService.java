@@ -33,6 +33,7 @@ public class AuthService {
                 .password(passwordEncoder.encode(password))
                 .name(name)
                 .provider("LOCAL") // 자체 회원가입은 "LOCAL"
+                .userCode(generateUserCode())
                 .role("USER")
                 .build();
 
@@ -70,5 +71,13 @@ public class AuthService {
 
         String newAccessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
         return new AuthResponseDto(newAccessToken, refreshToken);
+    }
+
+    private String generateUserCode() {
+        String code;
+        do {
+            code = org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric(8).toUpperCase(); // 예: AB12CD34
+        } while (userRepository.existsByUserCode(code));
+        return code;
     }
 }

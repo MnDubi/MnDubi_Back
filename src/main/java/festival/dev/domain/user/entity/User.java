@@ -36,6 +36,9 @@ public class User {
     @Column(nullable = false)
     private String role = "USER"; // 기본값 USER
 
+    @Column(name = "user_code", unique = true, nullable = false, updatable = false)
+    private String userCode;
+
     @OneToMany(mappedBy = "user")
     private List<ToDoList> toDoLists;
 
@@ -47,16 +50,5 @@ public class User {
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-//    @PrePersist
-//    protected void onCreate() {
-//        this.createdAt = LocalDateTime.now();
-//        this.updatedAt = LocalDateTime.now();
-//    }
-//
-//    @PreUpdate
-//    protected void onUpdate() {
-//        this.updatedAt = LocalDateTime.now();
-//    }
 
 }
