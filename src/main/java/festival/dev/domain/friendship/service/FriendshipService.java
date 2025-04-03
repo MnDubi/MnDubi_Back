@@ -26,6 +26,12 @@ public class FriendshipService {
 
     }
 
+    public boolean isAlreadyFriend(User currentUser, String userCode) {
+        User friend = userRepository.findByUserCode(userCode)
+                .orElseThrow(() -> new IllegalArgumentException("해당 userCode를 가진 사용자가 없습니다."));
+        return friendshipRepository.existsByRequesterAndAddressee(currentUser, friend);
+    }
+
     public void addFriend(User currentUser, String userCode) {
         User friend = userRepository.findByUserCode(userCode)
                 .orElseThrow(() -> new IllegalArgumentException("해당 userCode를 가진 사용자가 없습니다."));
@@ -45,6 +51,17 @@ public class FriendshipService {
                 .build();
 
         friendshipRepository.save(friendship);
+    }
+
+    public void deleteFriend(User currentUser, String userCode) {
+        User friend = userRepository.findByUserCode(userCode)
+                .orElseThrow(() -> new IllegalArgumentException("해당 userCode를 가진 사용자가 없습니다."));
+
+        Friendship friendship = friendshipRepository
+                .findByRequesterAndAddressee(currentUser, friend)
+                .orElseThrow(() -> new IllegalArgumentException("친구 관계가 존재하지 않습니다."));
+
+        friendshipRepository.delete(friendship);
     }
 
     public List<FriendInfoResponse> getMyFriends(User currentUser) {
