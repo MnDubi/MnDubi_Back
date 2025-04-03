@@ -27,35 +27,16 @@ public class Share {
 
     private String endDate;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "category_name")
-//    private Category category;
-//
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "user_id")
-//    private User user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_name")
+    private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "share")
-    private List<ToDoList_list> TDL_list;
+    private List<Share_list> TDL_list;
 
     private String friends;
-
-    @Entity
-    @Table(name = "STDL_list")
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    @NoArgsConstructor
-    static class ToDoList_list{
-        @Id
-        @GeneratedValue(strategy = IDENTITY)
-        private Long id;
-
-        @ManyToOne
-        @JoinColumn(name = "share_tdl")
-        private Share share;
-
-        private String received;
-        private String gave;
-    }
 }
