@@ -27,38 +27,18 @@ public class Group{
 
     private String endDate;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "category_name")
-//    private Category category;
-//
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "user_id")
-//    private User user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_name")
+    private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
     private String friends;
 
     @OneToMany(fetch = FetchType.LAZY,mappedBy = "group")
-    private List<ToDoList_list> TDL_list;
-
-    @Entity
-    @Table(name = "GTDL_list")
-    @Builder
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    @NoArgsConstructor
-    static class ToDoList_list{
-        @Id
-        @GeneratedValue(strategy = IDENTITY)
-        private Long id;
-
-        @ManyToOne
-        @JoinColumn(name = "group_tdl")
-        private Group group;
-
-        private String received;
-        private String gave;
-    }
+    private List<Group_list> TDL_list;
 }
 
 

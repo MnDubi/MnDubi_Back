@@ -1,6 +1,8 @@
 package festival.dev.domain.category.entity;
 
 import festival.dev.domain.TDL.entity.ToDoList;
+import festival.dev.domain.gorupTDL.entity.Group;
+import festival.dev.domain.shareTDL.entity.Share;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -28,4 +30,10 @@ public class Category {
 
     @OneToMany(mappedBy = "category")
     private List<ToDoList> toDoLists;
+
+    @OneToMany(mappedBy = "category")
+    private List<Share> shares;
+
+    @OneToMany(mappedBy = "category")
+    private List<Group> groups;
 }
