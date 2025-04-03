@@ -56,6 +56,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**", "/oauth2/**").permitAll()
                         .requestMatchers("/user/**").authenticated()
                         .requestMatchers("/friends/**").authenticated()
+//                        .requestMatchers("/toDoList/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
