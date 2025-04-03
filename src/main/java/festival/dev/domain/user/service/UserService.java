@@ -37,6 +37,21 @@ public class UserService implements UserDetailsService { //  UserDetailsService 
                 .roles("USER") //  기본 권한 추가
                 .build();
     }
+    public UserDto updateProfile(Long id, String name) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        user.setName(name);
+        userRepository.save(user);
+        return new UserDto(user);
+    }
+
+    public UserDto getUserById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+        return new UserDto(user);
+    }
+
 
 
 }
