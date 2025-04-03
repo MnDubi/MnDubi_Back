@@ -58,6 +58,14 @@ public class SecurityConfig {
                         .requestMatchers("/friends/**").authenticated()
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(403); // 또는 401
+                            response.setContentType("application/json");
+                            response.setCharacterEncoding("UTF-8");
+                            response.getWriter().write("{\"error\": \"로그인이 필요합니다.\"}");
+                        })
+                )
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(auth -> auth.baseUri("/oauth2/authorize"))
                         .redirectionEndpoint(redir -> redir.baseUri("/oauth2/callback/*"))

@@ -18,22 +18,29 @@ import java.util.List;
 public class FriendshipController {
 
     private final FriendshipService friendshipService;
-    private final UserRepository userRepository;
-
-
 
     @PostMapping
-    public ResponseEntity<?> addFriend(@AuthenticationPrincipal User currentUser,
-                                       @RequestBody AddFriendRequest request) {
+    public ResponseEntity<String> addFriend(@AuthenticationPrincipal User currentUser,
+                                            @RequestBody AddFriendRequest request) {
         friendshipService.addFriend(currentUser, request.getUserCode());
         return ResponseEntity.ok("친구 추가 완료");
     }
 
-
-    //
     @GetMapping
     public ResponseEntity<List<FriendInfoResponse>> getFriends(@AuthenticationPrincipal User currentUser) {
-        List<FriendInfoResponse> friends = friendshipService.getMyFriends(currentUser);
-        return ResponseEntity.ok(friends);
+        return ResponseEntity.ok(friendshipService.getMyFriends(currentUser));
+    }
+
+    @GetMapping("/check/{userCode}")
+    public ResponseEntity<Boolean> checkFriend(@AuthenticationPrincipal User currentUser,
+                                               @PathVariable String userCode) {
+        return ResponseEntity.ok(friendshipService.isAlreadyFriend(currentUser, userCode));
+    }
+
+    @DeleteMapping("/{userCode}")
+    public ResponseEntity<String> deleteFriend(@AuthenticationPrincipal User currentUser,
+                                               @PathVariable String userCode) {
+        friendshipService.deleteFriend(currentUser, userCode);
+        return ResponseEntity.ok("친구 삭제 완료");
     }
 }
