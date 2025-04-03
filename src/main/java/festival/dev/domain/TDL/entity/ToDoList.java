@@ -30,7 +30,7 @@ public class ToDoList {
     private String endDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_name")
+    @JoinColumn(name = "category_id")
     private Category category;
 
     @ManyToOne(fetch = FetchType.LAZY)

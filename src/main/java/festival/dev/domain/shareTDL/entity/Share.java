@@ -28,15 +28,13 @@ public class Share {
     private String endDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_name")
+    @JoinColumn(name = "category_id")
     private Category category;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "sender_id")
     private User user;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "share")
-    private List<Share_list> TDL_list;
-
-    private String friends;
+    private List<ShareList> TDL_list;
 }

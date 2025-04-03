@@ -12,7 +12,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Group_list{
+public class GroupList {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
@@ -22,6 +22,6 @@ public class Group_list{
     private Group group;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "received")
+    @JoinColumn(name = "received_id")
     private User user;
 }
