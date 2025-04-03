@@ -7,4 +7,6 @@ import lombok.Getter;
 public class GInviteReq {
     @NotNull
     private String receiver;
+    @NotNull
+    private Long groupID;
 }

@@ -20,23 +20,22 @@ public class GroupController {
         try {
             Long userID = getUserID(authorization);
             groupService.invite(gInviteReq,userID);
-            return ResponseEntity.ok("Success");
+            return ResponseEntity.ok("success");
         }
         catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-//    @PostMapping
-//    public ResponseEntity<?> insert(@RequestBody GInsertRequest request, @RequestHeader String authorization) {
-//        try {
-//            Long userID = getUserID(authorization);
-//            groupService
-//            return ResponseEntity.ok("Success");
-//        }catch (Exception e){
-//            return ResponseEntity.badRequest().body(e.getMessage());
-//        }
-//    }
+    @PostMapping("/insert")
+    public ResponseEntity<?> insert(@RequestBody GInsertRequest request, @RequestHeader String authorization) {
+        try {
+            Long userID = getUserID(authorization);
+            return ResponseEntity.ok(groupService.insert(request,userID));
+        }catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
     public Long getUserID(String auth){
         String token = auth.replace("Bearer ","");

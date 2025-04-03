@@ -8,6 +8,8 @@ import festival.dev.domain.gorupTDL.entity.Group;
 import festival.dev.domain.gorupTDL.entity.GroupList;
 import festival.dev.domain.gorupTDL.presentation.dto.request.GInsertRequest;
 import festival.dev.domain.gorupTDL.presentation.dto.request.GInviteReq;
+import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
+import festival.dev.domain.gorupTDL.presentation.dto.response.GToDoListResponse;
 import festival.dev.domain.gorupTDL.repository.GroupListRepo;
 import festival.dev.domain.gorupTDL.repository.GroupRepository;
 import festival.dev.domain.gorupTDL.service.GroupService;
@@ -30,13 +32,22 @@ public class GroupServiceImpl implements GroupService {
     private final GroupListRepo groupListRepo;
     private final CategoryRepository categoryRepository;
 
-    public void invite(GInviteReq gInviteReq, Long userID){
+    public void invite(GInviteReq request, Long userID){
         User sender = getUser(userID);
-        User receiver = userRepository.findByUserCode(gInviteReq.getReceiver()).orElseThrow(()-> new IllegalArgumentException("없는 존재 입니다."));
+        User receiver = userRepository.findByUserCode(request.getReceiver()).orElseThrow(()-> new IllegalArgumentException("없는 존재 입니다."));
 
+        friendshipRepository.findByRequesterAndAddressee(sender,receiver).orElseThrow(()-> new IllegalArgumentException("친구로 추가가 안 되어있습니다."));
+
+        Group group = groupRepository.findById(request.getGroupID()).orElseThrow(()-> new IllegalArgumentException("없는 방입니다."));
+        GroupList groupList = GroupList.builder()
+                .accept(false)
+                .group(group)
+                .user(receiver)
+                .build();
+        groupListRepo.save(groupList);
     }
 
-    public void insert(GInsertRequest request, Long userID){
+    public GInsertRes insert(GInsertRequest request, Long userID){
         User user = getUser(userID);
 
         Category category = categoryRepository.findByCategoryName(request.getCategory());
@@ -48,10 +59,14 @@ public class GroupServiceImpl implements GroupService {
                 .category(category)
                 .title(request.getTitle())
                 .endDate(request.getEndDate())
+                .user(user)
                 .completed(false)
                 .startDate(request.getEndDate())
                 .build();
-        groupRepository.save(group);
+        Group response = groupRepository.save(group);
+
+        return GInsertRes.builder().id(response.getId())
+                .build();
     }
 
     public String toDay(){

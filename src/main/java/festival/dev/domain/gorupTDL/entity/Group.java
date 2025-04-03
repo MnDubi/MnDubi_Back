@@ -14,6 +14,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "group_TDL")
+@Getter
 public class Group{
     @Id
     @GeneratedValue(strategy = IDENTITY)

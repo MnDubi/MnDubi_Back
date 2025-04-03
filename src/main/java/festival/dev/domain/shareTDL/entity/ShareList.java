@@ -25,4 +25,6 @@ public class ShareList {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "received_id")
     private User user;
+
+    private boolean accept;
 }
