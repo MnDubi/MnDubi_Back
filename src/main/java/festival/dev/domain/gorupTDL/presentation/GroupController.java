@@ -5,7 +5,10 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import festival.dev.domain.gorupTDL.presentation.dto.request.GInsertRequest;
 import festival.dev.domain.gorupTDL.presentation.dto.request.GInviteReq;
 import festival.dev.domain.gorupTDL.service.GroupService;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,14 +16,16 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("group/toDoList")
 @RequiredArgsConstructor
 public class GroupController {
+    @Value("${jwt.secret}")
+    private String secret;
+
     private final GroupService groupService;
 
     @PostMapping("/invite")
-    public ResponseEntity<?> invite(@RequestBody GInviteReq gInviteReq, @RequestHeader String authorization) {
+    public ResponseEntity<?> invite(@RequestBody GInviteReq request, @RequestHeader String authorization) {
         try {
             Long userID = getUserID(authorization);
-            groupService.invite(gInviteReq,userID);
-            return ResponseEntity.ok("success");
+            return ResponseEntity.ok(groupService.invite(request,userID));
         }
         catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -37,16 +42,40 @@ public class GroupController {
         }
     }
 
+    @PostMapping("/accept")
+    public ResponseEntity<?> accept(@RequestBody GInviteReq request,@RequestHeader String authorization) {
+        try{
+            Long userID = getUserID(authorization);
+            groupService.acceptInvite(request,userID);
+            return ResponseEntity.ok("success");
+        }catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/refuse")
+    public ResponseEntity<?> refuse(@RequestBody GInviteReq request,@RequestHeader String authorization) {
+        try{
+            Long userID = getUserID(authorization);
+            groupService.refuseInvite(request,userID);
+            return ResponseEntity.ok("success");
+        }
+        catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     public Long getUserID(String auth){
         String token = auth.replace("Bearer ","");
 
-//        Claims claims = Jwts.parserBuilder()
-//                .setSigningKey(secret.getBytes())
-//                .build()
-//                .parseClaimsJws(token).getBody();
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(secret.getBytes())
+                .build()
+                .parseClaimsJws(token).getBody();
 
-        DecodedJWT jwt = JWT.decode(token);
-
-        return jwt.getClaim("userId").asLong();
+        return claims.get("userId",Long.class);
+//        DecodedJWT jwt = JWT.decode(token);
+//
+//        return jwt.getClaim("userId").asLong();
     }
 }

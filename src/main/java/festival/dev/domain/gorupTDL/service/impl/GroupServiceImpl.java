@@ -9,6 +9,7 @@ import festival.dev.domain.gorupTDL.entity.GroupList;
 import festival.dev.domain.gorupTDL.presentation.dto.request.GInsertRequest;
 import festival.dev.domain.gorupTDL.presentation.dto.request.GInviteReq;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
+import festival.dev.domain.gorupTDL.presentation.dto.response.GListDto;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GToDoListResponse;
 import festival.dev.domain.gorupTDL.repository.GroupListRepo;
 import festival.dev.domain.gorupTDL.repository.GroupRepository;
@@ -17,6 +18,7 @@ import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.View;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -31,20 +33,25 @@ public class GroupServiceImpl implements GroupService {
     private final GroupRepository groupRepository;
     private final GroupListRepo groupListRepo;
     private final CategoryRepository categoryRepository;
+    private final View error;
 
-    public void invite(GInviteReq request, Long userID){
+    public GListDto invite(GInviteReq request, Long userID){
         User sender = getUser(userID);
         User receiver = userRepository.findByUserCode(request.getReceiver()).orElseThrow(()-> new IllegalArgumentException("없는 존재 입니다."));
 
         friendshipRepository.findByRequesterAndAddressee(sender,receiver).orElseThrow(()-> new IllegalArgumentException("친구로 추가가 안 되어있습니다."));
 
-        Group group = groupRepository.findById(request.getGroupID()).orElseThrow(()-> new IllegalArgumentException("없는 방입니다."));
+        Group group = getGroup(request.getGroupID());
         GroupList groupList = GroupList.builder()
                 .accept(false)
                 .group(group)
                 .user(receiver)
                 .build();
-        groupListRepo.save(groupList);
+        GroupList list = groupListRepo.save(groupList);
+        return GListDto.builder()
+                .groupID(list.getGroup().getId())
+                .receiverID(list.getUser().getId())
+                .build();
     }
 
     public GInsertRes insert(GInsertRequest request, Long userID){
@@ -67,6 +74,36 @@ public class GroupServiceImpl implements GroupService {
 
         return GInsertRes.builder().id(response.getId())
                 .build();
+    }
+
+    //초대를 응답하는 것이기 때문에 받은 사람은 나
+    public void acceptInvite(GInviteReq request, Long userID){
+        User receiver = getUser(userID);
+        Group group = getGroup(request.getGroupID());
+        checkInvite(group, receiver);
+        groupListRepo.updateAccept(group.getId(), receiver.getId());
+    }
+
+    //초대를 응답하는 것이기 때문에 받은 사람은 나
+    public void refuseInvite(GInviteReq request, Long userID){
+        User receiver = getUser(userID);
+        Group group = getGroup(request.getGroupID());
+        checkInvite(group,receiver);
+        groupListRepo.findByGroupAndUserAndAccept(group, receiver, true)
+                .ifPresent(groupList -> {
+                    throw new IllegalArgumentException("이미 수락한 요청입니다.");
+                });
+        groupListRepo.deleteByGroupAndUser(group,receiver);
+    }
+
+
+    //비즈니스 로직을 위한 메소드들
+    void checkInvite(Group group, User receiver){
+        groupListRepo.findByGroupAndUser(group, receiver).orElseThrow(()-> new IllegalArgumentException("초대받은 적이 없습니다."));
+    }
+
+    Group getGroup(Long groupID){
+        return groupRepository.findById(groupID).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 그룹입니다."));
     }
 
     public String toDay(){
