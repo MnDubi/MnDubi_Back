@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
 
@@ -14,7 +13,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Share_list{
+public class ShareList {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
@@ -24,6 +23,8 @@ public class Share_list{
     private Share share;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "received")
+    @JoinColumn(name = "received_id")
     private User user;
+
+    private boolean accept;
 }

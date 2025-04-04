@@ -104,14 +104,16 @@ public class ToDoListController {
 
     public Long getUserID(String auth){
         String token = auth.replace("Bearer ","");
+
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(secret.getBytes())
+                .build()
+                .parseClaimsJws(token).getBody();
+
+        return claims.get("userId",Long.class);
+
+//        DecodedJWT jwt = JWT.decode(token);
 //
-//        Claims claims = Jwts.parserBuilder()
-//                .setSigningKey(secret.getBytes())
-//                .build()
-//                .parseClaimsJws(token).getBody();
-
-        DecodedJWT jwt = JWT.decode(token);
-
-        return jwt.getClaim("userId").asLong();
+//        return jwt.getClaim("userId").asLong();
     }
 }

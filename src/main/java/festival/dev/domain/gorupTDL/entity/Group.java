@@ -14,6 +14,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "group_TDL")
+@Getter
 public class Group{
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -28,17 +29,15 @@ public class Group{
     private String endDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_name")
+    @JoinColumn(name = "category_id")
     private Category category;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "sender_id")
     private User user;
 
-    private String friends;
-
     @OneToMany(fetch = FetchType.LAZY,mappedBy = "group")
-    private List<Group_list> TDL_list;
+    private List<GroupList> TDL_list;
 }
 
 
