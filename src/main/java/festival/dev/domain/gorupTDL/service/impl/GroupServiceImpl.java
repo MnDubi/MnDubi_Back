@@ -1,5 +1,8 @@
 package festival.dev.domain.gorupTDL.service.impl;
 
+import festival.dev.domain.TDL.entity.ToDoList;
+import festival.dev.domain.TDL.presentation.dto.request.UpdateRequest;
+import festival.dev.domain.TDL.presentation.dto.response.ToDoListResponse;
 import festival.dev.domain.category.entity.Category;
 import festival.dev.domain.category.repository.CategoryRepository;
 import festival.dev.domain.friendship.entity.Friendship;
@@ -8,6 +11,7 @@ import festival.dev.domain.gorupTDL.entity.Group;
 import festival.dev.domain.gorupTDL.entity.GroupList;
 import festival.dev.domain.gorupTDL.presentation.dto.request.GInsertRequest;
 import festival.dev.domain.gorupTDL.presentation.dto.request.GInviteReq;
+import festival.dev.domain.gorupTDL.presentation.dto.request.GUpdateRequest;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GListDto;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GToDoListResponse;
@@ -33,7 +37,6 @@ public class GroupServiceImpl implements GroupService {
     private final GroupRepository groupRepository;
     private final GroupListRepo groupListRepo;
     private final CategoryRepository categoryRepository;
-    private final View error;
 
     public GListDto invite(GInviteReq request, Long userID){
         User sender = getUser(userID);
@@ -94,6 +97,27 @@ public class GroupServiceImpl implements GroupService {
                     throw new IllegalArgumentException("이미 수락한 요청입니다.");
                 });
         groupListRepo.deleteByGroupAndUser(group,receiver);
+    }
+
+    public GToDoListResponse update(GUpdateRequest request, Long userID) {
+        User user = getUser(userID);
+        checkNotExist(user, request.getTitle(), request.getEndDate());
+        checkExist(user, request.getChange(), request.getChangeDate());
+        if(toDay().compareTo(request.getEndDate()) > 0)
+            throw new IllegalArgumentException("이미 끝난 TDL은 변경이 불가능합니다.");
+
+        groupRepository.changeTitle(request.getChange(), request.getTitle(), userID, request.getChangeDate(), request.getEndDate());
+
+        Group toDoList = groupRepository.findByUserAndTitleAndEndDate(user, request.getChange(), request.getChangeDate());
+
+        return GToDoListResponse.builder()
+                .title(toDoList.getTitle())
+                .completed(toDoList.getCompleted())
+                .category(toDoList.getCategory().getCategoryName())
+                .userID(user.getName())
+                .endDate(toDoList.getEndDate())
+                .startDate(toDoList.getStartDate())
+                .build();
     }
 
 
