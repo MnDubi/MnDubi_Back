@@ -3,7 +3,10 @@ package festival.dev.domain.calendar.presentation;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import festival.dev.domain.calendar.service.CalendarService;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,6 +16,9 @@ import org.springframework.web.bind.annotation.*;
 public class CalendarController {
 
     private final CalendarService calendarService;
+
+    @Value("${jwt.secret}")
+    private String secret;
 
     @GetMapping
     public ResponseEntity<?> findDate(@RequestParam String date ,@RequestHeader String authorization){
@@ -35,16 +41,14 @@ public class CalendarController {
         }
     }
 
-    public Long getUserID(String auth){
-        String token = auth.replace("Bearer ","");
-//
-//        Claims claims = Jwts.parserBuilder()
-//                .setSigningKey(secret.getBytes())
-//                .build()
-//                .parseClaimsJws(token).getBody();
+    public Long getUserID(String auth) {
+        String token = auth.replace("Bearer ", "");
 
-        DecodedJWT jwt = JWT.decode(token);
+        Claims claims = Jwts.parserBuilder()
+                .setSigningKey(secret.getBytes())
+                .build()
+                .parseClaimsJws(token).getBody();
 
-        return jwt.getClaim("userId").asLong();
+        return claims.get("userId", Long.class);
     }
 }

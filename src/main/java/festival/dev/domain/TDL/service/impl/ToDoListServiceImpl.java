@@ -6,6 +6,7 @@ import festival.dev.domain.TDL.presentation.dto.response.ToDoListResponse;
 import festival.dev.domain.TDL.repository.ToDoListRepository;
 import festival.dev.domain.TDL.service.ToDoListService;
 import festival.dev.domain.calendar.entity.Calendar;
+import festival.dev.domain.calendar.entity.Calendar_tdl_ids;
 import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.category.entity.Category;
 import festival.dev.domain.category.repository.CategoryRepository;
@@ -76,8 +77,7 @@ public class ToDoListServiceImpl implements ToDoListService {
     public ToDoListResponse update(UpdateRequest request, Long userID) {
         User user = getUser(userID);
         checkNotExist(user, request.getTitle(), request.getEndDate());
-        if (request.getTitle().equals(request.getChange()))
-            checkExist(user, request.getTitle(), request.getChangeDate());
+        checkExist(user, request.getChange(), request.getChangeDate());
         if(toDay().compareTo(request.getEndDate()) > 0)
             throw new IllegalArgumentException("이미 끝난 TDL은 변경이 불가능합니다.");
 
@@ -141,7 +141,11 @@ public class ToDoListServiceImpl implements ToDoListService {
         User user = getUser(userID);
         List<ToDoList> tdls = toDoListRepository.findByUserAndEndDate(user,toDay());
         int part = toDoListRepository.findByUserAndEndDateAndCompleted(user,toDay(),true).size();
-        List<Long> tdlIDs = tdls.stream().map(ToDoList::getId).toList();
+        List<Calendar_tdl_ids> tdlIDs = tdls.stream()
+                .map(tdl -> Calendar_tdl_ids.builder()
+                        .toDoListId(tdl.getId())
+                        .build())
+                .collect(Collectors.toList());
 
         if (calendarRepository.findByUserAndYearMonthDay(user,toDay()) == null) {
             Calendar calendar = Calendar.builder()

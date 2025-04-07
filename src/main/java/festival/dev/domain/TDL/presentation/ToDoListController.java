@@ -109,7 +109,6 @@ public class ToDoListController {
                 .setSigningKey(secret.getBytes())
                 .build()
                 .parseClaimsJws(token).getBody();
-
         return claims.get("userId",Long.class);
 
 //        DecodedJWT jwt = JWT.decode(token);
