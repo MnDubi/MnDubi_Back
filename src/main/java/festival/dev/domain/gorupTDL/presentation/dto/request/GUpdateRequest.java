@@ -1,4 +1,4 @@
-package festival.dev.domain.TDL.presentation.dto.request;
+package festival.dev.domain.gorupTDL.presentation.dto.request;
 
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
@@ -10,7 +10,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Getter
-public class UpdateRequest {
+public class GUpdateRequest {
 //    @NotNull
 //    private String userID;
     @NotNull

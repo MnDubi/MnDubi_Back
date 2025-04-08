@@ -2,6 +2,10 @@ package festival.dev.domain.user.entity;
 
 import festival.dev.domain.TDL.entity.ToDoList;
 import festival.dev.domain.calendar.entity.Calendar;
+import festival.dev.domain.gorupTDL.entity.Group;
+import festival.dev.domain.gorupTDL.entity.GroupList;
+import festival.dev.domain.shareTDL.entity.Share;
+import festival.dev.domain.shareTDL.entity.ShareList;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -44,6 +48,18 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<Calendar> calendars;
+
+    @OneToMany(mappedBy = "user")
+    private List<Group> groups;
+
+    @OneToMany(mappedBy = "user")
+    private List<Share> shares;
+
+    @OneToMany(mappedBy = "user")
+    private List<GroupList> group_lists;
+
+    @OneToMany(mappedBy = "user")
+    private List<ShareList> share_lists;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

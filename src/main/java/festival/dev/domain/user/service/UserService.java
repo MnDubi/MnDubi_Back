@@ -1,5 +1,6 @@
 package festival.dev.domain.user.service;
 
+import festival.dev.domain.user.entity.CustomUserDetails;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import festival.dev.domain.user.dto.UserDto;
@@ -31,11 +32,12 @@ public class UserService implements UserDetailsService { //  UserDetailsService 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다: " + email));
 
-        return org.springframework.security.core.userdetails.User.builder()
-                .username(user.getEmail())
-                .password(user.getPassword())
-                .roles("USER") //  기본 권한 추가
-                .build();
+//        return org.springframework.security.core.userdetails.User.builder()
+//                .username(user.getEmail())
+//                .password(user.getPassword())
+//                .roles("USER") //  기본 권한 추가
+//                .build();
+        return new CustomUserDetails(user);
     }
     public UserDto updateProfile(Long id, String name) {
         User user = userRepository.findById(id)

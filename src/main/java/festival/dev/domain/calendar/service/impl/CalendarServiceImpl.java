@@ -3,6 +3,7 @@ package festival.dev.domain.calendar.service.impl;
 import festival.dev.domain.TDL.entity.ToDoList;
 import festival.dev.domain.TDL.repository.ToDoListRepository;
 import festival.dev.domain.calendar.entity.Calendar;
+import festival.dev.domain.calendar.entity.Calendar_tdl_ids;
 import festival.dev.domain.calendar.presentation.dto.Response.CalendarDtoAsis;
 import festival.dev.domain.calendar.presentation.dto.Response.CalendarResponse;
 import festival.dev.domain.calendar.presentation.dto.Response.MonthResponse;
@@ -20,6 +21,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,8 +35,11 @@ public class CalendarServiceImpl implements CalendarService {
         try{
             User user = userGet(userID);
             Calendar calendar = calendarRepository.findByYearMonthDayAndUser(date, user);
-            Collection<Long> tdlIds = calendar.getToDoListId();
-            List<ToDoList> tdls =  toDoListRepository.findByIdIn(tdlIds);
+            List<Calendar_tdl_ids> tdlIds = calendar.getToDoListId();
+            List<ToDoList> tdls =  toDoListRepository.findByIdIn(tdlIds.stream()
+                    .map(id->new Calendar_tdl_ids().getToDoListId())
+                    .collect(Collectors.toList()));
+
             List<CalendarDtoAsis> tdl = tdls.stream()
                     .map(toDoList -> CalendarDtoAsis.builder()
                             .title(toDoList.getTitle())
