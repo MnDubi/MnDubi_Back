@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import festival.dev.domain.gorupTDL.presentation.dto.request.GInsertRequest;
 import festival.dev.domain.gorupTDL.presentation.dto.request.GInviteReq;
+import festival.dev.domain.gorupTDL.presentation.dto.request.GUpdateRequest;
 import festival.dev.domain.gorupTDL.service.GroupService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -42,7 +43,7 @@ public class GroupController {
         }
     }
 
-    @PostMapping("/accept")
+    @PutMapping("/accept")
     public ResponseEntity<?> accept(@RequestBody GInviteReq request,@RequestHeader String authorization) {
         try{
             Long userID = getUserID(authorization);
@@ -53,12 +54,23 @@ public class GroupController {
         }
     }
 
-    @PostMapping("/refuse")
+    @DeleteMapping("/refuse")
     public ResponseEntity<?> refuse(@RequestBody GInviteReq request,@RequestHeader String authorization) {
         try{
             Long userID = getUserID(authorization);
             groupService.refuseInvite(request,userID);
             return ResponseEntity.ok("success");
+        }
+        catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PutMapping("/modify")
+    public ResponseEntity<?> modify(@RequestBody GUpdateRequest request, @RequestHeader String authorization) {
+        try{
+            Long userID = getUserID(authorization);
+            return ResponseEntity.ok(groupService.update(request,userID));
         }
         catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());

@@ -1,5 +1,6 @@
 package festival.dev.global.security.jwt;
 
+import festival.dev.domain.user.entity.CustomUserDetails;
 import festival.dev.domain.user.service.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -35,7 +36,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (token != null) {
             String email = jwtUtil.validateToken(token);
             if (email != null) {
-                UserDetails userDetails = userService.loadUserByUsername(email);
+                CustomUserDetails userDetails = (CustomUserDetails) userService.loadUserByUsername(email);
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(authentication);

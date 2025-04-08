@@ -30,6 +30,6 @@ public class Calendar extends BaseTime {
     private User user;
 
     @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "calendar_TDL_id")
-    private List<Long> toDoListId;
+    @CollectionTable(name = "calendar_TDL_id", joinColumns = @JoinColumn(name = "calendar_id"))
+    private List<Calendar_tdl_ids> toDoListId;
 }
