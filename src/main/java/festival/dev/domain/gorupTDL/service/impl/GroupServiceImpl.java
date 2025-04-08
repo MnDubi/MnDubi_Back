@@ -1,19 +1,17 @@
 package festival.dev.domain.gorupTDL.service.impl;
 
-import festival.dev.domain.TDL.entity.ToDoList;
-import festival.dev.domain.TDL.presentation.dto.request.UpdateRequest;
-import festival.dev.domain.TDL.presentation.dto.response.ToDoListResponse;
 import festival.dev.domain.category.entity.Category;
 import festival.dev.domain.category.repository.CategoryRepository;
-import festival.dev.domain.friendship.entity.Friendship;
 import festival.dev.domain.friendship.repository.FriendshipRepository;
 import festival.dev.domain.gorupTDL.entity.Group;
 import festival.dev.domain.gorupTDL.entity.GroupList;
+import festival.dev.domain.gorupTDL.entity.GroupNumber;
 import festival.dev.domain.gorupTDL.presentation.dto.request.*;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GListDto;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GToDoListResponse;
 import festival.dev.domain.gorupTDL.repository.GroupListRepo;
+import festival.dev.domain.gorupTDL.repository.GroupNumberRepo;
 import festival.dev.domain.gorupTDL.repository.GroupRepository;
 import festival.dev.domain.gorupTDL.service.GroupService;
 import festival.dev.domain.user.entity.User;
@@ -29,52 +27,36 @@ import java.time.format.DateTimeFormatter;
 @Service
 @RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
+
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
     private final GroupListRepo groupListRepo;
     private final CategoryRepository categoryRepository;
+    private final GroupNumberRepo groupNumberRepo;
 
-    public GListDto invite(GInviteReq request, Long userID){
+    public GInsertRes invite(GInsertRequest request, Long userID){
         User sender = getUser(userID);
-        User receiver = userRepository.findByUserCode(request.getReceiver()).orElseThrow(()-> new IllegalArgumentException("없는 존재 입니다."));
+        Long groupId = null;
+        for (String req_receiver: request.getReceivers()) {
+            User receiver = userRepository.findByUserCode(req_receiver).orElseThrow(() -> new IllegalArgumentException("없는 존재 입니다."));
 
-        friendshipRepository.findByRequesterAndAddressee(sender,receiver).orElseThrow(()-> new IllegalArgumentException("친구로 추가가 안 되어있습니다."));
+            friendshipRepository.findByRequesterAndAddressee(sender, receiver).orElseThrow(() -> new IllegalArgumentException("친구로 추가가 안 되어있습니다."));
 
-        Group group = getGroup(request.getGroupID());
-        GroupList groupList = GroupList.builder()
-                .accept(false)
-                .group(group)
-                .user(receiver)
-                .build();
-        GroupList list = groupListRepo.save(groupList);
-        return GListDto.builder()
-                .groupID(list.getGroup().getId())
-                .receiverID(list.getUser().getId())
-                .build();
-    }
-
-    public GInsertRes insert(GInsertRequest request, Long userID){
-        User user = getUser(userID);
-
-        Category category = categoryRepository.findByCategoryName(request.getCategory());
-        inputSetting(request.getTitle(), user, request.getEndDate(), category);
-
-        checkEndDate(request.getEndDate());
-
-        Group group = Group.builder()
-                .category(category)
-                .title(request.getTitle())
-                .endDate(request.getEndDate())
-                .user(user)
-                .completed(false)
-                .startDate(request.getEndDate())
-                .build();
-        Group response = groupRepository.save(group);
-
-        return GInsertRes.builder().id(response.getId())
+            groupId = insert(request,userID).getId();
+            Group group = getGroup(groupId);
+            GroupList groupList = GroupList.builder()
+                    .accept(false)
+                    .group(group)
+                    .user(receiver)
+                    .build();
+            groupListRepo.save(groupList);
+        }
+        return GInsertRes.builder()
+                .id(groupId)
                 .build();
     }
+
 
     //초대를 응답하는 것이기 때문에 받은 사람은 나
     public void acceptInvite(GChoiceRequest request, Long userID){
@@ -123,7 +105,48 @@ public class GroupServiceImpl implements GroupService {
         groupRepository.deleteByUserAndTitleAndEndDate(user, request.getTitle(), request.getEndDate());
     }
 
+    public void numberDelete(){
+        groupNumberRepo.deleteUnusedGroupNumbers();
+    }
+
     //비즈니스 로직을 위한 메소드들
+    public GInsertRes insert(GInsertRequest request, Long userID){
+        User user = getUser(userID);
+        Group response = new Group();
+
+        Long groupNumber = groupNumberRepo.getMaxGroupNumber();
+        if (groupNumber == null){
+            groupNumber = 1L;
+        }
+        else{
+            groupNumber += 1;
+        }
+        GroupNumber groupNumberBuild = GroupNumber.builder()
+                .groupNumber(groupNumber)
+                .build();
+        groupNumberRepo.save(groupNumberBuild);
+        for (String title: request.getTitles()) {
+            Category category = categoryRepository.findByCategoryName(request.getCategory());
+            inputSetting(title, user, request.getEndDate(), category);
+
+            checkEndDate(request.getEndDate());
+
+            Group group = Group.builder()
+                    .groupNumber(groupNumberBuild)
+                    .category(category)
+                    .title(title)
+                    .endDate(request.getEndDate())
+                    .user(user)
+                    .completed(false)
+                    .startDate(request.getEndDate())
+                    .build();
+
+            response = groupRepository.save(group);
+        }
+        return GInsertRes.builder().id(response.getGroupNumber().getId())
+                .build();
+    }
+
     void checkInvite(Group group, User receiver){
         groupListRepo.findByGroupAndUser(group, receiver).orElseThrow(()-> new IllegalArgumentException("초대받은 적이 없습니다."));
     }

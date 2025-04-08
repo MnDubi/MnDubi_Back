@@ -10,16 +10,18 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
+@Transactional
 public interface GroupListRepo extends JpaRepository<GroupList,Long> {
-    @Transactional
     @Modifying
     @Query("UPDATE GroupList g SET g.accept = true WHERE g.group.id = :group AND g.user.id = :receiver")
     void updateAccept(@Param("group") long group,@Param("receiver") long receiver);
 
-    @Transactional
+    List<GroupList> findByGroupId(Long groupId);
+
     @Modifying
     void deleteByGroupAndUser(Group group, User receiver);
 

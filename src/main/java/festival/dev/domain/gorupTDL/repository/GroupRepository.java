@@ -16,6 +16,8 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Group findByUserAndTitleAndEndDate(User sender, String title, String endDate);
     void deleteByUserAndTitleAndEndDate(User user, String title, String endDate);
 
+
+
     @Modifying
     @Query("UPDATE Group g set g.title = :change, g.startDate = :changeDate, g.endDate = :changeDate  WHERE g.title = :title AND g.user.id = :userID AND g.endDate = :fromDate")
     void changeTitle(@Param("change") String change, @Param("title") String title, @Param("userID") Long userID, @Param("changeDate") String changeDate, @Param("fromDate") String fromDate);
