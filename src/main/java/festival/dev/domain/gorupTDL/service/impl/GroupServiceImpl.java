@@ -35,14 +35,16 @@ public class GroupServiceImpl implements GroupService {
     private final CategoryRepository categoryRepository;
     private final GroupNumberRepo groupNumberRepo;
 
-    public void invite(GInsertRequest request, Long userID){
+    public GInsertRes invite(GInsertRequest request, Long userID){
         User sender = getUser(userID);
+        Long groupId = null;
         for (String req_receiver: request.getReceivers()) {
             User receiver = userRepository.findByUserCode(req_receiver).orElseThrow(() -> new IllegalArgumentException("없는 존재 입니다."));
 
             friendshipRepository.findByRequesterAndAddressee(sender, receiver).orElseThrow(() -> new IllegalArgumentException("친구로 추가가 안 되어있습니다."));
 
-            Group group = getGroup(insert(request,userID).getId());
+            groupId = insert(request,userID).getId();
+            Group group = getGroup(groupId);
             GroupList groupList = GroupList.builder()
                     .accept(false)
                     .group(group)
@@ -50,6 +52,9 @@ public class GroupServiceImpl implements GroupService {
                     .build();
             groupListRepo.save(groupList);
         }
+        return GInsertRes.builder()
+                .id(groupId)
+                .build();
     }
 
 

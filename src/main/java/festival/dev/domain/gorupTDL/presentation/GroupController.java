@@ -19,12 +19,11 @@ public class GroupController {
 
     private final GroupService groupService;
 
-//    //초대 중첩되는 문제 해결해야함.
+    //초대 중첩되는 문제 해결해야함.
 //    @PostMapping("/invite")
-//    public ResponseEntity<?> invite(@Valid @RequestBody GInviteReq request/*, @RequestHeader String authorization*/, @AuthenticationPrincipal CustomUserDetails user) {
+//    public ResponseEntity<?> invite(@Valid @RequestBody GInviteReq request, @AuthenticationPrincipal CustomUserDetails user) {
 //        try {
-////            Long userID = getUserID(authorization);
-//            return ResponseEntity.ok(groupService.invite(request,/*userID*/user.getUserID()));
+//            return ResponseEntity.ok(groupService.invite(request,user.getUserID()));
 //        }
 //        catch (Exception e) {
 //            return ResponseEntity.badRequest().body(e.getMessage());
@@ -35,8 +34,8 @@ public class GroupController {
     public ResponseEntity<?> insert(@Valid @RequestBody GInsertRequest request, /*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user) {
         try {
 //            Long userID = getUserID(authorization);
-            groupService.invite(request,/*userID*/user.getUserID());
-            return ResponseEntity.ok("success");
+
+            return ResponseEntity.ok(groupService.invite(request,/*userID*/user.getUserID()));
         }catch (Exception e){
             groupService.numberDelete();
             return ResponseEntity.badRequest().body(e.getMessage());
