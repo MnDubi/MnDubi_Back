@@ -1,48 +1,64 @@
 package festival.dev.domain.category.service.impl;
-
-import festival.dev.domain.category.entity.Category;
-import festival.dev.domain.category.presentation.dto.CategoryCreateDeleteRequest;
-import festival.dev.domain.category.presentation.dto.CategoryModifyRequest;
-import festival.dev.domain.category.repository.CategoryRepository;
+//
+import com.fasterxml.jackson.databind.ObjectMapper;
 import festival.dev.domain.category.service.CategoryService;
+import festival.dev.domain.category.client.CategoryClient;
+import festival.dev.domain.category.presentation.dto.CategoryResponse;
+import festival.dev.domain.category.entity.Category;
+import festival.dev.domain.category.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
+
     private final CategoryRepository categoryRepository;
+    private final CategoryClient categoryClient;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-//    public Category save(CategoryCreateDeleteRequest request) {
-//        Category category = Category.builder()
-//                .categoryName(request.getCategory())
-//                .build();
-//        return categoryRepository.save(category);
-//    }
+    @Override
+    public Category classifyAndGetCategory(String todoContent) {
+        Map<String, List<Float>> categoryVectors = loadCategoryVectors();
+        CategoryResponse response = categoryClient.classifyCategory(todoContent, categoryVectors);
 
-    public Category modify(CategoryModifyRequest request) {
-        if (!exist(request.getCategoryName())){
-            throw new IllegalArgumentException("존재하지 않은 category 입니다.");
+        return categoryRepository.findByName(response.getCategory())
+                .orElseGet(() -> {
+                    Category newCategory = Category.builder()
+                            .name(response.getCategory())
+                            .embeddingJson(toJson(response.getEmbedding()))
+                            .build();
+                    return categoryRepository.save(newCategory);
+                });
+    }
+
+    private Map<String, List<Float>> loadCategoryVectors() {
+        List<Object[]> rows = categoryRepository.findAllNameAndEmbedding();
+        Map<String, List<Float>> result = new HashMap<>();
+        for (Object[] row : rows) {
+            String name = (String) row[0];
+            String json = (String) row[1];
+            result.put(name, parseJson(json));
         }
-        Category category = categoryRepository.findByCategoryName(request.getCategoryName());
-        Category changed = category.toBuilder()
-                .categoryName(request.getChangeName())
-                .build();
-        return categoryRepository.save(changed);
+        return result;
     }
 
-    //없으면 false 있으면 true
-    public boolean exist(String categoryName) {
-        return categoryRepository.findByCategoryName(categoryName) != null;
+    private List<Float> parseJson(String json) {
+        try {
+            Float[] arr = objectMapper.readValue(json, Float[].class);
+            return Arrays.asList(arr);
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
     }
 
-//    public List<Category> findAll() {
-//        return categoryRepository.findAll();
-//    }
-
-    public void delete(String name) {
-        categoryRepository.deleteByCategoryName(name);
+    private String toJson(List<Float> embedding) {
+        try {
+            return objectMapper.writeValueAsString(embedding);
+        } catch (Exception e) {
+            return "[]";
+        }
     }
 }

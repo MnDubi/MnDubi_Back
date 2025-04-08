@@ -8,17 +8,22 @@ import festival.dev.domain.TDL.service.ToDoListService;
 import festival.dev.domain.calendar.entity.Calendar;
 import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.category.entity.Category;
+import festival.dev.domain.category.service.CategoryService;
 import festival.dev.domain.category.repository.CategoryRepository;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,16 +33,22 @@ public class ToDoListServiceImpl implements ToDoListService {
     private final ToDoListRepository toDoListRepository;
     private final CalendarRepository calendarRepository;
     private final CategoryRepository categoryRepository;
+    private final RestTemplate restTemplate;
+    private final CategoryService categoryService;
     private final UserRepository userRepository;
 
     public void input(InsertRequest request, Long id) {
         String title = request.getTitle();
         User user = getUser(id);
-        Category category = categoryRepository.findByCategoryName(request.getCategory());
-
-        inputSetting(title, user, request.getEndDate(), category);
 
         checkEndDate(request.getEndDate());
+
+        //  AI 서버에 투두 내용(title) 보내서 카테고리 자동 분류
+        String categoryName = classifyCategoryWithAI(title);
+        //  해당 이름의 카테고리가 없으면 새로 생성, 있으면 재사용
+        Category category = categoryService.findOrCreateByName(categoryName);
+
+        checkExist(user, title, request.getEndDate());
 
         ToDoList toDoList = ToDoList.builder()
                 .title(request.getTitle())
@@ -53,7 +64,6 @@ public class ToDoListServiceImpl implements ToDoListService {
     public void input(InsertUntilRequest request, Long id) {
         String title = request.getTitle();
         User user = getUser(id);
-        Category category = categoryRepository.findByCategoryName(request.getCategory());
 
         if (request.getStartDate().compareTo(request.getEndDate()) > 0) {
             throw new IllegalArgumentException("시작하는 날짜가 끝나는 날짜보다 늦을 수 없습니다.");
@@ -61,17 +71,39 @@ public class ToDoListServiceImpl implements ToDoListService {
 
         checkEndDate(request.getEndDate());
 
-        inputSetting(title, user, request.getEndDate(), category);
+        //  AI 카테고리 분류 + 저장/재사용
+        String categoryName = classifyCategoryWithAI(title);
+        Category category = categoryService.findOrCreateByName(categoryName);
+
+        checkExist(user, title, request.getEndDate());
 
         toDoListRepository.save(ToDoList.builder()
-                        .title(title)
-                        .completed(false)
-                        .user(user)
-                        .startDate(request.getStartDate())
-                        .endDate(request.getEndDate())
-                        .category(category)
+                .title(title)
+                .completed(false)
+                .user(user)
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .category(category)
                 .build());
     }
+
+    private String classifyCategoryWithAI(String title) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(Map.of("todo", title), headers);
+
+        ResponseEntity<Map<String, String>> response = restTemplate.exchange(
+                "http://localhost:8000/classify",
+                HttpMethod.POST,
+                entity,
+                new ParameterizedTypeReference<>() {}
+        );
+
+        return response.getBody().get("category");
+    }
+
+
 
     public ToDoListResponse update(UpdateRequest request, Long userID) {
         User user = getUser(userID);

@@ -6,7 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,10 +22,15 @@ public class Category {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String categoryName;
+    @Column(nullable = false, unique = true)
+    private String name;
 
-    private String keyword;
+    @Lob
+    private String embeddingJson;
 
-    @OneToMany(mappedBy = "category")
-    private List<ToDoList> toDoLists;
+//    private String keyword;
+    private LocalDateTime createdAt;
+
+
+
 }
