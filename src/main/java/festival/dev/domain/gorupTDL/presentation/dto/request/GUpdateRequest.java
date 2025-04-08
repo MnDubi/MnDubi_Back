@@ -11,8 +11,6 @@ import java.time.format.DateTimeFormatter;
 
 @Getter
 public class GUpdateRequest {
-//    @NotNull
-//    private String userID;
     @NotNull
     private String title;
     @NotNull
@@ -26,7 +24,7 @@ public class GUpdateRequest {
     public boolean isValidUpdate() {
         return !title.equals(change) || !endDate.equals(changeDate);
     }
-    @AssertTrue(message = "바꿀 날짜는 현재보다 늦을 수 없습니다.")
+    @AssertTrue(message = "바꿀 날짜는 현재보다 과거 수 없습니다.")
     public boolean isValidChange() {
         LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
         DateTimeFormatter yearMonthDayFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
