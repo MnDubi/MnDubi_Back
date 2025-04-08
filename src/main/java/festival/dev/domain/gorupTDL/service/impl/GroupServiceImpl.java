@@ -38,12 +38,12 @@ public class GroupServiceImpl implements GroupService {
     public GInsertRes invite(GInsertRequest request, Long userID){
         User sender = getUser(userID);
         Long groupId = null;
+        groupId = insert(request,userID).getId();
         for (String req_receiver: request.getReceivers()) {
             User receiver = userRepository.findByUserCode(req_receiver).orElseThrow(() -> new IllegalArgumentException("없는 존재 입니다."));
 
             friendshipRepository.findByRequesterAndAddressee(sender, receiver).orElseThrow(() -> new IllegalArgumentException("친구로 추가가 안 되어있습니다."));
 
-            groupId = insert(request,userID).getId();
             Group group = getGroup(groupId);
             GroupList groupList = GroupList.builder()
                     .accept(false)
@@ -109,7 +109,11 @@ public class GroupServiceImpl implements GroupService {
         groupNumberRepo.deleteUnusedGroupNumbers();
     }
 
-    //비즈니스 로직을 위한 메소드들
+    public void invite(GInviteReq request, Long userID){
+
+    }
+
+    //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
     public GInsertRes insert(GInsertRequest request, Long userID){
         User user = getUser(userID);
         Group response = new Group();

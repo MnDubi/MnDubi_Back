@@ -7,6 +7,7 @@ import festival.dev.domain.gorupTDL.presentation.dto.response.GToDoListResponse;
 
 public interface GroupService {
     GInsertRes invite(GInsertRequest gInsertRequest, Long userid);
+    void invite(GInviteReq request, Long userid);
 //    GInsertRes insert(GInsertRequest gInsertReq, Long userid);
     void acceptInvite(GChoiceRequest gInviteReq, Long userid);
     void refuseInvite(GChoiceRequest gInviteReq, Long userid);
