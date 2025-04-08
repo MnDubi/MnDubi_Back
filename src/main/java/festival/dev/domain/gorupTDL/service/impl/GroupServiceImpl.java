@@ -9,9 +9,7 @@ import festival.dev.domain.friendship.entity.Friendship;
 import festival.dev.domain.friendship.repository.FriendshipRepository;
 import festival.dev.domain.gorupTDL.entity.Group;
 import festival.dev.domain.gorupTDL.entity.GroupList;
-import festival.dev.domain.gorupTDL.presentation.dto.request.GInsertRequest;
-import festival.dev.domain.gorupTDL.presentation.dto.request.GInviteReq;
-import festival.dev.domain.gorupTDL.presentation.dto.request.GUpdateRequest;
+import festival.dev.domain.gorupTDL.presentation.dto.request.*;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GListDto;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GToDoListResponse;
@@ -22,7 +20,6 @@ import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.View;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -80,7 +77,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     //초대를 응답하는 것이기 때문에 받은 사람은 나
-    public void acceptInvite(GInviteReq request, Long userID){
+    public void acceptInvite(GChoiceRequest request, Long userID){
         User receiver = getUser(userID);
         Group group = getGroup(request.getGroupID());
         checkInvite(group, receiver);
@@ -88,7 +85,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     //초대를 응답하는 것이기 때문에 받은 사람은 나
-    public void refuseInvite(GInviteReq request, Long userID){
+    public void refuseInvite(GChoiceRequest request, Long userID){
         User receiver = getUser(userID);
         Group group = getGroup(request.getGroupID());
         checkInvite(group,receiver);
@@ -120,6 +117,11 @@ public class GroupServiceImpl implements GroupService {
                 .build();
     }
 
+    public void delete(GDeleteRequest request, Long userID){
+        User user = getUser(userID);
+        checkNotExist(user, request.getTitle(), request.getEndDate());
+        groupRepository.deleteByUserAndTitleAndEndDate(user, request.getTitle(), request.getEndDate());
+    }
 
     //비즈니스 로직을 위한 메소드들
     void checkInvite(Group group, User receiver){

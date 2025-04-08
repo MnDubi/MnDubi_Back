@@ -1,10 +1,9 @@
 package festival.dev.domain.gorupTDL.presentation;
 
-import festival.dev.domain.gorupTDL.presentation.dto.request.GInsertRequest;
-import festival.dev.domain.gorupTDL.presentation.dto.request.GInviteReq;
-import festival.dev.domain.gorupTDL.presentation.dto.request.GUpdateRequest;
+import festival.dev.domain.gorupTDL.presentation.dto.request.*;
 import festival.dev.domain.gorupTDL.service.GroupService;
 import festival.dev.domain.user.entity.CustomUserDetails;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,8 +19,9 @@ public class GroupController {
 
     private final GroupService groupService;
 
+    //초대 중첩되는 문제 해결해야함.
     @PostMapping("/invite")
-    public ResponseEntity<?> invite(@RequestBody GInviteReq request/*, @RequestHeader String authorization*/, @AuthenticationPrincipal CustomUserDetails user) {
+    public ResponseEntity<?> invite(@Valid @RequestBody GInviteReq request/*, @RequestHeader String authorization*/, @AuthenticationPrincipal CustomUserDetails user) {
         try {
 //            Long userID = getUserID(authorization);
             return ResponseEntity.ok(groupService.invite(request,/*userID*/user.getUserID()));
@@ -32,7 +32,7 @@ public class GroupController {
     }
 
     @PostMapping("/insert")
-    public ResponseEntity<?> insert(@RequestBody GInsertRequest request, /*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user) {
+    public ResponseEntity<?> insert(@Valid @RequestBody GInsertRequest request, /*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user) {
         try {
 //            Long userID = getUserID(authorization);
             return ResponseEntity.ok(groupService.insert(request,/*userID*/user.getUserID()));
@@ -41,9 +41,8 @@ public class GroupController {
         }
     }
 
-    //초대 중첩되는 문제 해결해야함.
     @PutMapping("/accept")
-    public ResponseEntity<?> accept(@RequestBody GInviteReq request,/*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user) {
+    public ResponseEntity<?> accept(@Valid @RequestBody GChoiceRequest request,/*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user) {
         try{
 //            Long userID = getUserID(authorization);
             groupService.acceptInvite(request,/*userID*/user.getUserID());
@@ -54,7 +53,7 @@ public class GroupController {
     }
 
     @DeleteMapping("/refuse")
-    public ResponseEntity<?> refuse(@RequestBody GInviteReq request,/*@RequestHeader String authorization,*/ @AuthenticationPrincipal CustomUserDetails user) {
+    public ResponseEntity<?> refuse(@Valid @RequestBody GChoiceRequest request,/*@RequestHeader String authorization,*/ @AuthenticationPrincipal CustomUserDetails user) {
         try{
 //            Long userID = getUserID(authorization);
             groupService.refuseInvite(request,/*userID*/user.getUserID());
@@ -66,12 +65,23 @@ public class GroupController {
     }
 
     @PutMapping("/modify")
-    public ResponseEntity<?> modify(@RequestBody GUpdateRequest request/*, @RequestHeader String authorization*/, @AuthenticationPrincipal CustomUserDetails user) {
+    public ResponseEntity<?> modify(@Valid @RequestBody GUpdateRequest request/*, @RequestHeader String authorization*/, @AuthenticationPrincipal CustomUserDetails user) {
         try{
 //            Long userID = getUserID(authorization);
             return ResponseEntity.ok(groupService.update(request,user.getUserID()/*userID*/));
         }
         catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/delete")
+    public ResponseEntity<?> delete(@Valid @RequestBody GDeleteRequest request, @AuthenticationPrincipal CustomUserDetails user) {
+        try{
+            groupService.delete(request,user.getUserID());
+            return ResponseEntity.ok("success");
+        }
+        catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }

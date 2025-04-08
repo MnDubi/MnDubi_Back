@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 public interface GroupRepository extends JpaRepository<Group, Long> {
     boolean existsByUserAndTitleAndEndDate(User sender, String title, String endDate);
     Group findByUserAndTitleAndEndDate(User sender, String title, String endDate);
+    void deleteByUserAndTitleAndEndDate(User user, String title, String endDate);
 
     @Modifying
     @Query("UPDATE Group g set g.title = :change, g.startDate = :changeDate, g.endDate = :changeDate  WHERE g.title = :title AND g.user.id = :userID AND g.endDate = :fromDate")
