@@ -17,7 +17,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.core.ParameterizedTypeReference;
+import festival.dev.domain.ai.service.AIClassifierService;  // AI 분류 서비스 추가
+
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -34,22 +36,21 @@ public class ToDoListServiceImpl implements ToDoListService {
     private final ToDoListRepository toDoListRepository;
     private final CalendarRepository calendarRepository;
     private final CategoryRepository categoryRepository;
-    private final RestTemplate restTemplate;
+//    private final RestTemplate restTemplate;
     private final CategoryService categoryService;
     private final UserRepository userRepository;
+    private final AIClassifierService aiClassifierService;
 
     public void input(InsertRequest request, Long id) {
         String title = request.getTitle();
         User user = getUser(id);
 
-        checkEndDate(request.getEndDate());
-
-        //  AI 서버에 투두 내용(title) 보내서 카테고리 자동 분류
         String categoryName = classifyCategoryWithAI(title);
-        //  해당 이름의 카테고리가 없으면 새로 생성, 있으면 재사용
-        Category category = categoryService.findOrCreateByName(categoryName);
+        Category category = categoryService.findOrCreateByName(categoryName, categoryService.getCategoryVectorsFromDB(categoryName));
 
-        checkExist(user, title, request.getEndDate());
+        inputSetting(title, user, request.getEndDate(), category);
+
+        checkEndDate(request.getEndDate());
 
         ToDoList toDoList = ToDoList.builder()
                 .title(request.getTitle())
@@ -74,7 +75,8 @@ public class ToDoListServiceImpl implements ToDoListService {
 
         //  AI 카테고리 분류 + 저장/재사용
         String categoryName = classifyCategoryWithAI(title);
-        Category category = categoryService.findOrCreateByName(categoryName);
+        Category category = categoryService.findOrCreateByName(categoryName, categoryService.getCategoryVectorsFromDB(categoryName));
+
 
         checkExist(user, title, request.getEndDate());
 
@@ -88,22 +90,12 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .build());
     }
 
+
     private String classifyCategoryWithAI(String title) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        HttpEntity<Map<String, String>> entity = new HttpEntity<>(Map.of("todo", title), headers);
-
-        ResponseEntity<Map<String, String>> response = restTemplate.exchange(
-                "http://localhost:8000/classify",
-                HttpMethod.POST,
-                entity,
-                new ParameterizedTypeReference<>() {}
-        );
-
-        return response.getBody().get("category");
+        // AI 서버로 분류 요청
+        List<Double> categoryVectors = categoryService.getCategoryVectorsFromDB("공부");  // 예시 카테고리
+        return aiClassifierService.classifyCategoryWithAI(title, categoryVectors);
     }
-
 
 
     public ToDoListResponse update(UpdateRequest request, Long userID) {
@@ -120,7 +112,7 @@ public class ToDoListServiceImpl implements ToDoListService {
         return ToDoListResponse.builder()
                 .title(toDoList.getTitle())
                 .completed(toDoList.getCompleted())
-                .category(toDoList.getCategory().getCategoryName())
+                .category(toDoList.getCategory().getName())
                 .userID(user.getName())
                 .endDate(toDoList.getEndDate())
                 .startDate(toDoList.getStartDate())
@@ -144,7 +136,7 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .map(tdl -> ToDoListResponse.builder()
                         .title(tdl.getTitle())
                         .completed(tdl.getCompleted())
-                        .category(tdl.getCategory().getCategoryName())  // 카테고리 이름을 포함
+                        .category(tdl.getCategory().getName())  // 카테고리 이름을 포함
                         .endDate(tdl.getEndDate())
                         .startDate(tdl.getStartDate())
                         .userID(user.getName())
@@ -162,7 +154,7 @@ public class ToDoListServiceImpl implements ToDoListService {
         return ToDoListResponse.builder()
                 .title(toDoList.getTitle())
                 .completed(toDoList.getCompleted())
-                .category(toDoList.getCategory().getCategoryName())
+                .category(toDoList.getCategory().getName())
                 .endDate(toDoList.getEndDate())
                 .startDate(toDoList.getStartDate())
                 .userID(user.getName())
