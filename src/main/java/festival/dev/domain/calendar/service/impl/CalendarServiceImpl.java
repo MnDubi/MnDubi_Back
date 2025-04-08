@@ -46,7 +46,7 @@ public class CalendarServiceImpl implements CalendarService {
                             .startDate(toDoList.getStartDate())
                             .endDate(toDoList.getEndDate())
                             .completed(toDoList.getCompleted())
-                            .category(toDoList.getCategory().getCategoryName())
+                            .category(toDoList.getCategory().getName())
                             .build()).toList();
 
             return CalendarResponse.builder()

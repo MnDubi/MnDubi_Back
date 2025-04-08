@@ -62,9 +62,9 @@ public class CategoryServiceImpl implements CategoryService {
         }
     }
 
-    public List<Double> getCategoryVectorsFromDB(String categoryName) {
+    public List<Double> getCategoryVectorsFromDB(String name) {
         // 카테고리 이름으로 카테고리 객체 찾기
-        Category category = categoryRepository.findByName(categoryName)
+        Category category = categoryRepository.findByName(name)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리입니다."));
 
         // 카테고리의 임베딩 벡터를 JSON에서 List<Double>으로 변환
