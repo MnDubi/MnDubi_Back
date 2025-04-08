@@ -4,6 +4,8 @@ import festival.dev.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 import static jakarta.persistence.GenerationType.IDENTITY;
 
 @Entity
@@ -26,4 +28,7 @@ public class GroupList {
     private User user;
 
     private boolean accept;
+
+    @OneToMany(mappedBy = "groupList", fetch = FetchType.LAZY)
+    private List<GroupJoin> groupJoins;
 }
