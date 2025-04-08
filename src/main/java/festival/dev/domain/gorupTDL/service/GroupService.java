@@ -13,5 +13,4 @@ public interface GroupService {
     void refuseInvite(GChoiceRequest gInviteReq, Long userid);
     GToDoListResponse update(GUpdateRequest gUpdateReq, Long userid);
     void delete(GDeleteRequest gDeleteReq, Long userid);
-    void numberDelete();
 }

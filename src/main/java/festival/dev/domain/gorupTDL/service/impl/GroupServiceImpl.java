@@ -37,6 +37,7 @@ public class GroupServiceImpl implements GroupService {
     private final CategoryRepository categoryRepository;
     private final GroupNumberRepo groupNumberRepo;
 
+    @Transactional
     public GInsertRes invite(GInsertRequest request, Long userID){
         User sender = getUser(userID);
         Long groupId = null;
@@ -99,10 +100,6 @@ public class GroupServiceImpl implements GroupService {
         User user = getUser(userID);
         checkNotExist(user, request.getTitle(), request.getEndDate());
         groupRepository.deleteByUserAndTitleAndEndDate(user, request.getTitle(), request.getEndDate());
-    }
-
-    public void numberDelete(){
-        groupNumberRepo.deleteUnusedGroupNumbers();
     }
 
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들

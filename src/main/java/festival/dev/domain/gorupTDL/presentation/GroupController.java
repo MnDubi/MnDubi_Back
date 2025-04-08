@@ -37,7 +37,6 @@ public class GroupController {
 
             return ResponseEntity.ok(groupService.invite(request,/*userID*/user.getUserID())    );
         }catch (Exception e){
-            groupService.numberDelete();
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
