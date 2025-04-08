@@ -20,6 +20,8 @@ public interface GroupListRepo extends JpaRepository<GroupList,Long> {
     @Query("UPDATE GroupList g SET g.accept = true WHERE g.group.id = :group AND g.user.id = :receiver")
     void updateAccept(@Param("group") long group,@Param("receiver") long receiver);
 
+    boolean existsByUserAndGroup(User user, Group group);
+
     List<GroupList> findByGroupId(Long groupId);
 
     @Modifying

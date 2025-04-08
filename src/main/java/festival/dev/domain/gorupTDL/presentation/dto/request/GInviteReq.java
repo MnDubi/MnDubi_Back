@@ -8,7 +8,7 @@ import java.util.List;
 @Getter
 public class GInviteReq {
     @NotNull
-    private List<String> receiver;
+    private List<String> receivers;
     @NotNull
     private Long groupID;
 }

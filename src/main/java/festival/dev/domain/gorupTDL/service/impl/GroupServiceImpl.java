@@ -18,11 +18,13 @@ import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -39,24 +41,18 @@ public class GroupServiceImpl implements GroupService {
         User sender = getUser(userID);
         Long groupId = null;
         groupId = insert(request,userID).getId();
-        for (String req_receiver: request.getReceivers()) {
-            User receiver = userRepository.findByUserCode(req_receiver).orElseThrow(() -> new IllegalArgumentException("없는 존재 입니다."));
-
-            friendshipRepository.findByRequesterAndAddressee(sender, receiver).orElseThrow(() -> new IllegalArgumentException("친구로 추가가 안 되어있습니다."));
-
-            Group group = getGroup(groupId);
-            GroupList groupList = GroupList.builder()
-                    .accept(false)
-                    .group(group)
-                    .user(receiver)
-                    .build();
-            groupListRepo.save(groupList);
-        }
+        inviteFor(sender,groupId,request.getReceivers());
         return GInsertRes.builder()
                 .id(groupId)
                 .build();
     }
 
+    @Transactional
+    public void invite(GInviteReq request, Long userID){
+        User sender = getUser(userID);
+        Long groupId = request.getGroupID();
+        inviteFor(sender,groupId,request.getReceivers());
+    }
 
     //초대를 응답하는 것이기 때문에 받은 사람은 나
     public void acceptInvite(GChoiceRequest request, Long userID){
@@ -109,10 +105,6 @@ public class GroupServiceImpl implements GroupService {
         groupNumberRepo.deleteUnusedGroupNumbers();
     }
 
-    public void invite(GInviteReq request, Long userID){
-
-    }
-
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
     public GInsertRes insert(GInsertRequest request, Long userID){
         User user = getUser(userID);
@@ -149,6 +141,24 @@ public class GroupServiceImpl implements GroupService {
         }
         return GInsertRes.builder().id(response.getGroupNumber().getId())
                 .build();
+    }
+
+    void inviteFor(User sender, Long groupId, List<String> receivers){
+        for (String req_receiver : receivers){
+            User receiver = userRepository.findByUserCode(req_receiver).orElseThrow(() -> new IllegalArgumentException("없는 유저 입니다."));
+            friendshipRepository.findByRequesterAndAddressee(sender, receiver).orElseThrow(() -> new IllegalArgumentException("친구로 추가가 안 되어있습니다."));
+
+            Group group = getGroup(groupId);
+            if (groupListRepo.existsByUserAndGroup(receiver,group)){
+                throw new IllegalArgumentException("이미 초대한 사람은 초대가 불가합니다.");
+            }
+            GroupList groupList = GroupList.builder()
+                    .accept(false)
+                    .group(group)
+                    .user(receiver)
+                    .build();
+            groupListRepo.save(groupList);
+        }
     }
 
     void checkInvite(Group group, User receiver){
