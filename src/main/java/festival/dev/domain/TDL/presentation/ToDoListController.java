@@ -1,15 +1,12 @@
 package festival.dev.domain.TDL.presentation;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.interfaces.DecodedJWT;
 import festival.dev.domain.TDL.presentation.dto.request.*;
 import festival.dev.domain.TDL.service.ToDoListService;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
+import festival.dev.domain.user.entity.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -18,15 +15,15 @@ import org.springframework.web.bind.annotation.*;
 public class ToDoListController {
     private final ToDoListService toDoListService;
 
-    @Value("${jwt.secret}")
-    private String secret;
+//    @Value("${jwt.secret}")
+//    private String secret;
 
     @PostMapping("/insert")
-    public ResponseEntity<String> input(@Valid @RequestBody InsertRequest request, @RequestHeader String authorization) {
-        Long userID = getUserID(authorization);
+    public ResponseEntity<String> input(@Valid @RequestBody InsertRequest request, /*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user) {
+//        Long userID = getUserID(authorization);
 
         try {
-            toDoListService.input(request,userID);
+            toDoListService.input(request,/*userID*/user.getUserID());
             return ResponseEntity.ok("Success");
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -34,11 +31,11 @@ public class ToDoListController {
     }
 
     @PutMapping("/modify")
-    public ResponseEntity<?> modify(@Valid @RequestBody UpdateRequest request, @RequestHeader String authorization) {
-        Long userID = getUserID(authorization);
+    public ResponseEntity<?> modify(@Valid @RequestBody UpdateRequest request, /*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user) {
+//        Long userID = getUserID(authorization);
 
         try{
-            return ResponseEntity.ok(toDoListService.update(request, userID));
+            return ResponseEntity.ok(toDoListService.update(request, /*userID*/user.getUserID()));
         }
         catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -46,11 +43,11 @@ public class ToDoListController {
     }
 
     @DeleteMapping("/delete")
-    public ResponseEntity<String> delete(@Valid @RequestBody DeleteRequest request, @RequestHeader String authorization){
-        Long userID = getUserID(authorization);
+    public ResponseEntity<String> delete(@Valid @RequestBody DeleteRequest request, /*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user){
+//        Long userID = getUserID(authorization);
 
         try {
-            toDoListService.delete(request,userID);
+            toDoListService.delete(request,/*userID*/user.getUserID());
             return ResponseEntity.ok("Success");
         }
         catch (Exception e){
@@ -59,31 +56,30 @@ public class ToDoListController {
     }
 
     @GetMapping("/get")
-    public ResponseEntity<?> get(@RequestHeader String authorization/*@RequestParam String userID*/){
-        Long userID = getUserID(authorization);
+    public ResponseEntity<?> get(/*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user){
+//        Long userID = getUserID(authorization);
         try{
-            return ResponseEntity.ok(toDoListService.get(userID));
+            return ResponseEntity.ok(toDoListService.get(/*userID*/user.getUserID()));
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     @PutMapping("/success")
-    public ResponseEntity<?> success(@Valid @RequestBody SuccessRequest request,@RequestHeader String authorization){
-        Long userID = getUserID(authorization);
-
+    public ResponseEntity<?> success(@Valid @RequestBody SuccessRequest request,/*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user){
+//        Long userID = getUserID(authorization);
         try{
-            return ResponseEntity.ok(toDoListService.success(request,userID));
+            return ResponseEntity.ok(toDoListService.success(request,/*userID*/user.getUserID()));
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     @PostMapping("/finish")
-    public ResponseEntity<String> finish(@RequestHeader String authorization){
-        Long userID = getUserID(authorization);
+    public ResponseEntity<String> finish(/*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user){
+//        Long userID = getUserID(authorization);
         try {
-            toDoListService.finish(userID);
+            toDoListService.finish(/*userID*/user.getUserID());
             return ResponseEntity.ok("Success");
         }catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -91,10 +87,10 @@ public class ToDoListController {
     }
 
     @PostMapping("/insert/until")
-    public ResponseEntity<?> until(@RequestHeader String authorization, @Valid @RequestBody InsertUntilRequest request){
-        Long userID = getUserID(authorization);
+    public ResponseEntity<?> until(/*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody InsertUntilRequest request){
+//        Long userID = getUserID(authorization);
         try {
-            toDoListService.input(request,userID);
+            toDoListService.input(request,/*userID*/user.getUserID());
             return ResponseEntity.ok("Success");
         }
         catch (Exception e){
@@ -102,17 +98,17 @@ public class ToDoListController {
         }
     }
 
-    public Long getUserID(String auth){
-        String token = auth.replace("Bearer ","");
-
-        Claims claims = Jwts.parserBuilder()
-                .setSigningKey(secret.getBytes())
-                .build()
-                .parseClaimsJws(token).getBody();
-        return claims.get("userId",Long.class);
-
-//        DecodedJWT jwt = JWT.decode(token);
+//    public Long getUserID(String auth){
+//        String token = auth.replace("Bearer ","");
 //
-//        return jwt.getClaim("userId").asLong();
-    }
+//        Claims claims = Jwts.parserBuilder()
+//                .setSigningKey(secret.getBytes())
+//                .build()
+//                .parseClaimsJws(token).getBody();
+//        return claims.get("userId",Long.class);
+//
+////        DecodedJWT jwt = JWT.decode(token);
+////
+////        return jwt.getClaim("userId").asLong();
+//    }
 }
