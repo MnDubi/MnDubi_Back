@@ -59,6 +59,7 @@ public class GroupController {
         }
     }
 
+    //groupNumber도 받아야함. 그래서 그걸 기준으로 값을 바꿔야함.
     @PutMapping("/modify")
     public ResponseEntity<?> modify(@Valid @RequestBody GUpdateRequest request, @AuthenticationPrincipal CustomUserDetails user) {
         try{
@@ -69,6 +70,7 @@ public class GroupController {
         }
     }
 
+    //groupNumber도 받아서 delete
     @DeleteMapping("/delete")
     public ResponseEntity<?> delete(@Valid @RequestBody GDeleteRequest request, @AuthenticationPrincipal CustomUserDetails user) {
         try{
