@@ -14,9 +14,6 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class GroupController {
 
-//    @Value("${jwt.secret}")
-//    private String secret;
-
     private final GroupService groupService;
 
     @PostMapping("/invite")
@@ -30,22 +27,21 @@ public class GroupController {
         }
     }
 
+    //자기 자신이 groupjoin에 들어가게 만들기.
     @PostMapping("/insert")
-    public ResponseEntity<?> insert(@Valid @RequestBody GInsertRequest request, /*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user) {
+    public ResponseEntity<?> insert(@Valid @RequestBody GInsertRequest request,@AuthenticationPrincipal CustomUserDetails user) {
         try {
-//            Long userID = getUserID(authorization);
-
-            return ResponseEntity.ok(groupService.invite(request,/*userID*/user.getUserID())    );
+            return ResponseEntity.ok(groupService.invite(request,user.getUserID())    );
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
+    //수락하면 groupJoin에 추가되기
     @PutMapping("/accept")
-    public ResponseEntity<?> accept(@Valid @RequestBody GChoiceRequest request,/*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user) {
+    public ResponseEntity<?> accept(@Valid @RequestBody GChoiceRequest request,@AuthenticationPrincipal CustomUserDetails user) {
         try{
-//            Long userID = getUserID(authorization);
-            groupService.acceptInvite(request,/*userID*/user.getUserID());
+            groupService.acceptInvite(request,user.getUserID());
             return ResponseEntity.ok("success");
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -53,10 +49,9 @@ public class GroupController {
     }
 
     @DeleteMapping("/refuse")
-    public ResponseEntity<?> refuse(@Valid @RequestBody GChoiceRequest request,/*@RequestHeader String authorization,*/ @AuthenticationPrincipal CustomUserDetails user) {
+    public ResponseEntity<?> refuse(@Valid @RequestBody GChoiceRequest request,@AuthenticationPrincipal CustomUserDetails user) {
         try{
-//            Long userID = getUserID(authorization);
-            groupService.refuseInvite(request,/*userID*/user.getUserID());
+            groupService.refuseInvite(request,user.getUserID());
             return ResponseEntity.ok("success");
         }
         catch (Exception e){
@@ -65,10 +60,9 @@ public class GroupController {
     }
 
     @PutMapping("/modify")
-    public ResponseEntity<?> modify(@Valid @RequestBody GUpdateRequest request/*, @RequestHeader String authorization*/, @AuthenticationPrincipal CustomUserDetails user) {
+    public ResponseEntity<?> modify(@Valid @RequestBody GUpdateRequest request, @AuthenticationPrincipal CustomUserDetails user) {
         try{
-//            Long userID = getUserID(authorization);
-            return ResponseEntity.ok(groupService.update(request,user.getUserID()/*userID*/));
+            return ResponseEntity.ok(groupService.update(request,user.getUserID()));
         }
         catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -86,14 +80,8 @@ public class GroupController {
         }
     }
 
-//    public Long getUserID(String auth){
-//        String token = auth.replace("Bearer ","");
-//
-//        Claims claims = Jwts.parserBuilder()
-//                .setSigningKey(secret.getBytes())
-//                .build()
-//                .parseClaimsJws(token).getBody();
-//
-//        return claims.get("userId",Long.class);
-//    }
+    @GetMapping("test")
+    public ResponseEntity<?> test(){
+        return ResponseEntity.ok("success");
+    }
 }

@@ -19,7 +19,7 @@ public class GroupList {
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_tdl")
     private Group group;
 
@@ -28,7 +28,4 @@ public class GroupList {
     private User user;
 
     private boolean accept;
-
-    @OneToMany(mappedBy = "groupList", fetch = FetchType.LAZY)
-    private List<GroupJoin> groupJoins;
 }

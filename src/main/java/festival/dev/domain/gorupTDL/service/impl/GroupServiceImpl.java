@@ -8,7 +8,6 @@ import festival.dev.domain.gorupTDL.entity.GroupList;
 import festival.dev.domain.gorupTDL.entity.GroupNumber;
 import festival.dev.domain.gorupTDL.presentation.dto.request.*;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
-import festival.dev.domain.gorupTDL.presentation.dto.response.GListDto;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GToDoListResponse;
 import festival.dev.domain.gorupTDL.repository.GroupListRepo;
 import festival.dev.domain.gorupTDL.repository.GroupNumberRepo;
@@ -40,7 +39,7 @@ public class GroupServiceImpl implements GroupService {
     @Transactional
     public GInsertRes invite(GInsertRequest request, Long userID){
         User sender = getUser(userID);
-        Long groupId = null;
+        Long groupId;
         groupId = insert(request,userID).getId();
         inviteFor(sender,groupId,request.getReceivers());
         return GInsertRes.builder()
@@ -88,7 +87,6 @@ public class GroupServiceImpl implements GroupService {
 
         return GToDoListResponse.builder()
                 .title(toDoList.getTitle())
-                .completed(toDoList.getCompleted())
                 .category(toDoList.getCategory().getCategoryName())
                 .userID(user.getName())
                 .endDate(toDoList.getEndDate())
@@ -130,7 +128,6 @@ public class GroupServiceImpl implements GroupService {
                     .title(title)
                     .endDate(request.getEndDate())
                     .user(user)
-                    .completed(false)
                     .startDate(request.getEndDate())
                     .build();
 
@@ -166,40 +163,40 @@ public class GroupServiceImpl implements GroupService {
         return groupRepository.findById(groupID).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 그룹입니다."));
     }
 
-    public String toDay(){
+    String toDay(){
         LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
         DateTimeFormatter yearMonthDayFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
         return createAt.format(yearMonthDayFormatter);
     }
 
-    public User getUser(Long id){
+    User getUser(Long id){
         return userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("존재하지 않은 UserID"));
     }
 
-    public void checkNotExist(User user, String title, String endDate){
+    void checkNotExist(User user, String title, String endDate){
         if (!groupRepository.existsByUserAndTitleAndEndDate(user,title, endDate)){
             throw new IllegalArgumentException("존재하지 않는 TDL입니다.");
         }
     }
 
-    public void checkExist(User user, String title,String endDate){
+    void checkExist(User user, String title,String endDate){
         if (groupRepository.existsByUserAndTitleAndEndDate(user,title, endDate)){
             throw new IllegalArgumentException("이미 존재하는 TDL입니다.");
         }
     }
 
-    public void inputSetting(String title, User user, String endDate, Category category) {
+    void inputSetting(String title, User user, String endDate, Category category) {
         checkExist(user, title, endDate);
         checkCategory(category);
     }
 
-    public void checkCategory(Category category){
+    void checkCategory(Category category){
         if (category == null) {
             throw new IllegalArgumentException("존재하지 않은 카테고리입니다.");
         }
     }
 
-    public void checkEndDate(String endDate){
+    void checkEndDate(String endDate){
         if (toDay().compareTo(endDate) > 0){
             throw new IllegalArgumentException("끝나는 날짜는 현재 날짜보다 빠를 수 없습니다.");
         }
