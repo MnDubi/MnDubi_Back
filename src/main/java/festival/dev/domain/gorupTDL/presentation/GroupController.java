@@ -7,7 +7,6 @@ import festival.dev.domain.user.entity.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 public class GroupController {
 
     private final GroupService groupService;
-    private final SimpMessagingTemplate messagingTemplate;
 
     @PostMapping("/invite")
     public ResponseEntity<?> invite(@Valid @RequestBody GInviteReq request, @AuthenticationPrincipal CustomUserDetails user) {
@@ -30,8 +28,8 @@ public class GroupController {
         }
     }
 
-    @PostMapping("/insert")
-    public ResponseEntity<?> insert(@Valid @RequestBody GInsertRequest request,@AuthenticationPrincipal CustomUserDetails user) {
+    @PostMapping("/create")
+    public ResponseEntity<?> create(@Valid @RequestBody GCreateRequest request, @AuthenticationPrincipal CustomUserDetails user) {
         try {
             return ResponseEntity.ok(groupService.invite(request,user.getUserID())    );
         }catch (Exception e){
@@ -82,7 +80,7 @@ public class GroupController {
         }
     }
 
-    //이미 변경한 속성이면 불가
+    //이미 변경한 속성이면 불가능해야함
     @PutMapping("success")
     public ResponseEntity<?> success(@Valid @RequestBody GSuccessRequest request, @AuthenticationPrincipal CustomUserDetails user) {
         try{
@@ -92,5 +90,16 @@ public class GroupController {
         catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    @GetMapping("/get")
+    public ResponseEntity<?> get(@AuthenticationPrincipal CustomUserDetails user) {
+        return ResponseEntity.ok("success");
+    }
+
+    @PutMapping("/insert")
+    public ResponseEntity<?> insert(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GInsertRequest request) {
+        groupService.insert(request,user.getUserID());
+        return ResponseEntity.ok("success");
     }
 }

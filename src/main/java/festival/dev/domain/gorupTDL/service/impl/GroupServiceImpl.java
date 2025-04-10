@@ -23,10 +23,6 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -43,9 +39,9 @@ public class GroupServiceImpl implements GroupService {
     private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
-    public GInsertRes invite(GInsertRequest request, Long userID){
+    public GInsertRes invite(GCreateRequest request, Long userID){
         User sender = getUser(userID);
-        Long groupNum = insert(request,userID);
+        Long groupNum = create(request,userID);
         inviteFor(sender,groupNum,request.getReceivers());
         return GInsertRes.builder()
                 .id(groupNum)
@@ -102,6 +98,7 @@ public class GroupServiceImpl implements GroupService {
         groupListRepo.deleteByGroupNumberAndUser(group,receiver);
     }
 
+    //바뀐 TDL이랑 관련된 모든 데이터를 보내야 할 듯? web socket으로
     @Transactional
     public GToDoListResponse update(GUpdateRequest request, Long userID) {
         User user = getUser(userID);
@@ -124,6 +121,8 @@ public class GroupServiceImpl implements GroupService {
     public void delete(GDeleteRequest request, Long userID){
         User user = getUser(userID);
         checkNotExist(user, request.getTitle());
+        Group group = getGroupByTitleUser(request.getTitle(),user);
+        messagingTemplate.convertAndSend("/topic/group/" + group.getGroupNumber()+"/deleted", group.getId());
         groupRepository.deleteByUserAndTitle(user, request.getTitle());
     }
 
@@ -148,6 +147,32 @@ public class GroupServiceImpl implements GroupService {
         return response;
     }
 
+    @Transactional
+    public void insert(GInsertRequest request, Long userID){
+        User user = getUser(userID);
+        checkExist(user, request.getTitle());
+        GroupNumber groupNumber = getGroupNum(request.getGroupNumber());
+        Category category = categoryRepository.findByCategoryName(request.getCategory());
+        List<GroupList> groupLists = groupListRepo.findByGroupNumberAndAccept(groupNumber,true);
+        Group group = Group.builder()
+                .user(user)
+                .category(category)
+                .title(request.getTitle())
+                .groupNumber(groupNumber)
+                .build();
+        groupRepository.save(group);
+        for(GroupList groupList: groupLists){
+            GroupJoin groupJoin = GroupJoin.builder()
+                    .group(group)
+                    .user(groupList.getUser())
+                    .completed(false)
+                    .groupNumber(groupNumber)
+                    .build();
+            groupJoinRepo.save(groupJoin);
+        }
+        messagingTemplate.convertAndSend("/topic/group/" + group.getGroupNumber(), group);
+    }
+
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
 
     Group getGroupByTitleUser(String title, User user){
@@ -158,7 +183,7 @@ public class GroupServiceImpl implements GroupService {
         return groupNumberRepo.findById(groupID).orElseThrow(()-> new IllegalArgumentException("그룹이 없습니다."));
     }
 
-    public Long insert(GInsertRequest request, Long userID){
+    public Long create(GCreateRequest request, Long userID){
         User user = getUser(userID);
         Group response = new Group();
 
@@ -173,15 +198,11 @@ public class GroupServiceImpl implements GroupService {
             Category category = categoryRepository.findByCategoryName(request.getCategory());
             inputSetting(title, user, category);
 
-//            checkEndDate(request.getEndDate());
-
             Group group = Group.builder()
                     .groupNumber(groupNumberBuild)
                     .category(category)
                     .title(title)
-//                    .endDate(request.getEndDate())
                     .user(user)
-//                    .startDate(request.getEndDate())
                     .build();
             GroupJoin groupJoin = GroupJoin.builder()
                     .groupNumber(groupNumberBuild)
@@ -190,17 +211,15 @@ public class GroupServiceImpl implements GroupService {
                     .group(group)
                     .build();
             groupJoinRepo.save(groupJoin);
-            GResponse gResponse = GResponse.builder()
-                    .groupNumber(groupNumber)
-                    .memberID(user.getName())
-                    .title(group.getTitle())
-//                    .endDate(group.getEndDate())
-                    .completed(false)
-                    .category(category.getCategoryName())
-//                    .startDate(group.getStartDate())
-                    .ownerID(group.getUser().getName())
-                    .build();
-            messagingTemplate.convertAndSend("/topic/group"+groupNumber, gResponse);
+//            GResponse gResponse = GResponse.builder()
+//                    .groupNumber(groupNumber)
+//                    .memberID(user.getName())
+//                    .title(group.getTitle())
+//                    .completed(false)
+//                    .category(category.getCategoryName())
+//                    .ownerID(group.getUser().getName())
+//                    .build();
+//            messagingTemplate.convertAndSend("/topic/group"+groupNumber, gResponse);
             response = groupRepository.save(group);
         }
 

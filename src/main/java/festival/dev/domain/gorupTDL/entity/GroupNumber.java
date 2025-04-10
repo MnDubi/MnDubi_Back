@@ -18,7 +18,6 @@ public class GroupNumber {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true)
     private Long groupNumber;
 
     @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY)

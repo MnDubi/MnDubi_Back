@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -23,6 +24,8 @@ public interface GroupListRepo extends JpaRepository<GroupList,Long> {
 
     @Modifying
     void deleteByGroupNumberAndUser(GroupNumber groupNumber, User receiver);
+
+    List<GroupList> findByGroupNumberAndAccept(GroupNumber groupNumber, boolean accept);
 
     Optional<GroupList> findByGroupNumberAndUser(GroupNumber groupNumber, User receiver);
     Optional<GroupList> findByGroupNumberAndUserAndAccept(GroupNumber groupNumber, User receiver, boolean accept);
