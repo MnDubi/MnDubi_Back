@@ -1,11 +1,13 @@
 package festival.dev.domain.gorupTDL.presentation;
 
 import festival.dev.domain.gorupTDL.presentation.dto.request.*;
+import festival.dev.domain.gorupTDL.presentation.dto.response.GResponse;
 import festival.dev.domain.gorupTDL.service.GroupService;
 import festival.dev.domain.user.entity.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class GroupController {
 
     private final GroupService groupService;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @PostMapping("/invite")
     public ResponseEntity<?> invite(@Valid @RequestBody GInviteReq request, @AuthenticationPrincipal CustomUserDetails user) {
@@ -27,7 +30,6 @@ public class GroupController {
         }
     }
 
-//    자기 자신이 groupjoin에 들어가게 만들기. - 해결
     @PostMapping("/insert")
     public ResponseEntity<?> insert(@Valid @RequestBody GInsertRequest request,@AuthenticationPrincipal CustomUserDetails user) {
         try {
@@ -37,7 +39,6 @@ public class GroupController {
         }
     }
 
-    //수락하면 groupJoin에 추가되기 - 해결
     @PutMapping("/accept")
     public ResponseEntity<?> accept(@Valid @RequestBody GChoiceRequest request,@AuthenticationPrincipal CustomUserDetails user) {
         try{
@@ -81,10 +82,12 @@ public class GroupController {
         }
     }
 
+    //이미 변경한 속성이면 불가
     @PutMapping("success")
     public ResponseEntity<?> success(@Valid @RequestBody GSuccessRequest request, @AuthenticationPrincipal CustomUserDetails user) {
         try{
-            return ResponseEntity.ok(groupService.success(request,user.getUserID()));
+            GResponse response = groupService.success(request,user.getUserID());
+            return ResponseEntity.ok(response);
         }
         catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

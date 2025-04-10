@@ -12,6 +12,4 @@ import java.util.Optional;
 @Repository
 @Transactional
 public interface GroupNumberRepo extends JpaRepository<GroupNumber, Long> {
-    @Query("SELECT MAX(g.groupNumber) FROM GroupNumber g")
-    Long getMaxGroupNumber();
 }

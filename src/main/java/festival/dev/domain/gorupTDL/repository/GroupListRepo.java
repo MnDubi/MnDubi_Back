@@ -1,6 +1,5 @@
 package festival.dev.domain.gorupTDL.repository;
 
-import festival.dev.domain.gorupTDL.entity.Group;
 import festival.dev.domain.gorupTDL.entity.GroupList;
 import festival.dev.domain.gorupTDL.entity.GroupNumber;
 import festival.dev.domain.user.entity.User;
@@ -11,7 +10,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -22,8 +20,6 @@ public interface GroupListRepo extends JpaRepository<GroupList,Long> {
     void updateAccept(@Param("group") long group,@Param("receiver") long receiver);
 
     boolean existsByUserAndGroupNumber(User user, GroupNumber groupNumber);
-
-    List<GroupList> findByGroupNumberId(Long groupId);
 
     @Modifying
     void deleteByGroupNumberAndUser(GroupNumber groupNumber, User receiver);

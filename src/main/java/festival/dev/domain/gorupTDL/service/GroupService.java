@@ -2,8 +2,7 @@ package festival.dev.domain.gorupTDL.service;
 
 import festival.dev.domain.gorupTDL.presentation.dto.request.*;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
-import festival.dev.domain.gorupTDL.presentation.dto.response.GListDto;
-import festival.dev.domain.gorupTDL.presentation.dto.response.GSuccessResponse;
+import festival.dev.domain.gorupTDL.presentation.dto.response.GResponse;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GToDoListResponse;
 
 public interface GroupService {
@@ -14,5 +13,5 @@ public interface GroupService {
     void refuseInvite(GChoiceRequest gInviteReq, Long userid);
     GToDoListResponse update(GUpdateRequest gUpdateReq, Long userid);
     void delete(GDeleteRequest gDeleteReq, Long userid);
-    GSuccessResponse success(GSuccessRequest request, Long userid);
+    GResponse success(GSuccessRequest request, Long userid);
 }

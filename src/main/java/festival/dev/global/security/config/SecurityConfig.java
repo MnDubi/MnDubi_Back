@@ -53,7 +53,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 적용
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/oauth2/**").permitAll()
+                        .requestMatchers("/auth/**", "/oauth2/**", "/ws/**").permitAll()
                         .requestMatchers("/user/**").authenticated()
                         .requestMatchers("/friends/**").authenticated()
 //                        .requestMatchers("/toDoList/**").authenticated()

@@ -9,13 +9,13 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class GSuccessResponse {
-    private String endDate;
-    private String startDate;
+public class GResponse {
+//    private String endDate;
+//    private String startDate;
     private String ownerID;
     private String title;
     private boolean completed;
     private Long groupNumber;
     private String category;
-    private String receiverID;
+    private String memberID;
 }
