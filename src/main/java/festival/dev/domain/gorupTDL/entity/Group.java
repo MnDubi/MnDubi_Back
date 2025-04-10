@@ -22,8 +22,6 @@ public class Group {
 
     private String title;
 
-    private Boolean completed;
-
     private String startDate;
 
     private String endDate;
@@ -41,7 +39,7 @@ public class Group {
     private User user;
 
     @OneToMany(fetch = FetchType.LAZY,mappedBy = "group")
-    private List<GroupList> TDL_list;
+    private List<GroupJoin> TDL_joins;
 }
 
 

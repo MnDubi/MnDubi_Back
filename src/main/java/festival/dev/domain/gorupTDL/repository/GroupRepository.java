@@ -1,6 +1,7 @@
 package festival.dev.domain.gorupTDL.repository;
 
 import festival.dev.domain.gorupTDL.entity.Group;
+import festival.dev.domain.gorupTDL.entity.GroupNumber;
 import festival.dev.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -9,13 +10,16 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Optional;
+
 @Repository
 @Transactional
 public interface GroupRepository extends JpaRepository<Group, Long> {
     boolean existsByUserAndTitleAndEndDate(User sender, String title, String endDate);
-    Group findByUserAndTitleAndEndDate(User sender, String title, String endDate);
+    Optional<Group> findByUserAndTitleAndEndDate(User sender, String title, String endDate);
     void deleteByUserAndTitleAndEndDate(User user, String title, String endDate);
-
+    List<Group> findByGroupNumber(GroupNumber groupNumber);
 
 
     @Modifying

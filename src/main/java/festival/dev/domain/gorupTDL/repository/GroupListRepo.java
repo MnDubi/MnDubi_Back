@@ -2,6 +2,7 @@ package festival.dev.domain.gorupTDL.repository;
 
 import festival.dev.domain.gorupTDL.entity.Group;
 import festival.dev.domain.gorupTDL.entity.GroupList;
+import festival.dev.domain.gorupTDL.entity.GroupNumber;
 import festival.dev.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -17,16 +18,16 @@ import java.util.Optional;
 @Transactional
 public interface GroupListRepo extends JpaRepository<GroupList,Long> {
     @Modifying
-    @Query("UPDATE GroupList g SET g.accept = true WHERE g.group.id = :group AND g.user.id = :receiver")
+    @Query("UPDATE GroupList g SET g.accept = true WHERE g.groupNumber.id = :group AND g.user.id = :receiver")
     void updateAccept(@Param("group") long group,@Param("receiver") long receiver);
 
-    boolean existsByUserAndGroup(User user, Group group);
+    boolean existsByUserAndGroupNumber(User user, GroupNumber groupNumber);
 
-    List<GroupList> findByGroupId(Long groupId);
+    List<GroupList> findByGroupNumberId(Long groupId);
 
     @Modifying
-    void deleteByGroupAndUser(Group group, User receiver);
+    void deleteByGroupNumberAndUser(GroupNumber groupNumber, User receiver);
 
-    Optional<GroupList> findByGroupAndUser(Group group, User receiver);
-    Optional<GroupList> findByGroupAndUserAndAccept(Group group, User receiver, boolean accept);
+    Optional<GroupList> findByGroupNumberAndUser(GroupNumber groupNumber, User receiver);
+    Optional<GroupList> findByGroupNumberAndUserAndAccept(GroupNumber groupNumber, User receiver, boolean accept);
 }

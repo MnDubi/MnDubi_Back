@@ -9,6 +9,8 @@ public class GSuccessRequest {
     private String title;
     @NotNull
     private Boolean completed;
-//    @NotNull
-//    private String userID;
+    @NotNull
+    private Long groupNumber;
+    @NotNull
+    private String senderID;
 }

@@ -19,16 +19,13 @@ public class GroupList {
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "group_tdl")
-    private Group group;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_number")
+    private GroupNumber groupNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "received_id")
     private User user;
 
     private boolean accept;
-
-    @OneToMany(mappedBy = "groupList", fetch = FetchType.LAZY)
-    private List<GroupJoin> groupJoins;
 }
