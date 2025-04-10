@@ -62,8 +62,8 @@ spring:
 
         provider:
           google:
-            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?prompt=consent&access_type=offline
-            token_uri: https://oauth2.googleapis.com/token
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
             user-info-uri: https://www.googleapis.com/oauth2/v2/userinfo
           naver:
             authorization-uri: https://nid.naver.com/oauth2.0/authorize
@@ -85,7 +85,7 @@ jwt:
 
 
 frontend:
-  url: "${baseUrl}" # 프론트엔드 URL(ngork 주소)
+  url: "http://localhost:3000" # 프론트엔드 URL(ngork 주소)
 
 server:
   port: 8090

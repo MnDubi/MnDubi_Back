@@ -102,7 +102,7 @@ public class GroupServiceImpl implements GroupService {
 
         return GToDoListResponse.builder()
                 .title(toDoList.getTitle())
-                .category(toDoList.getCategory().getCategoryName())
+                .category(toDoList.getCategory().getName())
                 .userID(user.getName())
                 .endDate(toDoList.getEndDate())
                 .groupNumber(toDoList.getGroupNumber().getGroupNumber())
@@ -128,7 +128,7 @@ public class GroupServiceImpl implements GroupService {
         return GSuccessResponse.builder()
                 .groupNumber(groupJoin.getGroupNumber().getGroupNumber())
                 .endDate(groupJoin.getGroup().getEndDate())
-                .category(groupJoin.getGroup().getCategory().getCategoryName())
+                .category(groupJoin.getGroup().getCategory().getName())
                 .ownerID(groupJoin.getGroup().getUser().getName())
                 .title(groupJoin.getGroup().getTitle())
                 .startDate(groupJoin.getGroup().getStartDate())
@@ -163,7 +163,8 @@ public class GroupServiceImpl implements GroupService {
                 .build();
         groupNumberRepo.save(groupNumberBuild);
         for (String title: request.getTitles()) {
-            Category category = categoryRepository.findByCategoryName(request.getCategory());
+            Category category = categoryRepository.findByName(request.getCategory())
+                    .orElseThrow(() -> new IllegalArgumentException("존재하지 않은 카테고리입니다."));
             inputSetting(title, user, request.getEndDate(), category);
 
             checkEndDate(request.getEndDate());

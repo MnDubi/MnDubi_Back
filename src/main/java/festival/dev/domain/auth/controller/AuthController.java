@@ -5,21 +5,29 @@ import festival.dev.domain.auth.dto.AuthResponseDto;
 import festival.dev.domain.auth.dto.OAuthUserInfoDto;
 import festival.dev.global.security.oauth.CustomOAuth2User;
 import festival.dev.domain.auth.service.AuthService;
+import festival.dev.global.security.oauth.dto.OAuthCodeInfo;
+import festival.dev.global.security.oauth.OAuthCodeStore;
+import festival.dev.global.security.jwt.JwtUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.*;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
 
     private final AuthService authService;
+    private final OAuthCodeStore codeStore;
+    private final JwtUtil jwtUtil;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, OAuthCodeStore codeStore, JwtUtil jwtUtil) {
         this.authService = authService;
+        this.codeStore = codeStore;
+        this.jwtUtil = jwtUtil;
     }
 
     // 자체 회원가입
@@ -40,6 +48,19 @@ public class AuthController {
     public ResponseEntity<AuthResponseDto> refreshAccessToken(@RequestHeader("Authorization") String refreshToken) {
         AuthResponseDto tokenResponse = authService.refreshAccessToken(refreshToken);
         return ResponseEntity.ok(tokenResponse);
+    }
+
+    @PostMapping("/token")
+    public ResponseEntity<?> issueToken(@RequestBody Map<String, String> body) {
+        String code = body.get("code");
+        OAuthCodeInfo info = codeStore.get(code);
+
+        if (info == null) {
+            return ResponseEntity.badRequest().body("유효하지 않거나 만료된 code입니다.");
+        }
+
+        String token = jwtUtil.generateAccessToken(info.getEmail(), info.getRole(), info.getUserId());
+        return ResponseEntity.ok(Map.of("accessToken", token));
     }
 
     // OAuth 로그인 후 사용자 정보 반환 (JWT 포함)

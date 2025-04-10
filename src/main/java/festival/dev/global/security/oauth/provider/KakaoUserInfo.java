@@ -3,6 +3,7 @@ package festival.dev.global.security.oauth.provider;
 import java.util.Map;
 
 public class KakaoUserInfo extends OAuth2UserInfo {
+
     public KakaoUserInfo(Map<String, Object> attributes) {
         super(attributes);
     }
@@ -14,19 +15,15 @@ public class KakaoUserInfo extends OAuth2UserInfo {
 
     @Override
     public String getName() {
-        Map<String, Object> properties = (Map<String, Object>) attributes.get("properties");
-        return properties != null ? (String) properties.get("nickname") : null;
+        Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
+        Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
+        return (String) profile.get("nickname");
     }
 
     @Override
     public String getEmail() {
         Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
-        return kakaoAccount != null ? (String) kakaoAccount.get("email") : null;
+        return (String) kakaoAccount.get("email");
     }
-
-//    @Override
-//    public String getProfileImage() {
-//        Map<String, Object> properties = (Map<String, Object>) attributes.get("properties");
-//        return properties != null ? (String) properties.get("profile_image") : null;
-//    }
 }
+
