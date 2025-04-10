@@ -4,13 +4,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
 @Getter
-public class GSuccessRequest {
-    @NotNull
-    private String title;
-    @NotNull
-    private Boolean completed;
+public class GChoiceRequest {
     @NotNull
     private Long groupNumber;
-    @NotNull
-    private String senderID;
 }

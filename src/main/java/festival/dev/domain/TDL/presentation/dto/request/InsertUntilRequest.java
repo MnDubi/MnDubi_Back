@@ -26,4 +26,11 @@ public class InsertUntilRequest {
         DateTimeFormatter yearMonthDayFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
         return !(startDate.compareTo(createAt.format(yearMonthDayFormatter)) < 0);
     }
+
+    @AssertTrue(message = "끝날 날짜가 현재보다 과거일 수 없습니다.")
+    public boolean isValidEnd() {
+        LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
+        DateTimeFormatter yearMonthDayFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
+        return !(endDate.compareTo(createAt.format(yearMonthDayFormatter)) < 0);
+    }
 }

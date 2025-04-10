@@ -13,20 +13,22 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "group_TDL")
+@Table(name = "group_tdl")
 @Getter
-public class Group{
+public class Group {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
 
     private String title;
 
-    private Boolean completed;
-
     private String startDate;
 
     private String endDate;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_number")
+    private GroupNumber groupNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
@@ -37,7 +39,7 @@ public class Group{
     private User user;
 
     @OneToMany(fetch = FetchType.LAZY,mappedBy = "group")
-    private List<GroupList> TDL_list;
+    private List<GroupJoin> TDL_joins;
 }
 
 

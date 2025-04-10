@@ -1,17 +1,18 @@
 package festival.dev.domain.gorupTDL.service;
 
-import festival.dev.domain.gorupTDL.entity.GroupList;
-import festival.dev.domain.gorupTDL.presentation.dto.request.GInsertRequest;
-import festival.dev.domain.gorupTDL.presentation.dto.request.GInviteReq;
-import festival.dev.domain.gorupTDL.presentation.dto.request.GUpdateRequest;
+import festival.dev.domain.gorupTDL.presentation.dto.request.*;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GListDto;
+import festival.dev.domain.gorupTDL.presentation.dto.response.GSuccessResponse;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GToDoListResponse;
 
 public interface GroupService {
-    GListDto invite(GInviteReq gInviteReq, Long userid);
-    GInsertRes insert(GInsertRequest gInsertReq, Long userid);
-    void acceptInvite(GInviteReq gInviteReq, Long userid);
-    void refuseInvite(GInviteReq gInviteReq, Long userid);
+    GInsertRes invite(GInsertRequest gInsertRequest, Long userid);
+    void invite(GInviteReq request, Long userid);
+//    GInsertRes insert(GInsertRequest gInsertReq, Long userid);
+    void acceptInvite(GChoiceRequest gInviteReq, Long userid);
+    void refuseInvite(GChoiceRequest gInviteReq, Long userid);
     GToDoListResponse update(GUpdateRequest gUpdateReq, Long userid);
+    void delete(GDeleteRequest gDeleteReq, Long userid);
+    GSuccessResponse success(GSuccessRequest request, Long userid);
 }

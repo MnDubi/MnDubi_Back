@@ -3,6 +3,7 @@ package festival.dev.domain.user.entity;
 import festival.dev.domain.TDL.entity.ToDoList;
 import festival.dev.domain.calendar.entity.Calendar;
 import festival.dev.domain.gorupTDL.entity.Group;
+import festival.dev.domain.gorupTDL.entity.GroupJoin;
 import festival.dev.domain.gorupTDL.entity.GroupList;
 import festival.dev.domain.shareTDL.entity.Share;
 import festival.dev.domain.shareTDL.entity.ShareList;
@@ -60,6 +61,9 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<ShareList> share_lists;
+
+    @OneToMany(mappedBy = "user")
+    private List<GroupJoin> group_joins;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

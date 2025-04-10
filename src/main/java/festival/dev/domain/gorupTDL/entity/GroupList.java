@@ -4,6 +4,8 @@ import festival.dev.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 import static jakarta.persistence.GenerationType.IDENTITY;
 
 @Entity
@@ -17,9 +19,9 @@ public class GroupList {
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "group_tdl")
-    private Group group;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_number")
+    private GroupNumber groupNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "received_id")
