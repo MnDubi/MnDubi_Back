@@ -38,7 +38,7 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
             redirect-uri: "${baseUrl}/oauth2/callback/google"
-            scope: email, profile
+            scope: openid, email, profile  # ← 여기에 openid 추가!
             authorization-grant-type: authorization_code
           naver:
             client-id: ${NAVER_CLIENT_ID}
@@ -61,6 +61,10 @@ spring:
             client-name: Kakao
 
         provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth?prompt=consent&access_type=offline
+            token_uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v2/userinfo
           naver:
             authorization-uri: https://nid.naver.com/oauth2.0/authorize
             token-uri: https://nid.naver.com/oauth2.0/token

@@ -53,11 +53,11 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource())) // CORS 적용
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**", "/oauth2/**").permitAll()
-                        .requestMatchers("/user/**").authenticated()
-                        .requestMatchers("/friends/**").authenticated()
+                                .requestMatchers("/login","/auth/**", "/oauth2/**").permitAll()
+                                .requestMatchers("/user/**").authenticated()
+                                .requestMatchers("/friends/**").authenticated()
 //                        .requestMatchers("/toDoList/**").authenticated()
-                        .anyRequest().authenticated()
+                                .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
