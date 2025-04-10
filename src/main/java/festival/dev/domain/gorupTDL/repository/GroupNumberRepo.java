@@ -7,18 +7,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Repository
 @Transactional
 public interface GroupNumberRepo extends JpaRepository<GroupNumber, Long> {
     @Query("SELECT MAX(g.groupNumber) FROM GroupNumber g")
     Long getMaxGroupNumber();
-
-    @Modifying
-    @Query("""
-        DELETE FROM GroupNumber g
-        WHERE g.id NOT IN (
-            SELECT DISTINCT t.groupNumber.id FROM Group t WHERE t.groupNumber IS NOT NULL
-        )
-    """)
-    void deleteUnusedGroupNumbers();
 }

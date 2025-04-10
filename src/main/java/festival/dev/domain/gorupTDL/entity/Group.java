@@ -39,9 +39,6 @@ public class Group {
     private User user;
 
     @OneToMany(fetch = FetchType.LAZY,mappedBy = "group")
-    private List<GroupList> TDL_list;
-
-    @OneToMany(fetch = FetchType.LAZY,mappedBy = "group")
     private List<GroupJoin> TDL_joins;
 }
 

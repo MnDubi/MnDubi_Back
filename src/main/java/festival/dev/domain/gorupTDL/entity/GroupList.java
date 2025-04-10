@@ -20,8 +20,8 @@ public class GroupList {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "group_tdl")
-    private Group group;
+    @JoinColumn(name = "group_number")
+    private GroupNumber groupNumber;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "received_id")

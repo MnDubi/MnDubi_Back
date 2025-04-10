@@ -27,7 +27,7 @@ public class GroupController {
         }
     }
 
-    //자기 자신이 groupjoin에 들어가게 만들기.
+//    자기 자신이 groupjoin에 들어가게 만들기. - 해결
     @PostMapping("/insert")
     public ResponseEntity<?> insert(@Valid @RequestBody GInsertRequest request,@AuthenticationPrincipal CustomUserDetails user) {
         try {
@@ -37,7 +37,7 @@ public class GroupController {
         }
     }
 
-    //수락하면 groupJoin에 추가되기
+    //수락하면 groupJoin에 추가되기 - 해결
     @PutMapping("/accept")
     public ResponseEntity<?> accept(@Valid @RequestBody GChoiceRequest request,@AuthenticationPrincipal CustomUserDetails user) {
         try{
@@ -59,7 +59,6 @@ public class GroupController {
         }
     }
 
-    //groupNumber도 받아야함. 그래서 그걸 기준으로 값을 바꿔야함.
     @PutMapping("/modify")
     public ResponseEntity<?> modify(@Valid @RequestBody GUpdateRequest request, @AuthenticationPrincipal CustomUserDetails user) {
         try{
@@ -70,7 +69,7 @@ public class GroupController {
         }
     }
 
-    //groupNumber도 받아서 delete
+    //groupNumber을 받아서 전체 delete API 생성
     @DeleteMapping("/delete")
     public ResponseEntity<?> delete(@Valid @RequestBody GDeleteRequest request, @AuthenticationPrincipal CustomUserDetails user) {
         try{
@@ -82,8 +81,13 @@ public class GroupController {
         }
     }
 
-    @GetMapping("test")
-    public ResponseEntity<?> test(){
-        return ResponseEntity.ok("success");
+    @PutMapping("success")
+    public ResponseEntity<?> success(@Valid @RequestBody GSuccessRequest request, @AuthenticationPrincipal CustomUserDetails user) {
+        try{
+            return ResponseEntity.ok(groupService.success(request,user.getUserID()));
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

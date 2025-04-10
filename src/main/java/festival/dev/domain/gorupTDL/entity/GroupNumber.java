@@ -21,9 +21,12 @@ public class GroupNumber {
     @Column(unique = true)
     private Long groupNumber;
 
-    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true)
+    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Group> groups;
 
-    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true)
+    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY)
     private List<GroupJoin> groupJoins;
+
+    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<GroupList> groupLists;
 }
