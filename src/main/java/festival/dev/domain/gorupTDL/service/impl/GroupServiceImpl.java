@@ -23,6 +23,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -128,7 +129,7 @@ public class GroupServiceImpl implements GroupService {
 
     @Transactional
     public GResponse success(GSuccessRequest request, Long userID){
-        User sender = userRepository.findByUserCode(request.getSenderID()).orElseThrow(()->new IllegalArgumentException("그 유저는 없는 유저입니다."));
+        User sender = userRepository.findByUserCode(request.getOwnerID()).orElseThrow(()->new IllegalArgumentException("그 유저는 없는 유저입니다."));
         GroupNumber groupNumber = getGroupNum(request.getGroupNumber());
         Group group = getGroupByTitleUser(request.getTitle(),sender);
         User user = getUser(userID);
@@ -148,7 +149,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Transactional
-    public void insert(GInsertRequest request, Long userID){
+    public Long insert(GInsertRequest request, Long userID){
         User user = getUser(userID);
         checkExist(user, request.getTitle());
         GroupNumber groupNumber = getGroupNum(request.getGroupNumber());
@@ -170,9 +171,28 @@ public class GroupServiceImpl implements GroupService {
                     .build();
             groupJoinRepo.save(groupJoin);
         }
-        messagingTemplate.convertAndSend("/topic/group/" + group.getGroupNumber(), group);
+        GToDoListResponse response = GToDoListResponse.builder()
+                .title(group.getTitle())
+                .category(group.getCategory().getCategoryName())
+                .userID(user.getName())
+                .completed(false)
+                .build();
+        messagingTemplate.convertAndSend("/topic/group/" + groupNumber.getId(), response);
+        return groupNumber.getId();
     }
 
+    public List<?> get(Long userID){
+        User user = getUser(userID);
+        GroupList groupList = groupListRepo.findByUserAndAccept(user,true);
+        GroupNumber groupNumber = groupList.getGroupNumber();
+        Long all = groupJoinRepo.countByUserAndGroupNumber(user,groupNumber);
+        Long part = groupJoinRepo.countByCompletedAndUserAndGroupNumber(true,user,groupNumber);
+        // 그룹 join에서 tdl ID에 따라 카운트를 받아야함.
+        // 그리고 그 중 true인 값만 가져오는 카운트도 만들어야함.
+        //'그룹 TDL+전채 인원 + 한 인원'이 있는 클래스 생성 그걸 LIST로 저장하면서
+        // 저 카운트들을 넣어야함.
+        return null;
+    }
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
 
     Group getGroupByTitleUser(String title, User user){
@@ -193,6 +213,13 @@ public class GroupServiceImpl implements GroupService {
                 .groupNumber(groupNumber)
                 .build();
 
+        GroupList groupList = GroupList.builder()
+                .user(user)
+                .accept(true)
+                .groupNumber(groupNumberBuild)
+                .build();
+        groupListRepo.save(groupList);
+
         groupNumberRepo.save(groupNumberBuild);
         for (String title: request.getTitles()) {
             Category category = categoryRepository.findByCategoryName(request.getCategory());
@@ -211,15 +238,6 @@ public class GroupServiceImpl implements GroupService {
                     .group(group)
                     .build();
             groupJoinRepo.save(groupJoin);
-//            GResponse gResponse = GResponse.builder()
-//                    .groupNumber(groupNumber)
-//                    .memberID(user.getName())
-//                    .title(group.getTitle())
-//                    .completed(false)
-//                    .category(category.getCategoryName())
-//                    .ownerID(group.getUser().getName())
-//                    .build();
-//            messagingTemplate.convertAndSend("/topic/group"+groupNumber, gResponse);
             response = groupRepository.save(group);
         }
 

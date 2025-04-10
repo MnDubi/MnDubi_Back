@@ -94,12 +94,11 @@ public class GroupController {
 
     @GetMapping("/get")
     public ResponseEntity<?> get(@AuthenticationPrincipal CustomUserDetails user) {
-        return ResponseEntity.ok("success");
+        return ResponseEntity.ok(groupService.get(user.getUserID()));
     }
 
     @PutMapping("/insert")
     public ResponseEntity<?> insert(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GInsertRequest request) {
-        groupService.insert(request,user.getUserID());
-        return ResponseEntity.ok("success");
+        return ResponseEntity.ok(groupService.insert(request,user.getUserID()));
     }
 }

@@ -5,6 +5,8 @@ import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GResponse;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GToDoListResponse;
 
+import java.util.List;
+
 public interface GroupService {
     GInsertRes invite(GCreateRequest gCreateRequest, Long userid);
     void invite(GInviteReq request, Long userid);
@@ -14,5 +16,6 @@ public interface GroupService {
     GToDoListResponse update(GUpdateRequest gUpdateReq, Long userid);
     void delete(GDeleteRequest gDeleteReq, Long userid);
     GResponse success(GSuccessRequest request, Long userid);
-    void insert(GInsertRequest request, Long userid);
+    Long insert(GInsertRequest request, Long userid);
+    List<?> get(Long userID);
 }
