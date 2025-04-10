@@ -9,7 +9,7 @@ import festival.dev.domain.gorupTDL.entity.GroupList;
 import festival.dev.domain.gorupTDL.entity.GroupNumber;
 import festival.dev.domain.gorupTDL.presentation.dto.request.*;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
-import festival.dev.domain.gorupTDL.presentation.dto.response.GSuccessResponse;
+import festival.dev.domain.gorupTDL.presentation.dto.response.GResponse;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GToDoListResponse;
 import festival.dev.domain.gorupTDL.repository.GroupJoinRepo;
 import festival.dev.domain.gorupTDL.repository.GroupListRepo;
@@ -19,13 +19,11 @@ import festival.dev.domain.gorupTDL.service.GroupService;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -39,11 +37,12 @@ public class GroupServiceImpl implements GroupService {
     private final CategoryRepository categoryRepository;
     private final GroupNumberRepo groupNumberRepo;
     private final GroupJoinRepo groupJoinRepo;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
-    public GInsertRes invite(GInsertRequest request, Long userID){
+    public GInsertRes invite(GCreateRequest request, Long userID){
         User sender = getUser(userID);
-        Long groupNum = insert(request,userID).getId();
+        Long groupNum = create(request,userID);
         inviteFor(sender,groupNum,request.getReceivers());
         return GInsertRes.builder()
                 .id(groupNum)
@@ -61,9 +60,9 @@ public class GroupServiceImpl implements GroupService {
     @Transactional
     public void acceptInvite(GChoiceRequest request, Long userID){
         User receiver = getUser(userID);
-        GroupNumber group = getGroupNum(request.getGroupNumber());
-        checkInvite(group, receiver);
-        groupListRepo.updateAccept(group.getId(), receiver.getId());
+        GroupNumber groupNum = getGroupNum(request.getGroupNumber());
+        checkInvite(groupNum, receiver);
+        groupListRepo.updateAccept(groupNum.getId(), receiver.getId());
         GroupNumber groupNumber = getGroupNum(request.getGroupNumber());
         List<Group> tdls = groupRepository.findByGroupNumber(groupNumber);
         for (Group tdl: tdls){
@@ -73,11 +72,22 @@ public class GroupServiceImpl implements GroupService {
                     .completed(false)
                     .groupNumber(groupNumber)
                     .build();
+
+            GResponse response = GResponse.builder()
+                    .groupNumber(groupNumber.getId())
+                    .ownerID(tdl.getUser().getName())
+                    .memberID(receiver.getName())
+                    .title(tdl.getTitle())
+                    .category(tdl.getCategory().getCategoryName())
+                    .completed(false)
+                    .build();
+            messagingTemplate.convertAndSend("/topic/group/" + groupNumber.getId(), response);
             groupJoinRepo.save(groupJoin);
         }
     }
 
     //초대를 응답하는 것이기 때문에 받은 사람은 나
+    @Transactional
     public void refuseInvite(GChoiceRequest request, Long userID){
         User receiver = getUser(userID);
         GroupNumber group = getGroupNum(request.getGroupNumber());
@@ -89,92 +99,137 @@ public class GroupServiceImpl implements GroupService {
         groupListRepo.deleteByGroupNumberAndUser(group,receiver);
     }
 
+    //바뀐 TDL이랑 관련된 모든 데이터를 보내야 할 듯? web socket으로
+    @Transactional
     public GToDoListResponse update(GUpdateRequest request, Long userID) {
         User user = getUser(userID);
-        checkNotExist(user, request.getTitle(), request.getEndDate());
-        checkExist(user, request.getChange(), request.getChangeDate());
-        if(toDay().compareTo(request.getEndDate()) > 0)
-            throw new IllegalArgumentException("이미 끝난 TDL은 변경이 불가능합니다.");
+        checkNotExist(user, request.getTitle());
+        checkExist(user, request.getChange());
 
-        groupRepository.changeTitle(request.getChange(), request.getTitle(), userID, request.getChangeDate(), request.getEndDate());
+        groupRepository.changeTitle(request.getChange(), request.getTitle(), userID);
 
-        Group toDoList = getGroupByTitleUserEndDate(request.getChange(), user, request.getChangeDate());
+        Group toDoList = getGroupByTitleUser(request.getChange(), user);
 
         return GToDoListResponse.builder()
                 .title(toDoList.getTitle())
                 .category(toDoList.getCategory().getCategoryName())
                 .userID(user.getName())
-                .endDate(toDoList.getEndDate())
                 .groupNumber(toDoList.getGroupNumber().getGroupNumber())
-                .startDate(toDoList.getStartDate())
                 .build();
     }
 
+    @Transactional
     public void delete(GDeleteRequest request, Long userID){
         User user = getUser(userID);
-        checkNotExist(user, request.getTitle(), request.getEndDate());
-        groupRepository.deleteByUserAndTitleAndEndDate(user, request.getTitle(), request.getEndDate());
+        checkNotExist(user, request.getTitle());
+        Group group = getGroupByTitleUser(request.getTitle(),user);
+        messagingTemplate.convertAndSend("/topic/group/" + group.getGroupNumber()+"/deleted", group.getId());
+        groupRepository.deleteByUserAndTitle(user, request.getTitle());
     }
 
-    public GSuccessResponse success(GSuccessRequest request, Long userID){
-        User sender = userRepository.findByUserCode(request.getSenderID()).orElseThrow(()->new IllegalArgumentException("그 유저는 없는 유저입니다."));
-        String date = toDay();
+    @Transactional
+    public GResponse success(GSuccessRequest request, Long userID){
+        User sender = userRepository.findByUserCode(request.getOwnerID()).orElseThrow(()->new IllegalArgumentException("그 유저는 없는 유저입니다."));
         GroupNumber groupNumber = getGroupNum(request.getGroupNumber());
-        Group group = getGroupByTitleUserEndDate(request.getTitle(),sender,date);
+        Group group = getGroupByTitleUser(request.getTitle(),sender);
         User user = getUser(userID);
         GroupJoin groupJoin = groupJoinRepo.findByGroupAndGroupNumberAndUser(group,groupNumber,user).orElseThrow(()-> new IllegalArgumentException("TDL이 없습니다."));
-        //test 해봐야함.
         groupJoinRepo.save(groupJoin.toBuilder().completed(request.getCompleted()).build());
-        return GSuccessResponse.builder()
-                .groupNumber(groupJoin.getGroupNumber().getGroupNumber())
-                .endDate(groupJoin.getGroup().getEndDate())
+
+        GResponse response = GResponse.builder()
+                .groupNumber(groupJoin.getGroupNumber().getId())
                 .category(groupJoin.getGroup().getCategory().getCategoryName())
                 .ownerID(groupJoin.getGroup().getUser().getName())
                 .title(groupJoin.getGroup().getTitle())
-                .startDate(groupJoin.getGroup().getStartDate())
                 .completed(groupJoin.isCompleted())
-                .receiverID(user.getName())
+                .memberID(user.getName())
                 .build();
+        messagingTemplate.convertAndSend("/topic/group/"+response.getGroupNumber(), response);
+        return response;
     }
 
+    @Transactional
+    public Long insert(GInsertRequest request, Long userID){
+        User user = getUser(userID);
+        checkExist(user, request.getTitle());
+        GroupNumber groupNumber = getGroupNum(request.getGroupNumber());
+        Category category = categoryRepository.findByCategoryName(request.getCategory());
+        List<GroupList> groupLists = groupListRepo.findByGroupNumberAndAccept(groupNumber,true);
+        Group group = Group.builder()
+                .user(user)
+                .category(category)
+                .title(request.getTitle())
+                .groupNumber(groupNumber)
+                .build();
+        groupRepository.save(group);
+        for(GroupList groupList: groupLists){
+            GroupJoin groupJoin = GroupJoin.builder()
+                    .group(group)
+                    .user(groupList.getUser())
+                    .completed(false)
+                    .groupNumber(groupNumber)
+                    .build();
+            groupJoinRepo.save(groupJoin);
+        }
+        GToDoListResponse response = GToDoListResponse.builder()
+                .title(group.getTitle())
+                .category(group.getCategory().getCategoryName())
+                .userID(user.getName())
+                .completed(false)
+                .build();
+        messagingTemplate.convertAndSend("/topic/group/" + groupNumber.getId(), response);
+        return groupNumber.getId();
+    }
+
+    public List<?> get(Long userID){
+        User user = getUser(userID);
+        GroupList groupList = groupListRepo.findByUserAndAccept(user,true);
+        GroupNumber groupNumber = groupList.getGroupNumber();
+        Long all = groupJoinRepo.countByUserAndGroupNumber(user,groupNumber);
+        Long part = groupJoinRepo.countByCompletedAndUserAndGroupNumber(true,user,groupNumber);
+        // 그룹 join에서 tdl ID에 따라 카운트를 받아야함.
+        // 그리고 그 중 true인 값만 가져오는 카운트도 만들어야함.
+        //'그룹 TDL+전채 인원 + 한 인원'이 있는 클래스 생성 그걸 LIST로 저장하면서
+        // 저 카운트들을 넣어야함.
+        return null;
+    }
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
 
-    Group getGroupByTitleUserEndDate(String title, User user, String endDate){
-        return groupRepository.findByUserAndTitleAndEndDate(user, title, endDate).orElseThrow(()-> new IllegalArgumentException("관련된 TDL이 없습니다."));
+    Group getGroupByTitleUser(String title, User user){
+        return groupRepository.findByUserAndTitle(user, title).orElseThrow(()-> new IllegalArgumentException("관련된 TDL이 없습니다."));
     }
 
     GroupNumber getGroupNum(Long groupID){
         return groupNumberRepo.findById(groupID).orElseThrow(()-> new IllegalArgumentException("그룹이 없습니다."));
     }
 
-    public GInsertRes insert(GInsertRequest request, Long userID){
+    public Long create(GCreateRequest request, Long userID){
         User user = getUser(userID);
         Group response = new Group();
 
-        Long groupNumber = groupNumberRepo.getMaxGroupNumber();
-        if (groupNumber == null){
-            groupNumber = 1L;
-        }
-        else{
-            groupNumber += 1;
-        }
+        Long groupNumber = 1L;
+
         GroupNumber groupNumberBuild = GroupNumber.builder()
                 .groupNumber(groupNumber)
                 .build();
+
+        GroupList groupList = GroupList.builder()
+                .user(user)
+                .accept(true)
+                .groupNumber(groupNumberBuild)
+                .build();
+        groupListRepo.save(groupList);
+
         groupNumberRepo.save(groupNumberBuild);
         for (String title: request.getTitles()) {
             Category category = categoryRepository.findByCategoryName(request.getCategory());
-            inputSetting(title, user, request.getEndDate(), category);
-
-            checkEndDate(request.getEndDate());
+            inputSetting(title, user, category);
 
             Group group = Group.builder()
                     .groupNumber(groupNumberBuild)
                     .category(category)
                     .title(title)
-                    .endDate(request.getEndDate())
                     .user(user)
-                    .startDate(request.getEndDate())
                     .build();
             GroupJoin groupJoin = GroupJoin.builder()
                     .groupNumber(groupNumberBuild)
@@ -183,13 +238,10 @@ public class GroupServiceImpl implements GroupService {
                     .group(group)
                     .build();
             groupJoinRepo.save(groupJoin);
-
             response = groupRepository.save(group);
         }
 
-        return GInsertRes.builder()
-                .id(response.getGroupNumber().getId())
-                .build();
+        return response.getGroupNumber().getId();
     }
 
     void inviteFor(User sender, Long groupNum, List<String> receivers){
@@ -206,6 +258,7 @@ public class GroupServiceImpl implements GroupService {
                     .groupNumber(groupNumber)
                     .user(receiver)
                     .build();
+            messagingTemplate.convertAndSend("/topic/invite/"+req_receiver,groupNumber.getId());
             groupListRepo.save(groupList);
         }
     }
@@ -214,46 +267,30 @@ public class GroupServiceImpl implements GroupService {
         groupListRepo.findByGroupNumberAndUser(groupNum, receiver).orElseThrow(()-> new IllegalArgumentException("초대받은 적이 없습니다."));
     }
 
-    Group getGroup(Long groupID){
-        return groupRepository.findById(groupID).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 그룹입니다."));
-    }
-
-    String toDay(){
-        LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
-        DateTimeFormatter yearMonthDayFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
-        return createAt.format(yearMonthDayFormatter);
-    }
-
     User getUser(Long id){
         return userRepository.findById(id).orElseThrow(() -> new IllegalArgumentException("존재하지 않은 UserID"));
     }
 
-    void checkNotExist(User user, String title, String endDate){
-        if (!groupRepository.existsByUserAndTitleAndEndDate(user,title, endDate)){
+    void checkNotExist(User user, String title){
+        if (!groupRepository.existsByUserAndTitle(user,title)){
             throw new IllegalArgumentException("존재하지 않는 TDL입니다.");
         }
     }
 
-    void checkExist(User user, String title,String endDate){
-        if (groupRepository.existsByUserAndTitleAndEndDate(user,title, endDate)){
+    void checkExist(User user, String title){
+        if (groupRepository.existsByUserAndTitle(user,title)){
             throw new IllegalArgumentException("이미 존재하는 TDL입니다.");
         }
     }
 
-    void inputSetting(String title, User user, String endDate, Category category) {
-        checkExist(user, title, endDate);
+    void inputSetting(String title, User user, Category category) {
+        checkExist(user, title);
         checkCategory(category);
     }
 
     void checkCategory(Category category){
         if (category == null) {
             throw new IllegalArgumentException("존재하지 않은 카테고리입니다.");
-        }
-    }
-
-    void checkEndDate(String endDate){
-        if (toDay().compareTo(endDate) > 0){
-            throw new IllegalArgumentException("끝나는 날짜는 현재 날짜보다 빠를 수 없습니다.");
         }
     }
 }

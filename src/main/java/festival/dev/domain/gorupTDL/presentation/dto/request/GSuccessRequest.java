@@ -12,5 +12,5 @@ public class GSuccessRequest {
     @NotNull
     private Long groupNumber;
     @NotNull
-    private String senderID;
+    private String ownerID;
 }

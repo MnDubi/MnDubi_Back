@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GToDoListResponse {
-    private String endDate;
-    private String startDate;
+//    private String endDate;
+//    private String startDate;
     private String userID;
     private String title;
     private boolean completed;
