@@ -38,7 +38,7 @@ public class Group {
     @JoinColumn(name = "sender_id")
     private User user;
 
-    @OneToMany(fetch = FetchType.LAZY,mappedBy = "group")
+    @OneToMany(fetch = FetchType.LAZY,mappedBy = "group",cascade = CascadeType.ALL,orphanRemoval = true)
     private List<GroupJoin> TDL_joins;
 }
 

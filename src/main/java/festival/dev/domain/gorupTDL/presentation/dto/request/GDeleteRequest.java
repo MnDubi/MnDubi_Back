@@ -13,14 +13,14 @@ import java.time.format.DateTimeFormatter;
 public class GDeleteRequest {
     @NotNull
     private String title;
-    @NotNull
-    private String endDate;
+//    @NotNull
+//    private String endDate;
 
-    @AssertTrue(message = "이미 끝난 ToDoList는 삭제가 불가능합니다.")
-    public boolean isValidEnd() {
-        LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
-        DateTimeFormatter yearMonthDayFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
-        return !(endDate.compareTo(createAt.format(yearMonthDayFormatter)) < 0);
-    }
+//    @AssertTrue(message = "이미 끝난 ToDoList는 삭제가 불가능합니다.")
+//    public boolean isValidEnd() {
+//        LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
+//        DateTimeFormatter yearMonthDayFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
+//        return !(endDate.compareTo(createAt.format(yearMonthDayFormatter)) < 0);
+//    }
 
 }
