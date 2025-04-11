@@ -22,10 +22,6 @@ public class Group {
 
     private String title;
 
-//    private String startDate;
-//
-//    private String endDate;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_number")
     private GroupNumber groupNumber;
