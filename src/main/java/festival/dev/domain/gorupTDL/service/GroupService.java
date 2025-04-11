@@ -1,6 +1,7 @@
 package festival.dev.domain.gorupTDL.service;
 
 import festival.dev.domain.gorupTDL.presentation.dto.request.*;
+import festival.dev.domain.gorupTDL.presentation.dto.response.GGetRes;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GResponse;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GToDoListResponse;
@@ -17,5 +18,5 @@ public interface GroupService {
     void delete(GDeleteRequest gDeleteReq, Long userid);
     GResponse success(GSuccessRequest request, Long userid);
     Long insert(GInsertRequest request, Long userid);
-    List<?> get(Long userID);
+    GGetRes get(Long userID);
 }

@@ -8,9 +8,7 @@ import festival.dev.domain.gorupTDL.entity.GroupJoin;
 import festival.dev.domain.gorupTDL.entity.GroupList;
 import festival.dev.domain.gorupTDL.entity.GroupNumber;
 import festival.dev.domain.gorupTDL.presentation.dto.request.*;
-import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
-import festival.dev.domain.gorupTDL.presentation.dto.response.GResponse;
-import festival.dev.domain.gorupTDL.presentation.dto.response.GToDoListResponse;
+import festival.dev.domain.gorupTDL.presentation.dto.response.*;
 import festival.dev.domain.gorupTDL.repository.GroupJoinRepo;
 import festival.dev.domain.gorupTDL.repository.GroupListRepo;
 import festival.dev.domain.gorupTDL.repository.GroupNumberRepo;
@@ -171,27 +169,51 @@ public class GroupServiceImpl implements GroupService {
                     .build();
             groupJoinRepo.save(groupJoin);
         }
-        GToDoListResponse response = GToDoListResponse.builder()
+        GResponse response = GResponse.builder()
                 .title(group.getTitle())
                 .category(group.getCategory().getCategoryName())
-                .userID(user.getName())
+                .ownerID(user.getName())
+                .memberID(user.getName())
                 .completed(false)
                 .build();
         messagingTemplate.convertAndSend("/topic/group/" + groupNumber.getId(), response);
         return groupNumber.getId();
     }
 
-    public List<?> get(Long userID){
+    public GGetRes get(Long userID){
         User user = getUser(userID);
         GroupList groupList = groupListRepo.findByUserAndAccept(user,true);
         GroupNumber groupNumber = groupList.getGroupNumber();
         Long all = groupJoinRepo.countByUserAndGroupNumber(user,groupNumber);
         Long part = groupJoinRepo.countByCompletedAndUserAndGroupNumber(true,user,groupNumber);
+        List<Group> groups = groupRepository.findByGroupNumber(groupNumber);
+        GGetRes response = GGetRes.builder()
+                .all(all)
+                .part(part)
+                .name(user.getName()).build();
+        List<GetSup> getSups = new ArrayList<>();
+        for(Group group: groups){
+            Long tdlAll = groupJoinRepo.countByGroup(group);
+            Long tdlPart = groupJoinRepo.countByCompletedAndGroup(true,group);
+            GetSup getSup = GetSup.builder()
+                    .title(group.getTitle())
+                    .category(group.getCategory().getCategoryName())
+                    .userID(group.getUser().getName())
+                    .groupNumber(groupNumber.getId())
+                    .all(tdlAll)
+                    .part(tdlPart)
+                    .tdlID(group.getId())
+                    .build();
+            getSups.add(getSup);
+
+        }
+        return response.toBuilder()
+                .getSups(getSups)
+                .build();
         // 그룹 join에서 tdl ID에 따라 카운트를 받아야함.
         // 그리고 그 중 true인 값만 가져오는 카운트도 만들어야함.
         //'그룹 TDL+전채 인원 + 한 인원'이 있는 클래스 생성 그걸 LIST로 저장하면서
         // 저 카운트들을 넣어야함.
-        return null;
     }
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
 
