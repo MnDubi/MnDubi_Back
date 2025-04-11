@@ -20,12 +20,12 @@ public class GroupNumber {
 
     private Long groupNumber;
 
-    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     private List<Group> groups;
 
-    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     private List<GroupJoin> groupJoins;
 
-    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     private List<GroupList> groupLists;
 }

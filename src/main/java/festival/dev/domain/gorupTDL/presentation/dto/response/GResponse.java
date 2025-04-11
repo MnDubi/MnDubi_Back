@@ -10,8 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GResponse {
-//    private String endDate;
-//    private String startDate;
     private String ownerID;
     private String title;
     private boolean completed;
