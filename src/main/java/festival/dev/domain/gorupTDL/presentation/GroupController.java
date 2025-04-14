@@ -1,6 +1,7 @@
 package festival.dev.domain.gorupTDL.presentation;
 
 import festival.dev.domain.gorupTDL.presentation.dto.request.*;
+import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
 import festival.dev.domain.gorupTDL.presentation.dto.response.GResponse;
 import festival.dev.domain.gorupTDL.service.GroupService;
 import festival.dev.domain.user.entity.CustomUserDetails;
@@ -97,8 +98,14 @@ public class GroupController {
         return ResponseEntity.ok(groupService.get(user.getUserID()));
     }
 
-    @PutMapping("/insert")
+    @PostMapping("/insert")
     public ResponseEntity<?> insert(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GInsertRequest request) {
-        return ResponseEntity.ok(groupService.insert(request,user.getUserID()));
+        return ResponseEntity.ok(GInsertRes.builder().id(groupService.insert(request,user.getUserID())).build());
+    }
+
+    @PostMapping("/finish")
+    public ResponseEntity<?> finish(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GChoiceRequest request){
+        groupService.finish(user.getUserID(),request.getGroupNumber());
+        return null;
     }
 }

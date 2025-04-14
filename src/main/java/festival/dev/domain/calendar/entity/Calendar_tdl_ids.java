@@ -14,5 +14,5 @@ import lombok.*;
 public class Calendar_tdl_ids {
     private Long tdlID;
     @Enumerated(EnumType.STRING)
-    private TdlKind kind;
+    private CTdlKind kind;
 }

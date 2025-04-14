@@ -1,5 +1,6 @@
 package festival.dev.domain.calendar.entity;
 
+import festival.dev.domain.gorupTDL.entity.GroupCalendar;
 import festival.dev.domain.user.entity.User;
 import festival.dev.global.entity.BaseTime;
 import jakarta.persistence.*;
@@ -29,7 +30,12 @@ import java.util.List;
         @JoinColumn(name = "user_id")
         private User user;
 
+        private String title;
+
         @ElementCollection(fetch = FetchType.LAZY)
         @CollectionTable(name = "calendar_TDL_id", joinColumns = @JoinColumn(name = "calendar_id"))
         private List<Calendar_tdl_ids> toDoListId;
+
+        @OneToMany(mappedBy = "calendar")
+        private List<GroupCalendar> groupCalendars;
     }

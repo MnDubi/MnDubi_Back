@@ -4,7 +4,7 @@ import festival.dev.domain.TDL.entity.ToDoList;
 import festival.dev.domain.TDL.repository.ToDoListRepository;
 import festival.dev.domain.calendar.entity.Calendar;
 import festival.dev.domain.calendar.entity.Calendar_tdl_ids;
-import festival.dev.domain.calendar.entity.TdlKind;
+import festival.dev.domain.calendar.entity.CTdlKind;
 import festival.dev.domain.calendar.presentation.dto.Response.CalendarDtoAsis;
 import festival.dev.domain.calendar.presentation.dto.Response.CalendarResponse;
 import festival.dev.domain.calendar.presentation.dto.Response.MonthResponse;
@@ -15,8 +15,6 @@ import festival.dev.domain.user.repository.UserRepository;
 import jakarta.persistence.Tuple;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -24,6 +22,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,42 +34,29 @@ public class CalendarServiceImpl implements CalendarService {
     private final UserRepository userRepository;
     private final ToDoListRepository toDoListRepository;
 
-    private final Logger LOGGER = LoggerFactory.getLogger(CalendarServiceImpl.class);
-
     public CalendarResponse getDateCalendarWithPrivate(String date, Long userID){
-        return getDateCalendar(date, userID, TdlKind.PRIVATE);
+        return getDateCalendar(date, userID, CTdlKind.PRIVATE);
     }
 
     public MonthResponse getByMonthWithPrivate(Long userID){
-        return getByMonth(userID,TdlKind.PRIVATE);
+        return getByMonth(userID, CTdlKind.PRIVATE);
     }
 
     public CalendarResponse getDateCalendarWithGroup(String date, Long userID){
-        return getDateCalendar(date, userID, TdlKind.GROUP);
+        return getDateCalendar(date, userID, CTdlKind.GROUP);
     }
 
     public MonthResponse getByMonthWithGroup(Long userID){
-        return getByMonth(userID,TdlKind.GROUP);
+        return getByMonth(userID, CTdlKind.GROUP);
     }
 
-    CalendarResponse getDateCalendar(String date, Long userID, TdlKind tdlKind){
+    CalendarResponse getDateCalendar(String date, Long userID, CTdlKind CTdlKind){
         try{
             User user = userGet(userID);
-            Calendar calendar = calendarRepository.findWithTDLIDsByUserDateKind(user.getId(),date,tdlKind).orElseThrow(()-> new IllegalArgumentException("캘린더에 데이터가 존재하지 않습니다."));
+            Calendar calendar = calendarRepository.findWithTDLIDsByUserDateKind(user.getId(),date, CTdlKind).orElseThrow(()-> new IllegalArgumentException("캘린더에 데이터가 존재하지 않습니다."));
             List<Calendar_tdl_ids> tdlIds = calendar.getToDoListId();
 
-            List<ToDoList> tdls =  toDoListRepository.findByIdIn(tdlIds.stream()
-                    .map(Calendar_tdl_ids::getTdlID)
-                    .collect(Collectors.toList()));
-
-            List<CalendarDtoAsis> tdl = tdls.stream()
-                    .map(toDoList -> CalendarDtoAsis.builder()
-                            .title(toDoList.getTitle())
-                            .startDate(toDoList.getStartDate())
-                            .endDate(toDoList.getEndDate())
-                            .completed(toDoList.getCompleted())
-                            .category(toDoList.getCategory().getCategoryName())
-                            .build()).toList();
+            List<CalendarDtoAsis> tdl = tdl(CTdlKind,tdlIds);
 
             return CalendarResponse.builder()
                     .tdl(tdl)
@@ -85,7 +71,7 @@ public class CalendarServiceImpl implements CalendarService {
         }
     }
 
-    MonthResponse getByMonth(Long userID, TdlKind tdlKind) {
+    MonthResponse getByMonth(Long userID, CTdlKind CTdlKind) {
         LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
 
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MM");
@@ -93,7 +79,7 @@ public class CalendarServiceImpl implements CalendarService {
 
         User user = userGet(userID);
 
-        List<Tuple> result = calendarRepository.findByMonth(month, userID, tdlKind);
+        List<Tuple> result = calendarRepository.findByMonth(month, userID, CTdlKind);
 
         Tuple tuple = result.get(0);
         Long monthEvery = tuple.get("monthEvery", Number.class) != null ? tuple.get("monthEvery", Number.class).longValue() : 0L;
@@ -107,7 +93,29 @@ public class CalendarServiceImpl implements CalendarService {
                 .build();
     }
 
-    public User userGet(Long userID){
+    List<CalendarDtoAsis> tdl(CTdlKind kind, List<Calendar_tdl_ids> tdlIds) {
+        List<?> tdls = switch (kind) {
+            case SHARE -> null;
+            case GROUP -> null;
+            case PRIVATE -> toDoListRepository.findByIdIn(
+                    tdlIds.stream()
+                            .map(Calendar_tdl_ids::getTdlID)
+                            .collect(Collectors.toList()));
+        };
+
+        return Objects.requireNonNull(tdls).stream()
+                .map(obj -> (ToDoList) obj)  // 타입 캐스팅!
+                .map(toDoList -> CalendarDtoAsis.builder()
+                        .title(toDoList.getTitle())
+                        .startDate(toDoList.getStartDate())
+                        .endDate(toDoList.getEndDate())
+                        .completed(toDoList.getCompleted())
+                        .category(toDoList.getCategory().getCategoryName())
+                        .build()
+                ).toList();
+    }
+
+    User userGet(Long userID){
         return userRepository.findById(userID).orElseThrow(() -> new IllegalArgumentException("없는 UserID 입니다."));
     }
 }
