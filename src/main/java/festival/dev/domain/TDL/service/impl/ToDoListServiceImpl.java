@@ -7,6 +7,7 @@ import festival.dev.domain.TDL.repository.ToDoListRepository;
 import festival.dev.domain.TDL.service.ToDoListService;
 import festival.dev.domain.calendar.entity.Calendar;
 import festival.dev.domain.calendar.entity.Calendar_tdl_ids;
+import festival.dev.domain.calendar.entity.TdlKind;
 import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.category.entity.Category;
 import festival.dev.domain.category.repository.CategoryRepository;
@@ -143,11 +144,12 @@ public class ToDoListServiceImpl implements ToDoListService {
         int part = toDoListRepository.findByUserAndEndDateAndCompleted(user,toDay(),true).size();
         List<Calendar_tdl_ids> tdlIDs = tdls.stream()
                 .map(tdl -> Calendar_tdl_ids.builder()
-                        .toDoListId(tdl.getId())
+                        .tdlID(tdl.getId())
+                        .kind(TdlKind.PRIVATE)
                         .build())
                 .collect(Collectors.toList());
 
-        if (calendarRepository.findByUserAndYearMonthDay(user,toDay()) == null) {
+        if (calendarRepository.findWithTDLIDsByUserDateKind(user.getId(),toDay(),TdlKind.PRIVATE).isEmpty()) {
             Calendar calendar = Calendar.builder()
                     .user(user)
                     .every(tdlIDs.size())

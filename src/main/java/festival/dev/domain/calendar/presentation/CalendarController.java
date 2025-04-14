@@ -17,21 +17,21 @@ public class CalendarController {
 //    @Value("${jwt.secret}")
 //    private String secret;
 
-    @GetMapping
+    @GetMapping("/private")
     public ResponseEntity<?> findDate(@RequestParam String date ,/*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user){
         try{
 //            Long userID = getUserID(authorization);
-            return ResponseEntity.ok(calendarService.getDateCalendar(date, /*userID*/user.getUserID()));
+            return ResponseEntity.ok(calendarService.getDateCalendarWithPrivate(date, /*userID*/user.getUserID()));
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @GetMapping("/month")
+    @GetMapping("/private/month")
     public ResponseEntity<?> findMonth(/*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user){
         try{
 //            Long userID = getUserID(authorization);
-            return ResponseEntity.ok(calendarService.getByMonth(/*userID*/user.getUserID()));
+            return ResponseEntity.ok(calendarService.getByMonthWithPrivate(/*userID*/user.getUserID()));
         }
         catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
