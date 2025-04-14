@@ -55,7 +55,7 @@ spring:
             authorization-grant-type: authorization_code
             scope: # https://developers.kakao.com/docs/latest/ko/kakaologin/common#user-info
               - profile_nickname
-              - profile_image
+#              - profile_image
               - account_email
             redirect-uri: "${baseUrl}/oauth2/callback/kakao"
             client-name: Kakao

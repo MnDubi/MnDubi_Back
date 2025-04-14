@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import festival.dev.domain.ai.service.AIClassifierService;  // AI 분류 서비스 추가
+import festival.dev.domain.ai.service.AIClassifierService;
 
 import org.springframework.stereotype.Service;
 
@@ -47,6 +47,8 @@ public class ToDoListServiceImpl implements ToDoListService {
 
         String categoryName = classifyCategoryWithAI(title);
         Category category = categoryService.findOrCreateByName(categoryName, categoryService.getCategoryVectorsFromDB(categoryName));
+
+        request.setCategory(category.getName());  // AI에서 받은 카테고리 이름을 request에 설정
 
         inputSetting(title, user, request.getEndDate(), category);
 
