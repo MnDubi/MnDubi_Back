@@ -6,4 +6,6 @@ import festival.dev.domain.calendar.presentation.dto.Response.MonthResponse;
 public interface CalendarService {
     CalendarResponse getDateCalendarWithPrivate(String date, Long userID);
     MonthResponse getByMonthWithPrivate(Long userID);
+    CalendarResponse getDateCalendarWithGroup(String date, Long userID);
+    MonthResponse getByMonthWithGroup(Long userID);
 }

@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,8 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     Optional<Group>  findByUserAndTitle(User sender, String title);
     void deleteByUserAndTitle(User user, String title);
     List<Group> findByGroupNumber(GroupNumber groupNumber);
+
+    List<Group> findByIdIn(Collection<Long> ids);
 
     @Modifying
     @Query("UPDATE Group g set g.title = :change WHERE g.title = :title AND g.user.id = :userID")

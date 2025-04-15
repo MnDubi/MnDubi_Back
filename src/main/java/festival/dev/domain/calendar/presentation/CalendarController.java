@@ -38,6 +38,26 @@ public class CalendarController {
         }
     }
 
+    @GetMapping("/group")
+    public ResponseEntity<?> findGroup(@AuthenticationPrincipal CustomUserDetails user, @RequestParam String date){
+        try{
+            return ResponseEntity.ok(calendarService.getDateCalendarWithGroup(date, user.getUserID()));
+        }
+        catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/group/month")
+    public ResponseEntity<?> findMonthGroup(@AuthenticationPrincipal CustomUserDetails user){
+        try{
+            return ResponseEntity.ok(calendarService.getByMonthWithGroup(user.getUserID()));
+        }
+        catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 //    public Long getUserID(String auth) {
 //        String token = auth.replace("Bearer ", "");
 //

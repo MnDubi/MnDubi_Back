@@ -10,6 +10,11 @@ import festival.dev.domain.calendar.presentation.dto.Response.CalendarResponse;
 import festival.dev.domain.calendar.presentation.dto.Response.MonthResponse;
 import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.calendar.service.CalendarService;
+import festival.dev.domain.gorupTDL.entity.Group;
+import festival.dev.domain.gorupTDL.entity.GroupJoin;
+import festival.dev.domain.gorupTDL.repository.GroupJoinRepo;
+import festival.dev.domain.gorupTDL.repository.GroupRepository;
+import festival.dev.domain.shareTDL.entity.Share;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import jakarta.persistence.Tuple;
@@ -25,6 +30,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -33,6 +40,8 @@ public class CalendarServiceImpl implements CalendarService {
     private final CalendarRepository calendarRepository;
     private final UserRepository userRepository;
     private final ToDoListRepository toDoListRepository;
+    private final GroupRepository groupRepository;
+    private final GroupJoinRepo groupJoinRepo;
 
     public CalendarResponse getDateCalendarWithPrivate(String date, Long userID){
         return getDateCalendar(date, userID, CTdlKind.PRIVATE);
@@ -96,22 +105,56 @@ public class CalendarServiceImpl implements CalendarService {
     List<CalendarDtoAsis> tdl(CTdlKind kind, List<Calendar_tdl_ids> tdlIds) {
         List<?> tdls = switch (kind) {
             case SHARE -> null;
-            case GROUP -> null;
+            case GROUP -> groupRepository.findByIdIn(
+                    tdlIds.stream()
+                            .map(Calendar_tdl_ids::getTdlID)
+                            .collect(toList()));
+
             case PRIVATE -> toDoListRepository.findByIdIn(
                     tdlIds.stream()
                             .map(Calendar_tdl_ids::getTdlID)
-                            .collect(Collectors.toList()));
+                            .collect(toList()));
         };
 
         return Objects.requireNonNull(tdls).stream()
-                .map(obj -> (ToDoList) obj)  // 타입 캐스팅!
-                .map(toDoList -> CalendarDtoAsis.builder()
-                        .title(toDoList.getTitle())
-                        .startDate(toDoList.getStartDate())
-                        .endDate(toDoList.getEndDate())
-                        .completed(toDoList.getCompleted())
-                        .category(toDoList.getCategory().getCategoryName())
-                        .build()
+                .map(obj -> {
+                    String title = null;
+                    String startDate = null;
+                    String endDate = null;
+                    boolean completed = false;
+                    String category = null;
+                    switch (kind){
+                        case PRIVATE -> {
+                            ToDoList toDoList = (ToDoList) obj;
+                            title = toDoList.getTitle();
+                            startDate = toDoList.getStartDate();
+                            endDate = toDoList.getEndDate();
+                            completed = toDoList.getCompleted();
+                            category = toDoList.getCategory().getCategoryName();
+                        }
+                        case GROUP -> {
+                            Group group = (Group) obj;
+                            GroupJoin groupJoin = groupJoinRepo.findByGroupAndGroupNumberAndUser(group,group.getGroupNumber(),group.getUser()).orElseThrow(()->new IllegalArgumentException("에러 발생"));
+                            title = group.getTitle();
+                            category = group.getCategory().getCategoryName();
+                            startDate = "Group";
+                            endDate = "Group";
+                            completed = groupJoin.isCompleted();
+                        }
+                        case SHARE -> {
+                            Share share = (Share) obj;
+                            startDate = "Share";
+                            endDate = "Share";
+                        }
+                    }
+                    return CalendarDtoAsis.builder()
+                            .title(title)
+                            .startDate(startDate)
+                            .endDate(endDate)
+                            .completed(completed)
+                            .category(category)
+                            .build();
+                }
                 ).toList();
     }
 
