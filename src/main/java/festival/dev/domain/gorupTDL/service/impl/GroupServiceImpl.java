@@ -1,12 +1,13 @@
 package festival.dev.domain.gorupTDL.service.impl;
 
+import festival.dev.domain.calendar.entity.CTdlKind;
+import festival.dev.domain.calendar.entity.Calendar;
+import festival.dev.domain.calendar.entity.Calendar_tdl_ids;
+import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.category.entity.Category;
 import festival.dev.domain.category.repository.CategoryRepository;
 import festival.dev.domain.friendship.repository.FriendshipRepository;
-import festival.dev.domain.gorupTDL.entity.Group;
-import festival.dev.domain.gorupTDL.entity.GroupJoin;
-import festival.dev.domain.gorupTDL.entity.GroupList;
-import festival.dev.domain.gorupTDL.entity.GroupNumber;
+import festival.dev.domain.gorupTDL.entity.*;
 import festival.dev.domain.gorupTDL.presentation.dto.request.*;
 import festival.dev.domain.gorupTDL.presentation.dto.response.*;
 import festival.dev.domain.gorupTDL.repository.GroupJoinRepo;
@@ -36,6 +37,7 @@ public class GroupServiceImpl implements GroupService {
     private final GroupNumberRepo groupNumberRepo;
     private final GroupJoinRepo groupJoinRepo;
     private final SimpMessagingTemplate messagingTemplate;
+    private final CalendarRepository calendarRepository;
 
     @Transactional
     public GInsertRes invite(GCreateRequest request, Long userID){
@@ -213,10 +215,33 @@ public class GroupServiceImpl implements GroupService {
 
     public void finish(Long userID,Long groupNumber){
         GroupNumber groupNum = getGroupNum(groupNumber);
+        User user = getUser(userID);
         List<Group> groups = groupRepository.findByGroupNumber(groupNum);
+        List<Calendar_tdl_ids> tdlIds = new ArrayList<>();
+        List<GroupCalendar> groupCalendars = new ArrayList<>();
+        Long all = groupJoinRepo.countByUserAndGroupNumber(user,groupNum);
+        Long part = groupJoinRepo.countByCompletedAndUserAndGroupNumber(true,user,groupNum);
         for(Group group: groups){
-//            GroupJoin groupJoin = groupJoinRepo
+            Calendar_tdl_ids tdlId = Calendar_tdl_ids.builder()
+                    .kind(CTdlKind.GROUP)
+                    .tdlID(group.getId())
+                    .build();
+            tdlIds.add(tdlId);
+
+            GroupCalendar groupCalendar = GroupCalendar.builder()
+                    .title(group.getTitle())
+                    .category(group.getCategory().getId())
+                    .build();
+            groupCalendars.add(groupCalendar);
         }
+        Calendar calendar = Calendar.builder()
+                .toDoListId(tdlIds)
+                .user(user)
+                .every(all.intValue())
+                .part(part.intValue())
+                .groupCalendarId(groupCalendars)
+                .build();
+        calendarRepository.save(calendar);
     }
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
 

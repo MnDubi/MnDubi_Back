@@ -30,12 +30,11 @@ import java.util.List;
         @JoinColumn(name = "user_id")
         private User user;
 
-        private String title;
-
         @ElementCollection(fetch = FetchType.LAZY)
         @CollectionTable(name = "calendar_TDL_id", joinColumns = @JoinColumn(name = "calendar_id"))
         private List<Calendar_tdl_ids> toDoListId;
 
-        @OneToMany(mappedBy = "calendar")
-        private List<GroupCalendar> groupCalendars;
+        @ElementCollection(fetch = FetchType.LAZY)
+        @CollectionTable(name = "group_calendar", joinColumns = @JoinColumn(name = "calendar_id"))
+        private List<GroupCalendar> groupCalendarId;
     }
