@@ -1,12 +1,13 @@
 package festival.dev.domain.gorupTDL.service.impl;
 
+import festival.dev.domain.calendar.entity.CTdlKind;
+import festival.dev.domain.calendar.entity.Calendar;
+import festival.dev.domain.calendar.entity.Calendar_tdl_ids;
+import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.category.entity.Category;
 import festival.dev.domain.category.repository.CategoryRepository;
 import festival.dev.domain.friendship.repository.FriendshipRepository;
-import festival.dev.domain.gorupTDL.entity.Group;
-import festival.dev.domain.gorupTDL.entity.GroupJoin;
-import festival.dev.domain.gorupTDL.entity.GroupList;
-import festival.dev.domain.gorupTDL.entity.GroupNumber;
+import festival.dev.domain.gorupTDL.entity.*;
 import festival.dev.domain.gorupTDL.presentation.dto.request.*;
 import festival.dev.domain.gorupTDL.presentation.dto.response.*;
 import festival.dev.domain.gorupTDL.repository.GroupJoinRepo;
@@ -36,6 +37,7 @@ public class GroupServiceImpl implements GroupService {
     private final GroupNumberRepo groupNumberRepo;
     private final GroupJoinRepo groupJoinRepo;
     private final SimpMessagingTemplate messagingTemplate;
+    private final CalendarRepository calendarRepository;
 
     @Transactional
     public GInsertRes invite(GCreateRequest request, Long userID){
@@ -91,7 +93,7 @@ public class GroupServiceImpl implements GroupService {
         GroupNumber group = getGroupNum(request.getGroupNumber());
         checkInvite(group,receiver);
         groupListRepo.findByGroupNumberAndUserAndAccept(group, receiver, true)
-                .ifPresent(groupList -> {
+                .ifPresent(GroupList -> {
                     throw new IllegalArgumentException("이미 수락한 요청입니다.");
                 });
         groupListRepo.deleteByGroupNumberAndUser(group,receiver);
@@ -152,7 +154,7 @@ public class GroupServiceImpl implements GroupService {
         checkExist(user, request.getTitle());
         GroupNumber groupNumber = getGroupNum(request.getGroupNumber());
         Category category = categoryRepository.findByCategoryName(request.getCategory());
-        List<GroupList> groupLists = groupListRepo.findByGroupNumberAndAccept(groupNumber,true);
+        List<GroupList> GroupLists = groupListRepo.findByGroupNumberAndAccept(groupNumber,true);
         Group group = Group.builder()
                 .user(user)
                 .category(category)
@@ -160,10 +162,10 @@ public class GroupServiceImpl implements GroupService {
                 .groupNumber(groupNumber)
                 .build();
         groupRepository.save(group);
-        for(GroupList groupList: groupLists){
+        for(GroupList GroupList : GroupLists){
             GroupJoin groupJoin = GroupJoin.builder()
                     .group(group)
-                    .user(groupList.getUser())
+                    .user(GroupList.getUser())
                     .completed(false)
                     .groupNumber(groupNumber)
                     .build();
@@ -182,8 +184,8 @@ public class GroupServiceImpl implements GroupService {
 
     public GGetRes get(Long userID){
         User user = getUser(userID);
-        GroupList groupList = groupListRepo.findByUserAndAccept(user,true);
-        GroupNumber groupNumber = groupList.getGroupNumber();
+        GroupList GroupList = groupListRepo.findByUserAndAccept(user,true).orElseThrow(()-> new IllegalArgumentException("그룹에 참가하지 않은 유저입니다."));
+        GroupNumber groupNumber = GroupList.getGroupNumber();
         Long all = groupJoinRepo.countByUserAndGroupNumber(user,groupNumber);
         Long part = groupJoinRepo.countByCompletedAndUserAndGroupNumber(true,user,groupNumber);
         List<Group> groups = groupRepository.findByGroupNumber(groupNumber);
@@ -205,11 +207,41 @@ public class GroupServiceImpl implements GroupService {
                     .tdlID(group.getId())
                     .build();
             getSups.add(getSup);
-
         }
         return response.toBuilder()
                 .getSups(getSups)
                 .build();
+    }
+
+    public void finish(Long userID,Long groupNumber){
+        GroupNumber groupNum = getGroupNum(groupNumber);
+        User user = getUser(userID);
+        List<Group> groups = groupRepository.findByGroupNumber(groupNum);
+        List<Calendar_tdl_ids> tdlIds = new ArrayList<>();
+        List<GroupCalendar> groupCalendars = new ArrayList<>();
+        Long all = groupJoinRepo.countByUserAndGroupNumber(user,groupNum);
+        Long part = groupJoinRepo.countByCompletedAndUserAndGroupNumber(true,user,groupNum);
+        for(Group group: groups){
+            Calendar_tdl_ids tdlId = Calendar_tdl_ids.builder()
+                    .kind(CTdlKind.GROUP)
+                    .tdlID(group.getId())
+                    .build();
+            tdlIds.add(tdlId);
+
+            GroupCalendar groupCalendar = GroupCalendar.builder()
+                    .title(group.getTitle())
+                    .category(group.getCategory().getId())
+                    .build();
+            groupCalendars.add(groupCalendar);
+        }
+        Calendar calendar = Calendar.builder()
+                .toDoListId(tdlIds)
+                .user(user)
+                .every(all.intValue())
+                .part(part.intValue())
+                .groupCalendarId(groupCalendars)
+                .build();
+        calendarRepository.save(calendar);
     }
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
 

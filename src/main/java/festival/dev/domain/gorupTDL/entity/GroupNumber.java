@@ -27,5 +27,5 @@ public class GroupNumber {
     private List<GroupJoin> groupJoins;
 
     @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    private List<GroupList> groupLists;
+    private List<GroupList> GroupLists;
 }
