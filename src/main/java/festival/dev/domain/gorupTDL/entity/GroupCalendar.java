@@ -12,4 +12,5 @@ import lombok.*;
 public class GroupCalendar {
     private String title;
     private Long category;
+    private boolean completed;
 }

@@ -17,4 +17,5 @@ public interface GroupService {
     Long insert(GInsertRequest request, Long userid);
     GGetRes get(Long userID);
     void finish(Long userid,Long groupNumber);
+    void deleteAll(Long userID, GChoiceRequest request);
 }

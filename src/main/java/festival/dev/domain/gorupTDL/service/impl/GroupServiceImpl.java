@@ -216,12 +216,14 @@ public class GroupServiceImpl implements GroupService {
     public void finish(Long userID,Long groupNumber){
         GroupNumber groupNum = getGroupNum(groupNumber);
         User user = getUser(userID);
-        List<Group> groups = groupRepository.findByGroupNumber(groupNum);
+        List<GroupJoin> groupJoins = groupJoinRepo.findByGroupNumberAndUser(groupNum,user);
         List<Calendar_tdl_ids> tdlIds = new ArrayList<>();
         List<GroupCalendar> groupCalendars = new ArrayList<>();
         Long all = groupJoinRepo.countByUserAndGroupNumber(user,groupNum);
         Long part = groupJoinRepo.countByCompletedAndUserAndGroupNumber(true,user,groupNum);
-        for(Group group: groups){
+
+        for(GroupJoin groupjoin: groupJoins){
+            Group group = groupjoin.getGroup();
             Calendar_tdl_ids tdlId = Calendar_tdl_ids.builder()
                     .kind(CTdlKind.GROUP)
                     .tdlID(group.getId())
@@ -231,6 +233,7 @@ public class GroupServiceImpl implements GroupService {
             GroupCalendar groupCalendar = GroupCalendar.builder()
                     .title(group.getTitle())
                     .category(group.getCategory().getId())
+                    .completed(groupjoin.isCompleted())
                     .build();
             groupCalendars.add(groupCalendar);
         }
@@ -242,6 +245,12 @@ public class GroupServiceImpl implements GroupService {
                 .groupCalendarId(groupCalendars)
                 .build();
         calendarRepository.save(calendar);
+    }
+
+    public void deleteAll(Long userID, GChoiceRequest request){
+        User user = getUser(userID);
+        GroupNumber groupNumber = getGroupNum(request.getGroupNumber());
+        groupRepository.deleteAllByGroupNumberAndUser(groupNumber,user);
     }
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
 
