@@ -10,11 +10,8 @@ import festival.dev.domain.calendar.presentation.dto.Response.CalendarResponse;
 import festival.dev.domain.calendar.presentation.dto.Response.MonthResponse;
 import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.calendar.service.CalendarService;
-import festival.dev.domain.gorupTDL.entity.Group;
-import festival.dev.domain.gorupTDL.entity.GroupJoin;
-import festival.dev.domain.gorupTDL.repository.GroupJoinRepo;
-import festival.dev.domain.gorupTDL.repository.GroupRepository;
-import festival.dev.domain.shareTDL.entity.Share;
+import festival.dev.domain.category.repository.CategoryRepository;
+import festival.dev.domain.gorupTDL.entity.GroupCalendar;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import jakarta.persistence.Tuple;
@@ -26,11 +23,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
 
 @Service
 @RequiredArgsConstructor
@@ -40,8 +34,7 @@ public class CalendarServiceImpl implements CalendarService {
     private final CalendarRepository calendarRepository;
     private final UserRepository userRepository;
     private final ToDoListRepository toDoListRepository;
-    private final GroupRepository groupRepository;
-    private final GroupJoinRepo groupJoinRepo;
+    private final CategoryRepository categoryRepository;
 
     public CalendarResponse getDateCalendarWithPrivate(String date, Long userID){
         return getDateCalendar(date, userID, CTdlKind.PRIVATE);
@@ -63,9 +56,7 @@ public class CalendarServiceImpl implements CalendarService {
         try{
             User user = userGet(userID);
             Calendar calendar = calendarRepository.findWithTDLIDsByUserDateKind(user.getId(),date, CTdlKind).orElseThrow(()-> new IllegalArgumentException("캘린더에 데이터가 존재하지 않습니다."));
-            List<Calendar_tdl_ids> tdlIds = calendar.getToDoListId();
-
-            List<CalendarDtoAsis> tdl = tdl(CTdlKind,tdlIds);
+            List<CalendarDtoAsis> tdl = tdl(CTdlKind,calendar);
 
             return CalendarResponse.builder()
                     .tdl(tdl)
@@ -102,60 +93,54 @@ public class CalendarServiceImpl implements CalendarService {
                 .build();
     }
 
-    List<CalendarDtoAsis> tdl(CTdlKind kind, List<Calendar_tdl_ids> tdlIds) {
-        List<?> tdls = switch (kind) {
-            case SHARE -> null;
-            case GROUP -> groupRepository.findByIdIn(
-                    tdlIds.stream()
-                            .map(Calendar_tdl_ids::getTdlID)
-                            .collect(toList()));
+    List<CalendarDtoAsis> tdl(CTdlKind kind, Calendar calendar) {
+        String endDate;
+        String startDate;
+        String title;
+        boolean completed;
+        String category;
 
-            case PRIVATE -> toDoListRepository.findByIdIn(
-                    tdlIds.stream()
-                            .map(Calendar_tdl_ids::getTdlID)
-                            .collect(toList()));
-        };
-
-        return Objects.requireNonNull(tdls).stream()
-                .map(obj -> {
-                    String title = null;
-                    String startDate = null;
-                    String endDate = null;
-                    boolean completed = false;
-                    String category = null;
-                    switch (kind){
-                        case PRIVATE -> {
-                            ToDoList toDoList = (ToDoList) obj;
-                            title = toDoList.getTitle();
-                            startDate = toDoList.getStartDate();
-                            endDate = toDoList.getEndDate();
-                            completed = toDoList.getCompleted();
-                            category = toDoList.getCategory().getCategoryName();
-                        }
-                        case GROUP -> {
-                            Group group = (Group) obj;
-                            GroupJoin groupJoin = groupJoinRepo.findByGroupAndGroupNumberAndUser(group,group.getGroupNumber(),group.getUser()).orElseThrow(()->new IllegalArgumentException("에러 발생"));
-                            title = group.getTitle();
-                            category = group.getCategory().getCategoryName();
-                            startDate = "Group";
-                            endDate = "Group";
-                            completed = groupJoin.isCompleted();
-                        }
-                        case SHARE -> {
-                            Share share = (Share) obj;
-                            startDate = "Share";
-                            endDate = "Share";
-                        }
-                    }
-                    return CalendarDtoAsis.builder()
+        List<CalendarDtoAsis> response = new ArrayList<>(List.of());
+        switch (kind) {
+            case PRIVATE -> {
+                List<Calendar_tdl_ids> tdlIds = calendar.getToDoListId();
+                for (Calendar_tdl_ids tdlId : tdlIds) {
+                    ToDoList tdl = toDoListRepository.findById(tdlId.getTdlID()).orElseThrow(()-> new IllegalArgumentException("TDL이 없습니다."));
+                    title = tdl.getTitle();
+                    startDate = tdl.getStartDate();
+                    endDate = tdl.getEndDate();
+                    completed = tdl.getCompleted();
+                    category = tdl.getCategory().getCategoryName();
+                    response.add(CalendarDtoAsis.builder()
                             .title(title)
                             .startDate(startDate)
                             .endDate(endDate)
-                            .completed(completed)
                             .category(category)
-                            .build();
+                            .completed(completed)
+                            .build());
                 }
-                ).toList();
+            }
+            case GROUP ->{
+                List<GroupCalendar> tdlIds = calendar.getGroupCalendarId();
+                for (GroupCalendar tdlId : tdlIds) {
+                    title = tdlId.getTitle();
+                    category = categoryRepository.findById(tdlId.getCategory())
+                            .orElseThrow(()-> new IllegalArgumentException("카테고리가 없습니다."))
+                            .getCategoryName();
+                    startDate = "Group";
+                    endDate = "Group";
+                    completed = tdlId.isCompleted();
+                    response.add(CalendarDtoAsis.builder()
+                            .title(title)
+                            .startDate(startDate)
+                            .endDate(endDate)
+                            .category(category)
+                            .completed(completed)
+                            .build());
+                }
+            }
+        }
+        return response;
     }
 
     User userGet(Long userID){

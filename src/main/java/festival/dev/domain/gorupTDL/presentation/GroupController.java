@@ -95,17 +95,41 @@ public class GroupController {
 
     @GetMapping("/get")
     public ResponseEntity<?> get(@AuthenticationPrincipal CustomUserDetails user) {
-        return ResponseEntity.ok(groupService.get(user.getUserID()));
+        try {
+            return ResponseEntity.ok(groupService.get(user.getUserID()));
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PostMapping("/insert")
     public ResponseEntity<?> insert(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GInsertRequest request) {
-        return ResponseEntity.ok(GInsertRes.builder().id(groupService.insert(request,user.getUserID())).build());
+        try {
+            return ResponseEntity.ok(GInsertRes.builder().id(groupService.insert(request,user.getUserID())).build());
+        }catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @PostMapping("/finish")
     public ResponseEntity<?> finish(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GChoiceRequest request){
-        groupService.finish(user.getUserID(),request.getGroupNumber());
-        return null;
+        try {
+            groupService.finish(user.getUserID(),request.getGroupNumber());
+            return ResponseEntity.ok("success");
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/delete/all")
+    public ResponseEntity<?> deleteAll(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GChoiceRequest request){
+       try {
+           groupService.deleteAll(user.getUserID(), request);
+           return ResponseEntity.ok("success");
+       }catch (Exception e) {
+           return ResponseEntity.badRequest().body(e.getMessage());
+       }
     }
 }

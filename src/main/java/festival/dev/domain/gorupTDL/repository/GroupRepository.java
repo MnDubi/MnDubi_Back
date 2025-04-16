@@ -24,6 +24,8 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
 
     List<Group> findByIdIn(Collection<Long> ids);
 
+    void deleteAllByGroupNumberAndUser(GroupNumber groupNumber, User user);
+
     @Modifying
     @Query("UPDATE Group g set g.title = :change WHERE g.title = :title AND g.user.id = :userID")
     void changeTitle(@Param("change") String change, @Param("title") String title, @Param("userID") Long userID);
