@@ -69,7 +69,6 @@ public class GroupController {
         }
     }
 
-    //groupNumber을 받아서 전체 delete API 생성
     @DeleteMapping("/delete")
     public ResponseEntity<?> delete(@Valid @RequestBody GDeleteRequest request, @AuthenticationPrincipal CustomUserDetails user) {
         try{
@@ -123,6 +122,7 @@ public class GroupController {
         }
     }
 
+    //web socket으로 대충 그룹 삭제됐다는 거 알려줘야함.
     @DeleteMapping("/delete/all")
     public ResponseEntity<?> deleteAll(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GChoiceRequest request){
        try {
@@ -131,5 +131,15 @@ public class GroupController {
        }catch (Exception e) {
            return ResponseEntity.badRequest().body(e.getMessage());
        }
+    }
+
+    @GetMapping("/invite")
+    public ResponseEntity<?> inviteGet(@AuthenticationPrincipal CustomUserDetails user){
+        try{
+            return ResponseEntity.ok(groupService.inviteGet(user.getUserID()));
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

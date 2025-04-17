@@ -1,10 +1,9 @@
 package festival.dev.domain.gorupTDL.service;
 
 import festival.dev.domain.gorupTDL.presentation.dto.request.*;
-import festival.dev.domain.gorupTDL.presentation.dto.response.GGetRes;
-import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
-import festival.dev.domain.gorupTDL.presentation.dto.response.GResponse;
-import festival.dev.domain.gorupTDL.presentation.dto.response.GToDoListResponse;
+import festival.dev.domain.gorupTDL.presentation.dto.response.*;
+
+import java.util.List;
 
 public interface GroupService {
     GInsertRes invite(GCreateRequest gCreateRequest, Long userid);
@@ -18,4 +17,5 @@ public interface GroupService {
     GGetRes get(Long userID);
     void finish(Long userid,Long groupNumber);
     void deleteAll(Long userID, GChoiceRequest request);
+    List<GInviteGet> inviteGet(Long userid);
 }
