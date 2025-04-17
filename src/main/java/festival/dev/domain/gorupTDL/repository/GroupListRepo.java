@@ -26,6 +26,7 @@ public interface GroupListRepo extends JpaRepository<GroupList,Long> {
     @Modifying
     void deleteByGroupNumberAndUser(GroupNumber groupNumber, User receiver);
 
+    boolean existsByAcceptTrue();
     List<GroupList> findByUserAndAcceptFalse(User user);
     List<GroupList> findByGroupNumberAndAccept(GroupNumber groupNumber, boolean accept);
     Optional<GroupList> findByUserAndAcceptTrue(User user);

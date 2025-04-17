@@ -331,8 +331,9 @@ public class GroupServiceImpl implements GroupService {
             User receiver = userRepository.findByUserCode(req_receiver).orElseThrow(() -> new IllegalArgumentException("없는 유저 입니다."));
             if (friendshipRepository.findByRequesterAndAddressee(sender, receiver).isEmpty())
                 friendshipRepository.findByRequesterAndAddressee(receiver, sender).orElseThrow(()-> new IllegalArgumentException("친구로 추가가 안 되어있습니다."));
-            if (groupListRepo.existsByUserAndGroupNumber(receiver,groupNumber)){
-                throw new IllegalArgumentException("이미 초대한 사람은 초대가 불가합니다.");
+
+            if (groupListRepo.existsByAcceptTrue()){
+                throw new IllegalArgumentException("이미 그룹에 포함된 사람은 초대가 불가합니다.");
             }
             GroupList groupList = GroupList.builder()
                     .accept(false)
