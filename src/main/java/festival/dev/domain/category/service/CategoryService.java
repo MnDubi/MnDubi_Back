@@ -10,4 +10,7 @@ public interface CategoryService {
     List<Double> getEmbeddingFromJson(String embeddingJson);
     Category saveCategoryWithEmbedding(String name, List<Double> embedding);
     List<Double> getCategoryVectorsFromDB(String categoryName);
+    List<Double> convertJsonToEmbedding(String json);
+    List<Double> getEmbeddingFromText(String text);
+
 }

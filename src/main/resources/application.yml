@@ -87,5 +87,10 @@ jwt:
 frontend:
   url: "http://localhost:3000" # 프론트엔드 URL(ngork 주소)
 
+ai:
+  server:
+    url: http://localhost:5001
+
+
 server:
   port: 8090

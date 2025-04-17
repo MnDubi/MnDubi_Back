@@ -17,8 +17,8 @@ public class InsertRequest {
     private String title;
 //    @NotNull
 //    private String userID;
-    @NotNull
-    private String category;
+//    @NotNull
+//    private String category;
     @NotNull
     private String endDate;
 

@@ -41,27 +41,36 @@ public class ToDoListServiceImpl implements ToDoListService {
     private final UserRepository userRepository;
     private final AIClassifierService aiClassifierService;
 
-    public void input(InsertRequest request, Long id) {
+    public void input(InsertRequest request, Long userId) {
         String title = request.getTitle();
-        User user = getUser(id);
+        User user = getUser(userId);
 
-        String categoryName = classifyCategoryWithAI(title);
-        Category category = categoryService.findOrCreateByName(categoryName, categoryService.getCategoryVectorsFromDB(categoryName));
+        Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        Category::getName,
+                        c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                ));
 
-        request.setCategory(category.getName());  // AI에서 받은 카테고리 이름을 request에 설정
+        String categoryName = aiClassifierService.classifyCategoryWithAI(title, categoryMap);
+
+        Category category = categoryService.findOrCreateByName(categoryName,
+                categoryMap.containsKey(categoryName)
+                        ? categoryMap.get(categoryName)
+                        : categoryService.getEmbeddingFromText(categoryName)
+        );
 
         inputSetting(title, user, request.getEndDate(), category);
-
         checkEndDate(request.getEndDate());
 
         ToDoList toDoList = ToDoList.builder()
-                .title(request.getTitle())
+                .title(title)
                 .completed(false)
                 .user(user)
                 .startDate(request.getEndDate())
                 .endDate(request.getEndDate())
                 .category(category)
                 .build();
+
         toDoListRepository.save(toDoList);
     }
 
@@ -75,10 +84,19 @@ public class ToDoListServiceImpl implements ToDoListService {
 
         checkEndDate(request.getEndDate());
 
-        //  AI 카테고리 분류 + 저장/재사용
-        String categoryName = classifyCategoryWithAI(title);
-        Category category = categoryService.findOrCreateByName(categoryName, categoryService.getCategoryVectorsFromDB(categoryName));
+        Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        Category::getName,
+                        c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                ));
 
+        String categoryName = aiClassifierService.classifyCategoryWithAI(title, categoryMap);
+
+        Category category = categoryService.findOrCreateByName(categoryName,
+                categoryMap.containsKey(categoryName)
+                        ? categoryMap.get(categoryName)
+                        : categoryService.getEmbeddingFromText(categoryName)
+        );
 
         checkExist(user, title, request.getEndDate());
 
@@ -93,18 +111,12 @@ public class ToDoListServiceImpl implements ToDoListService {
     }
 
 
-    private String classifyCategoryWithAI(String title) {
-        // AI 서버로 분류 요청
-        List<Double> categoryVectors = categoryService.getCategoryVectorsFromDB("공부");  // 예시 카테고리
-        return aiClassifierService.classifyCategoryWithAI(title, categoryVectors);
-    }
-
-
     public ToDoListResponse update(UpdateRequest request, Long userID) {
         User user = getUser(userID);
         checkNotExist(user, request.getTitle(), request.getEndDate());
         checkExist(user, request.getChange(), request.getChangeDate());
-        if(toDay().compareTo(request.getEndDate()) > 0)
+
+        if (toDay().compareTo(request.getEndDate()) > 0)
             throw new IllegalArgumentException("이미 끝난 TDL은 변경이 불가능합니다.");
 
         toDoListRepository.changeTitle(request.getChange(), request.getTitle(), userID, request.getChangeDate(), request.getEndDate());
