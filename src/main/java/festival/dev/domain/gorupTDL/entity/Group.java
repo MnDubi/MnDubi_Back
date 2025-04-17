@@ -22,10 +22,6 @@ public class Group {
 
     private String title;
 
-    private String startDate;
-
-    private String endDate;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_number")
     private GroupNumber groupNumber;
@@ -38,7 +34,7 @@ public class Group {
     @JoinColumn(name = "sender_id")
     private User user;
 
-    @OneToMany(fetch = FetchType.LAZY,mappedBy = "group")
+    @OneToMany(fetch = FetchType.LAZY,mappedBy = "group",cascade = CascadeType.ALL,orphanRemoval = true)
     private List<GroupJoin> TDL_joins;
 }
 

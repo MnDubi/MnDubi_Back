@@ -4,34 +4,55 @@ import festival.dev.domain.TDL.entity.ToDoList;
 import festival.dev.domain.TDL.repository.ToDoListRepository;
 import festival.dev.domain.calendar.entity.Calendar;
 import festival.dev.domain.calendar.entity.Calendar_tdl_ids;
+import festival.dev.domain.calendar.entity.CTdlKind;
 import festival.dev.domain.calendar.presentation.dto.Response.CalendarDtoAsis;
 import festival.dev.domain.calendar.presentation.dto.Response.CalendarResponse;
 import festival.dev.domain.calendar.presentation.dto.Response.MonthResponse;
 import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.calendar.service.CalendarService;
+import festival.dev.domain.category.repository.CategoryRepository;
+import festival.dev.domain.gorupTDL.entity.GroupCalendar;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import jakarta.persistence.Tuple;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CalendarServiceImpl implements CalendarService {
 
     private final CalendarRepository calendarRepository;
     private final UserRepository userRepository;
     private final ToDoListRepository toDoListRepository;
+    private final CategoryRepository categoryRepository;
 
-    public CalendarResponse getDateCalendar(String date, Long userID){
+    public CalendarResponse getDateCalendarWithPrivate(String date, Long userID){
+        return getDateCalendar(date, userID, CTdlKind.PRIVATE);
+    }
+
+    public MonthResponse getByMonthWithPrivate(Long userID){
+        return getByMonth(userID, CTdlKind.PRIVATE);
+    }
+
+    public CalendarResponse getDateCalendarWithGroup(String date, Long userID){
+        return getDateCalendar(date, userID, CTdlKind.GROUP);
+    }
+
+    public MonthResponse getByMonthWithGroup(Long userID){
+        return getByMonth(userID, CTdlKind.GROUP);
+    }
+
+    CalendarResponse getDateCalendar(String date, Long userID, CTdlKind CTdlKind){
         try{
             User user = userGet(userID);
             Calendar calendar = calendarRepository.findByYearMonthDayAndUser(date, user);
@@ -62,7 +83,7 @@ public class CalendarServiceImpl implements CalendarService {
         }
     }
 
-    public MonthResponse getByMonth(Long userID) {
+    MonthResponse getByMonth(Long userID, CTdlKind CTdlKind) {
         LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
 
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MM");
@@ -70,7 +91,7 @@ public class CalendarServiceImpl implements CalendarService {
 
         User user = userGet(userID);
 
-        List<Tuple> result = calendarRepository.findByMonth(month, userID);
+        List<Tuple> result = calendarRepository.findByMonth(month, userID, CTdlKind);
 
         Tuple tuple = result.get(0);
         Long monthEvery = tuple.get("monthEvery", Number.class) != null ? tuple.get("monthEvery", Number.class).longValue() : 0L;
@@ -84,7 +105,57 @@ public class CalendarServiceImpl implements CalendarService {
                 .build();
     }
 
-    public User userGet(Long userID){
+    List<CalendarDtoAsis> tdl(CTdlKind kind, Calendar calendar) {
+        String endDate;
+        String startDate;
+        String title;
+        boolean completed;
+        String category;
+
+        List<CalendarDtoAsis> response = new ArrayList<>(List.of());
+        switch (kind) {
+            case PRIVATE -> {
+                List<Calendar_tdl_ids> tdlIds = calendar.getToDoListId();
+                for (Calendar_tdl_ids tdlId : tdlIds) {
+                    ToDoList tdl = toDoListRepository.findById(tdlId.getTdlID()).orElseThrow(()-> new IllegalArgumentException("TDL이 없습니다."));
+                    title = tdl.getTitle();
+                    startDate = tdl.getStartDate();
+                    endDate = tdl.getEndDate();
+                    completed = tdl.getCompleted();
+                    category = tdl.getCategory().getCategoryName();
+                    response.add(CalendarDtoAsis.builder()
+                            .title(title)
+                            .startDate(startDate)
+                            .endDate(endDate)
+                            .category(category)
+                            .completed(completed)
+                            .build());
+                }
+            }
+            case GROUP ->{
+                List<GroupCalendar> tdlIds = calendar.getGroupCalendarId();
+                for (GroupCalendar tdlId : tdlIds) {
+                    title = tdlId.getTitle();
+                    category = categoryRepository.findById(tdlId.getCategory())
+                            .orElseThrow(()-> new IllegalArgumentException("카테고리가 없습니다."))
+                            .getCategoryName();
+                    startDate = "Group";
+                    endDate = "Group";
+                    completed = tdlId.isCompleted();
+                    response.add(CalendarDtoAsis.builder()
+                            .title(title)
+                            .startDate(startDate)
+                            .endDate(endDate)
+                            .category(category)
+                            .completed(completed)
+                            .build());
+                }
+            }
+        }
+        return response;
+    }
+
+    User userGet(Long userID){
         return userRepository.findById(userID).orElseThrow(() -> new IllegalArgumentException("없는 UserID 입니다."));
     }
 }

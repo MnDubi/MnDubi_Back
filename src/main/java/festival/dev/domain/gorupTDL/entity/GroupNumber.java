@@ -18,15 +18,14 @@ public class GroupNumber {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true)
     private Long groupNumber;
 
-    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     private List<Group> groups;
 
-    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     private List<GroupJoin> groupJoins;
 
-    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<GroupList> groupLists;
+    @OneToMany(mappedBy = "groupNumber", orphanRemoval = true, fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    private List<GroupList> GroupLists;
 }
