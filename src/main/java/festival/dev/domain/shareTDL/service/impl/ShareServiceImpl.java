@@ -1,4 +1,13 @@
 package festival.dev.domain.shareTDL.service.impl;
 
-public class ShareServiceImpl {
+import festival.dev.domain.shareTDL.service.ShareService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class ShareServiceImpl implements ShareService {
+    public void createShare() {
+
+    }
 }
