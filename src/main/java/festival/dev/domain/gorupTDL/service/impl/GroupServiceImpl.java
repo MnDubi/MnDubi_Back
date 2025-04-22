@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -272,6 +273,41 @@ public class GroupServiceImpl implements GroupService {
                     .build());
         }
         return response;
+    }
+
+    public void createWs(GCreateWsReq request) {
+        String email = request.getEmail();
+        String path = "/group/create/" + email;
+
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        if (optionalUser.isEmpty()) {
+            messagingTemplate.convertAndSend(path, "사용자를 찾을 수 없음");
+            return;
+        }
+
+        User user = optionalUser.get();
+        List<GCreateWsRes> responses = new ArrayList<>();
+        List<User> friends = userRepository.findByName(request.getFriend());
+
+        if (friends.isEmpty()) {
+            messagingTemplate.convertAndSend(path, "존재하지 않는 유저입니다.");
+            return;
+        }
+
+        for (User friend : friends) {
+            if (friendshipRepository.existsByRequesterAndAddressee(user, friend)) {
+                responses.add(GCreateWsRes.builder()
+                        .userCode(friend.getUserCode())
+                        .email(friend.getEmail())
+                        .name(friend.getName())
+                        .build());
+            } else {
+                messagingTemplate.convertAndSend(path, "존재하지 않는 친구입니다");
+                return;
+            }
+        }
+
+        messagingTemplate.convertAndSend(path, responses);
     }
 
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
