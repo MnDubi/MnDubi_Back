@@ -23,11 +23,13 @@ public interface GroupListRepo extends JpaRepository<GroupList,Long> {
 
     boolean existsByUserAndGroupNumber(User user, GroupNumber groupNumber);
 
-    List<GroupList> findByGroupNumberId(Long groupId);
-
     @Modifying
     void deleteByGroupNumberAndUser(GroupNumber groupNumber, User receiver);
 
+    boolean existsByAcceptTrue();
+    List<GroupList> findByUserAndAcceptFalse(User user);
+    List<GroupList> findByGroupNumberAndAccept(GroupNumber groupNumber, boolean accept);
+    Optional<GroupList> findByUserAndAcceptTrue(User user);
     Optional<GroupList> findByGroupNumberAndUser(GroupNumber groupNumber, User receiver);
     Optional<GroupList> findByGroupNumberAndUserAndAccept(GroupNumber groupNumber, User receiver, boolean accept);
 }

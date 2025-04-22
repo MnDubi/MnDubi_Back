@@ -1,5 +1,6 @@
 package festival.dev.domain.calendar.entity;
 
+import festival.dev.domain.gorupTDL.entity.GroupCalendar;
 import festival.dev.domain.user.entity.User;
 import festival.dev.global.entity.BaseTime;
 import jakarta.persistence.*;
@@ -16,20 +17,24 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-public class Calendar extends BaseTime {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    public class Calendar extends BaseTime {
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
 
-    private int every;
+        private int every;
 
-    private int part;
+        private int part;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "user_id")
+        private User user;
 
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "calendar_TDL_id", joinColumns = @JoinColumn(name = "calendar_id"))
-    private List<Calendar_tdl_ids> toDoListId;
-}
+        @ElementCollection(fetch = FetchType.LAZY)
+        @CollectionTable(name = "calendar_TDL_id", joinColumns = @JoinColumn(name = "calendar_id"))
+        private List<Calendar_tdl_ids> toDoListId;
+
+        @ElementCollection(fetch = FetchType.LAZY)
+        @CollectionTable(name = "group_calendar", joinColumns = @JoinColumn(name = "calendar_id"))
+        private List<GroupCalendar> groupCalendarId;
+    }

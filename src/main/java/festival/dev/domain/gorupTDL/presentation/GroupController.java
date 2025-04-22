@@ -1,6 +1,8 @@
 package festival.dev.domain.gorupTDL.presentation;
 
 import festival.dev.domain.gorupTDL.presentation.dto.request.*;
+import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
+import festival.dev.domain.gorupTDL.presentation.dto.response.GResponse;
 import festival.dev.domain.gorupTDL.service.GroupService;
 import festival.dev.domain.user.entity.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -27,9 +29,8 @@ public class GroupController {
         }
     }
 
-//    자기 자신이 groupjoin에 들어가게 만들기. - 해결
-    @PostMapping("/insert")
-    public ResponseEntity<?> insert(@Valid @RequestBody GInsertRequest request,@AuthenticationPrincipal CustomUserDetails user) {
+    @PostMapping("/create")
+    public ResponseEntity<?> create(@Valid @RequestBody GCreateRequest request, @AuthenticationPrincipal CustomUserDetails user) {
         try {
             return ResponseEntity.ok(groupService.invite(request,user.getUserID())    );
         }catch (Exception e){
@@ -37,7 +38,6 @@ public class GroupController {
         }
     }
 
-    //수락하면 groupJoin에 추가되기 - 해결
     @PutMapping("/accept")
     public ResponseEntity<?> accept(@Valid @RequestBody GChoiceRequest request,@AuthenticationPrincipal CustomUserDetails user) {
         try{
@@ -69,7 +69,6 @@ public class GroupController {
         }
     }
 
-    //groupNumber을 받아서 전체 delete API 생성
     @DeleteMapping("/delete")
     public ResponseEntity<?> delete(@Valid @RequestBody GDeleteRequest request, @AuthenticationPrincipal CustomUserDetails user) {
         try{
@@ -81,10 +80,63 @@ public class GroupController {
         }
     }
 
+    //이미 변경한 속성이면 불가능해야함
     @PutMapping("success")
     public ResponseEntity<?> success(@Valid @RequestBody GSuccessRequest request, @AuthenticationPrincipal CustomUserDetails user) {
         try{
-            return ResponseEntity.ok(groupService.success(request,user.getUserID()));
+            GResponse response = groupService.success(request,user.getUserID());
+            return ResponseEntity.ok(response);
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/get")
+    public ResponseEntity<?> get(@AuthenticationPrincipal CustomUserDetails user) {
+        try {
+            return ResponseEntity.ok(groupService.get(user.getUserID()));
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/insert")
+    public ResponseEntity<?> insert(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GInsertRequest request) {
+        try {
+            return ResponseEntity.ok(GInsertRes.builder().id(groupService.insert(request,user.getUserID())).build());
+        }catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/finish")
+    public ResponseEntity<?> finish(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GChoiceRequest request){
+        try {
+            groupService.finish(user.getUserID(),request.getGroupNumber());
+            return ResponseEntity.ok("success");
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    //web socket으로 대충 그룹 삭제됐다는 거 알려줘야함.
+    @DeleteMapping("/delete/all")
+    public ResponseEntity<?> deleteAll(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GChoiceRequest request){
+       try {
+           groupService.deleteAll(user.getUserID(), request);
+           return ResponseEntity.ok("success");
+       }catch (Exception e) {
+           return ResponseEntity.badRequest().body(e.getMessage());
+       }
+    }
+
+    @GetMapping("/invite")
+    public ResponseEntity<?> inviteGet(@AuthenticationPrincipal CustomUserDetails user){
+        try{
+            return ResponseEntity.ok(groupService.inviteGet(user.getUserID()));
         }
         catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
