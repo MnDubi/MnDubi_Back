@@ -1,6 +1,5 @@
 package festival.dev.domain.shareTDL.entity;
 
-import festival.dev.domain.category.entity.Category;
 import festival.dev.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -13,28 +12,25 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "share_TDL")
+@Table(name = "share")
 public class Share {
     @Id
     @GeneratedValue(strategy = IDENTITY)
     private Long id;
 
-    private String title;
-
-    private Boolean completed;
-
-    private String startDate;
-
-    private String endDate;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
-    private Category category;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sender_id")
+    @JoinColumn(name = "member_id")
     private User user;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "share")
-    private List<ShareList> TDL_list;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "share_number")
+    private ShareNumber shareNumber;
+
+    @OneToMany(mappedBy = "share", orphanRemoval = true, fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    private List<ShareJoin> shareJoins;
+
+    private boolean accepted;
+
+    private boolean showShared;
+    private boolean includeShared;
 }
