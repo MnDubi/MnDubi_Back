@@ -111,7 +111,7 @@ public class CalendarServiceImpl implements CalendarService {
                     startDate = tdl.getStartDate();
                     endDate = tdl.getEndDate();
                     completed = tdl.getCompleted();
-                    category = tdl.getCategory().getCategoryName();
+                    category = tdl.getCategory().getName();
                     response.add(CalendarDtoAsis.builder()
                             .title(title)
                             .startDate(startDate)
@@ -127,7 +127,7 @@ public class CalendarServiceImpl implements CalendarService {
                     title = tdlId.getTitle();
                     category = categoryRepository.findById(tdlId.getCategory())
                             .orElseThrow(()-> new IllegalArgumentException("카테고리가 없습니다."))
-                            .getCategoryName();
+                            .getName();
                     startDate = "Group";
                     endDate = "Group";
                     completed = tdlId.isCompleted();
