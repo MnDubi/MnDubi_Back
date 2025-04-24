@@ -30,7 +30,7 @@ public class Share {
     private List<ShareJoin> shareJoins;
 
     private boolean accepted;
-
+    private boolean owner;
     private boolean showShared;
     private boolean includeShared;
 }

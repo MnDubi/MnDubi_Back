@@ -18,6 +18,8 @@ import festival.dev.domain.gorupTDL.service.GroupService;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +41,7 @@ public class GroupServiceImpl implements GroupService {
     private final GroupJoinRepo groupJoinRepo;
     private final SimpMessagingTemplate messagingTemplate;
     private final CalendarRepository calendarRepository;
+    private final Logger logger = LoggerFactory.getLogger(GroupServiceImpl.class);
 
     @Transactional
     public GInsertRes invite(GCreateRequest request, Long userID){
@@ -277,11 +280,11 @@ public class GroupServiceImpl implements GroupService {
 
     public void createWs(GCreateWsReq request) {
         String email = request.getEmail();
-        String path = "/group/create/" + email;
+        String path = "/topic/group/create/" + email;
 
         Optional<User> optionalUser = userRepository.findByEmail(email);
         if (optionalUser.isEmpty()) {
-            messagingTemplate.convertAndSend(path, "사용자를 찾을 수 없음");
+            logger.error("1");
             return;
         }
 
@@ -290,21 +293,28 @@ public class GroupServiceImpl implements GroupService {
         List<User> friends = userRepository.findByName(request.getFriend());
 
         if (friends.isEmpty()) {
-            messagingTemplate.convertAndSend(path, "존재하지 않는 유저입니다.");
+            logger.error("2");
             return;
         }
 
         for (User friend : friends) {
-            if (friendshipRepository.existsByRequesterAndAddressee(user, friend)) {
+            if (friendshipRepository.existsByRequesterAndAddressee(user, friend) || friendshipRepository.existsByRequesterAndAddressee(friend, user)) {
                 responses.add(GCreateWsRes.builder()
                         .userCode(friend.getUserCode())
                         .email(friend.getEmail())
                         .name(friend.getName())
                         .build());
             } else {
-                messagingTemplate.convertAndSend(path, "존재하지 않는 친구입니다");
+                logger.error("3");
                 return;
             }
+        }
+
+        logger.info(path);
+        for (GCreateWsRes response : responses) {
+            logger.info(response.getName());
+            logger.info(response.getUserCode());
+            logger.info(response.getEmail());
         }
 
         messagingTemplate.convertAndSend(path, responses);
@@ -363,14 +373,18 @@ public class GroupServiceImpl implements GroupService {
 
     void inviteFor(User sender, Long groupNum, List<String> receivers){
         GroupNumber groupNumber = getGroupNum(groupNum);
+
         for (String req_receiver : receivers){
             User receiver = userRepository.findByUserCode(req_receiver).orElseThrow(() -> new IllegalArgumentException("없는 유저 입니다."));
-            if (friendshipRepository.findByRequesterAndAddressee(sender, receiver).isEmpty())
-                friendshipRepository.findByRequesterAndAddressee(receiver, sender).orElseThrow(()-> new IllegalArgumentException("친구로 추가가 안 되어있습니다."));
+            logger.info(receiver.getName());
+            if (!friendshipRepository.existsByRequesterAndAddressee(sender, receiver) && !friendshipRepository.existsByRequesterAndAddressee(receiver, sender)) {
+                throw new IllegalArgumentException("친구로 추가가 안 되어있습니다.");
+            }
 
-            if (groupListRepo.existsByAcceptTrue()){
+            if (groupListRepo.existsByAcceptTrueAndUser(receiver)){
                 throw new IllegalArgumentException("이미 그룹에 포함된 사람은 초대가 불가합니다.");
             }
+
             GroupList groupList = GroupList.builder()
                     .accept(false)
                     .groupNumber(groupNumber)
