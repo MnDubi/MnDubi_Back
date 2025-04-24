@@ -373,14 +373,18 @@ public class GroupServiceImpl implements GroupService {
 
     void inviteFor(User sender, Long groupNum, List<String> receivers){
         GroupNumber groupNumber = getGroupNum(groupNum);
+
         for (String req_receiver : receivers){
             User receiver = userRepository.findByUserCode(req_receiver).orElseThrow(() -> new IllegalArgumentException("없는 유저 입니다."));
-            if (friendshipRepository.findByRequesterAndAddressee(sender, receiver).isEmpty())
-                friendshipRepository.findByRequesterAndAddressee(receiver, sender).orElseThrow(()-> new IllegalArgumentException("친구로 추가가 안 되어있습니다."));
+            logger.info(receiver.getName());
+            if (!friendshipRepository.existsByRequesterAndAddressee(sender, receiver) && !friendshipRepository.existsByRequesterAndAddressee(receiver, sender)) {
+                throw new IllegalArgumentException("친구로 추가가 안 되어있습니다.");
+            }
 
-            if (groupListRepo.existsByAcceptTrue()){
+            if (groupListRepo.existsByAcceptTrueAndUser(receiver)){
                 throw new IllegalArgumentException("이미 그룹에 포함된 사람은 초대가 불가합니다.");
             }
+
             GroupList groupList = GroupList.builder()
                     .accept(false)
                     .groupNumber(groupNumber)
