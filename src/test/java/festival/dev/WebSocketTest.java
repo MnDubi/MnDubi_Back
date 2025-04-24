@@ -48,7 +48,7 @@ public class WebSocketTest {
         groupService.createWs(request);
 
         // then
-        verify(messagingTemplate, times(1)).convertAndSend(eq("/group/create/nonexistent@example.com"), eq("사용자를 찾을 수 없음"));
+        verify(messagingTemplate, times(1)).convertAndSend(eq("/topic/group/create/nonexistent@example.com"), eq("사용자를 찾을 수 없음"));
     }
     @Test
     void testCreateWs_FriendsNotFound() {
@@ -77,7 +77,7 @@ public class WebSocketTest {
         groupService.createWs(request);
 
         // then
-        verify(messagingTemplate, times(1)).convertAndSend(eq("/group/create/s1@gsm.hs.kr"), eq("존재하지 않는 유저입니다."));
+        verify(messagingTemplate, times(1)).convertAndSend(eq("/topic/group/create/s1@gsm.hs.kr"), eq("존재하지 않는 유저입니다."));
     }
 
     @Test
@@ -119,7 +119,7 @@ public class WebSocketTest {
 
         // then
         ArgumentCaptor<List> captor = ArgumentCaptor.forClass(List.class);
-        verify(messagingTemplate).convertAndSend(eq("/group/create/s1@gsm.hs.kr"), captor.capture());
+        verify(messagingTemplate).convertAndSend(eq("/topic/group/create/s1@gsm.hs.kr"), captor.capture());
 
         List<GCreateWsRes> sentResponses = captor.getValue();
 
@@ -167,6 +167,6 @@ public class WebSocketTest {
         groupService.createWs(request);
 
         // then
-        verify(messagingTemplate, times(1)).convertAndSend(eq("/group/create/s1@gsm.hs.kr"), eq("존재하지 않는 친구입니다"));
+        verify(messagingTemplate, times(1)).convertAndSend(eq("/topic/group/create/s1@gsm.hs.kr"), eq("존재하지 않는 친구입니다"));
     }
 }

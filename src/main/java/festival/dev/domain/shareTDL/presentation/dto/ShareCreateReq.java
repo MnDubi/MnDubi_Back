@@ -1,5 +1,6 @@
 package festival.dev.domain.shareTDL.presentation.dto;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,6 +14,8 @@ import java.util.List;
 @NoArgsConstructor
 public class ShareCreateReq {
     private List<String> userCode;
+    @NotNull
     private boolean showShared;
+    @NotNull
     private boolean includeShared;
 }
