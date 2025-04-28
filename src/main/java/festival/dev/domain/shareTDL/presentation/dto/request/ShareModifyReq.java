@@ -1,11 +1,11 @@
-package festival.dev.domain.gorupTDL.presentation.dto.request;
+package festival.dev.domain.shareTDL.presentation.dto.request;
 
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
 @Getter
-public class GUpdateRequest {
+public class ShareModifyReq {
     @NotNull
     private String title;
     @NotNull

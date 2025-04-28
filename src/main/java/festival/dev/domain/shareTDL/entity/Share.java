@@ -13,6 +13,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "share")
+@Getter
 public class Share {
     @Id
     @GeneratedValue(strategy = IDENTITY)
@@ -25,9 +26,6 @@ public class Share {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "share_number")
     private ShareNumber shareNumber;
-
-    @OneToMany(mappedBy = "share", orphanRemoval = true, fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    private List<ShareJoin> shareJoins;
 
     private boolean accepted;
     private boolean owner;

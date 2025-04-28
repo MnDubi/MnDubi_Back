@@ -62,39 +62,40 @@ public class GroupServiceImpl implements GroupService {
 
     //초대를 응답하는 것이기 때문에 받은 사람은 나
     @Transactional
-    public void acceptInvite(GChoiceRequest request, Long userID){
+    public void acceptInvite(Long userID){
         User receiver = getUser(userID);
-        GroupNumber groupNum = getGroupNum(request.getGroupNumber());
+        GroupList groupList = getGroupListByUser(receiver);
+        GroupNumber groupNum = getGroupNum(groupList.getGroupNumber().getId());
         checkInvite(groupNum, receiver);
         groupListRepo.updateAccept(groupNum.getId(), receiver.getId());
-        GroupNumber groupNumber = getGroupNum(request.getGroupNumber());
-        List<Group> tdls = groupRepository.findByGroupNumber(groupNumber);
+        List<Group> tdls = groupRepository.findByGroupNumber(groupNum);
         for (Group tdl: tdls){
             GroupJoin groupJoin = GroupJoin.builder()
                     .group(tdl)
                     .user(receiver)
                     .completed(false)
-                    .groupNumber(groupNumber)
+                    .groupNumber(groupNum)
                     .build();
 
             GResponse response = GResponse.builder()
-                    .groupNumber(groupNumber.getId())
+                    .groupNumber(groupNum.getId())
                     .ownerID(tdl.getUser().getName())
                     .memberID(receiver.getName())
                     .title(tdl.getTitle())
                     .category(tdl.getCategory().getCategoryName())
                     .completed(false)
                     .build();
-            messagingTemplate.convertAndSend("/topic/group/" + groupNumber.getId(), response);
+            messagingTemplate.convertAndSend("/topic/group/" + groupNum.getId(), response);
             groupJoinRepo.save(groupJoin);
         }
     }
 
     //초대를 응답하는 것이기 때문에 받은 사람은 나
     @Transactional
-    public void refuseInvite(GChoiceRequest request, Long userID){
+    public void refuseInvite(Long userID){
         User receiver = getUser(userID);
-        GroupNumber group = getGroupNum(request.getGroupNumber());
+        GroupList groupList = getGroupListByUser(receiver);
+        GroupNumber group = getGroupNum(groupList.getGroupNumber().getId());
         checkInvite(group,receiver);
         groupListRepo.findByGroupNumberAndUserAndAccept(group, receiver, true)
                 .ifPresent(GroupList -> {
@@ -134,7 +135,8 @@ public class GroupServiceImpl implements GroupService {
     @Transactional
     public GResponse success(GSuccessRequest request, Long userID){
         User sender = userRepository.findByUserCode(request.getOwnerID()).orElseThrow(()->new IllegalArgumentException("그 유저는 없는 유저입니다."));
-        GroupNumber groupNumber = getGroupNum(request.getGroupNumber());
+        GroupList groupList = getGroupListByUser(sender);
+        GroupNumber groupNumber = getGroupNum(groupList.getGroupNumber().getId());
         Group group = getGroupByTitleUser(request.getTitle(),sender);
         User user = getUser(userID);
         GroupJoin groupJoin = groupJoinRepo.findByGroupAndGroupNumberAndUser(group,groupNumber,user).orElseThrow(()-> new IllegalArgumentException("TDL이 없습니다."));
@@ -156,7 +158,8 @@ public class GroupServiceImpl implements GroupService {
     public Long insert(GInsertRequest request, Long userID){
         User user = getUser(userID);
         checkExist(user, request.getTitle());
-        GroupNumber groupNumber = getGroupNum(request.getGroupNumber());
+        GroupList groupList = getGroupListByUser(user);
+        GroupNumber groupNumber = getGroupNum(groupList.getGroupNumber().getId());
         Category category = categoryRepository.findByCategoryName(request.getCategory());
         List<GroupList> GroupLists = groupListRepo.findByGroupNumberAndAccept(groupNumber,true);
         Group group = Group.builder()
@@ -218,9 +221,10 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Transactional
-    public void finish(Long userID,Long groupNumber){
-        GroupNumber groupNum = getGroupNum(groupNumber);
+    public void finish(Long userID){
         User user = getUser(userID);
+        GroupList groupList = getGroupListByUser(user);
+        GroupNumber groupNum = getGroupNum(groupList.getGroupNumber().getId());
         List<GroupJoin> groupJoins = groupJoinRepo.findByGroupNumberAndUser(groupNum,user);
         List<Calendar_tdl_ids> tdlIds = new ArrayList<>();
         List<GroupCalendar> groupCalendars = new ArrayList<>();
@@ -253,9 +257,10 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Transactional
-    public void deleteAll(Long userID, GChoiceRequest request){
+    public void deleteAll(Long userID){
         User user = getUser(userID);
-        GroupNumber groupNumber = getGroupNum(request.getGroupNumber());
+        GroupList groupList = getGroupListByUser(user);
+        GroupNumber groupNumber = getGroupNum(groupList.getGroupNumber().getId());
         groupNumberRepo.deleteById(groupNumber.getId());
         groupRepository.deleteAllByGroupNumberAndUser(groupNumber,user);
     }
@@ -321,6 +326,9 @@ public class GroupServiceImpl implements GroupService {
     }
 
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
+    GroupList getGroupListByUser(User user){
+        return groupListRepo.findByUser(user).orElseThrow(()-> new IllegalArgumentException("GroupList에 없습니다."));
+    }
 
     Group getGroupByTitleUser(String title, User user){
         return groupRepository.findByUserAndTitle(user, title).orElseThrow(()-> new IllegalArgumentException("관련된 TDL이 없습니다."));

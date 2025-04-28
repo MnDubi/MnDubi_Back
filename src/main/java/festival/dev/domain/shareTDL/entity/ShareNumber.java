@@ -22,4 +22,7 @@ public class ShareNumber {
 
     @OneToMany(mappedBy = "shareNumber", orphanRemoval = true, fetch = FetchType.LAZY,cascade = CascadeType.ALL)
     private List<Share> shares;
+
+    @OneToMany(mappedBy = "shareNumber", orphanRemoval = true, fetch = FetchType.LAZY,cascade = CascadeType.ALL)
+    private List<ShareJoin> shareJoins;
 }
