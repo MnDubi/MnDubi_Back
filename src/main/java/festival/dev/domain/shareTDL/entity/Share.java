@@ -13,6 +13,7 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "share")
+@Getter
 public class Share {
     @Id
     @GeneratedValue(strategy = IDENTITY)

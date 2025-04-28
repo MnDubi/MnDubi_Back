@@ -10,10 +10,7 @@ import java.util.List;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ShareCreateReq {
-    private List<String> userCode;
+public class ShareInsertReq {
     @NotNull
-    private boolean showShared;
-    @NotNull
-    private boolean includeShared;
+    private List<String> userCodes;
 }

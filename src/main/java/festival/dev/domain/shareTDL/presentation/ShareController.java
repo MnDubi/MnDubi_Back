@@ -1,6 +1,7 @@
 package festival.dev.domain.shareTDL.presentation;
 
 import festival.dev.domain.shareTDL.presentation.dto.ShareCreateReq;
+import festival.dev.domain.shareTDL.presentation.dto.ShareInsertReq;
 import festival.dev.domain.shareTDL.service.ShareService;
 import festival.dev.domain.user.entity.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -29,5 +30,14 @@ public class ShareController {
         }
     }
 
-    
+    @PostMapping("/insert")
+    public ResponseEntity<?> insert(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody ShareInsertReq request) {
+        try{
+            shareService.insertShare(user.getUserID(),request);
+            return ResponseEntity.ok("success");
+        }
+        catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
