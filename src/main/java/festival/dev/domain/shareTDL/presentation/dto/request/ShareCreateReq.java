@@ -1,4 +1,4 @@
-package festival.dev.domain.shareTDL.presentation.dto;
+package festival.dev.domain.shareTDL.presentation.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

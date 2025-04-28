@@ -27,9 +27,6 @@ public class Share {
     @JoinColumn(name = "share_number")
     private ShareNumber shareNumber;
 
-    @OneToMany(mappedBy = "share", orphanRemoval = true, fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-    private List<ShareJoin> shareJoins;
-
     private boolean accepted;
     private boolean owner;
     private boolean showShared;

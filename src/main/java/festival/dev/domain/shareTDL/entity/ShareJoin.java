@@ -1,6 +1,7 @@
 package festival.dev.domain.shareTDL.entity;
 
 import festival.dev.domain.category.entity.Category;
+import festival.dev.domain.shareTDL.presentation.dto.response.ShareNumberRes;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +12,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "share_tdl")
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 @Getter
 public class ShareJoin {
     @Id
@@ -19,8 +20,8 @@ public class ShareJoin {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "share_iD")
-    private Share share;
+    @JoinColumn(name = "share_number")
+    private ShareNumber shareNumber;
 
     private String title;
     private boolean completed;

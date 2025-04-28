@@ -1,4 +1,4 @@
-package festival.dev.domain.shareTDL.presentation.dto;
+package festival.dev.domain.shareTDL.presentation.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -10,7 +10,7 @@ import java.util.List;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ShareInsertReq {
+public class ShareInviteReq {
     @NotNull
     private List<String> userCodes;
 }
