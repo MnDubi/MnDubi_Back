@@ -10,4 +10,5 @@ import java.util.Optional;
 @Repository
 public interface ShareJoinRepo extends JpaRepository<ShareJoin, Long> {
     Optional<ShareJoin> findByTitleAndShareNumber(String title, ShareNumber shareNumber);
+    boolean existsByTitleAndShareNumber(String title, ShareNumber shareNumber);
 }
