@@ -58,11 +58,23 @@ public class ShareController {
         }
     }
 
+    //websocket으로 보내기
     @DeleteMapping("/delete")
     public ResponseEntity<?> delete(@AuthenticationPrincipal CustomUserDetails user,@Valid @RequestBody ShareDeleteReq request){
         try{
             shareService.deleteShare(user.getUserID(),request);
             return ResponseEntity.ok("success");
+        }
+        catch (Exception e){
+            return  ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    //websocket으로 보내기
+    @PutMapping("/success")
+    public ResponseEntity<?> success(@AuthenticationPrincipal CustomUserDetails user,@Valid @RequestBody ShareSuccessReq request){
+        try{
+            return ResponseEntity.ok(shareService.success(user.getUserID(),request));
         }
         catch (Exception e){
             return  ResponseEntity.badRequest().body(e.getMessage());
