@@ -6,10 +6,7 @@ import festival.dev.domain.friendship.repository.FriendshipRepository;
 import festival.dev.domain.shareTDL.entity.Share;
 import festival.dev.domain.shareTDL.entity.ShareJoin;
 import festival.dev.domain.shareTDL.entity.ShareNumber;
-import festival.dev.domain.shareTDL.presentation.dto.request.ShareCreateReq;
-import festival.dev.domain.shareTDL.presentation.dto.request.ShareInsertReq;
-import festival.dev.domain.shareTDL.presentation.dto.request.ShareInviteReq;
-import festival.dev.domain.shareTDL.presentation.dto.request.ShareModifyReq;
+import festival.dev.domain.shareTDL.presentation.dto.request.*;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareNumberRes;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareRes;
 import festival.dev.domain.shareTDL.repository.ShareJoinRepo;
@@ -96,10 +93,10 @@ public class ShareServiceImpl implements ShareService {
     @Transactional
     public ShareRes modifyShare(Long userID, ShareModifyReq request){
         User user = getUserByID(userID);
-        Share share = getShareByUserAndAccept(user,true);
-        ShareNumber shareNumber = share.getShareNumber();
-        ShareJoin shareJoin = shareJoinRepo.findByTitleAndShareNumber(request.getTitle(), shareNumber).orElseThrow(()-> new IllegalArgumentException("존재하지 않은 TDL입니다ㅓ."));
-        checkShareJoinByTitleAndShareNumber(request.getChange(), shareNumber);
+        getShareByUserAndAccept(user,true);
+
+        ShareJoin shareJoin = shareJoinRepo.findByTitleAndUser(request.getTitle(),user).orElseThrow(()-> new IllegalArgumentException("존재하지 않은 TDL입니다ㅓ."));
+        checkShareJoinByTitleAndUser(request.getChange(),user);
         shareJoin = shareJoin.toBuilder()
                 .title(request.getChange())
                 .build();
@@ -110,19 +107,26 @@ public class ShareServiceImpl implements ShareService {
     @Transactional
     public ShareRes insertShare(Long userID, ShareInsertReq request){
         User user = getUserByID(userID);
-        Share share = getShareByUserAndAccept(user, true);
-        ShareNumber shareNumber = share.getShareNumber();
-        checkShareJoinByTitleAndShareNumber(request.getTitle(),shareNumber);
+        getShareByUserAndAccept(user, true);
+        ShareNumber shareNumber = getShareNumber(user);
+        checkShareJoinByTitleAndUser(request.getTitle(),user);
         ShareJoin shareJoin = ShareJoin.builder()
                 .shareNumber(shareNumber)
                 .category(getCategory(request.getCategory()))
                 .title(request.getTitle())
                 .completed(false)
+                .user(user)
                 .build();
         shareJoinRepo.save(shareJoin);
         return shareResponse(shareJoin);
     }
 
+    @Transactional
+    public void deleteShare(Long userID, ShareDeleteReq request){
+        User user = getUserByID(userID);
+        checkShareJoinByTitleAndUserNot(request.getTitle(),user);
+        shareJoinRepo.deleteByTitleAndUser(request.getTitle(), user);
+    }
     //---------------------
     User getUserByID(Long userID){
         return userRepository.findById(userID).orElseThrow(()-> new IllegalArgumentException("없는 유저입니다.(ID)"));
@@ -158,12 +162,19 @@ public class ShareServiceImpl implements ShareService {
         return ShareRes.builder()
                 .accept(shareJoin.isCompleted())
                 .category(shareJoin.getCategory().getCategoryName())
-                .groupNumber(shareJoin.getShareNumber().getId())
+                .shareNumber(shareJoin.getShareNumber().getId())
                 .title(shareJoin.getTitle())
                 .build();
     }
-    void checkShareJoinByTitleAndShareNumber(String title,ShareNumber shareNumber){
-        if (shareJoinRepo.existsByTitleAndShareNumber(title,shareNumber))
+    void checkShareJoinByTitleAndUser(String title,User user){
+        if (shareJoinRepo.existsByTitleAndUser(title,user))
             throw new IllegalArgumentException("이미 존재하는 TDL입니다.");
+    }
+    void checkShareJoinByTitleAndUserNot(String title,User user){
+        if (!shareJoinRepo.existsByTitleAndUser(title,user))
+            throw new IllegalArgumentException("존재하지 않은 TDL입니다.");
+    }
+    ShareNumber getShareNumber(User user){
+        return getShareByUserAndAccept(user,true).getShareNumber();
     }
 }

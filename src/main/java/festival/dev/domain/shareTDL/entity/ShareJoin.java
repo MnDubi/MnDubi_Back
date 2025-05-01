@@ -2,6 +2,7 @@ package festival.dev.domain.shareTDL.entity;
 
 import festival.dev.domain.category.entity.Category;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareNumberRes;
+import festival.dev.domain.user.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,4 +30,8 @@ public class ShareJoin {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private Category category;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 }

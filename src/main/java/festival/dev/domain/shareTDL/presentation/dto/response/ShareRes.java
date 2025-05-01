@@ -8,6 +8,6 @@ import lombok.Getter;
 public class ShareRes {
     private String title;
     private String category;
-    private Long groupNumber;
+    private Long shareNumber;
     private Boolean accept;
 }
