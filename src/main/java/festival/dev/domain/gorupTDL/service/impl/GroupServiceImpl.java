@@ -9,7 +9,9 @@ import festival.dev.domain.category.repository.CategoryRepository;
 import festival.dev.domain.friendship.repository.FriendshipRepository;
 import festival.dev.domain.gorupTDL.entity.*;
 import festival.dev.domain.gorupTDL.presentation.dto.request.*;
-import festival.dev.domain.gorupTDL.presentation.dto.response.*;
+import festival.dev.domain.gorupTDL.presentation.dto.response.GInsertRes;
+import festival.dev.domain.gorupTDL.presentation.dto.response.GSuccessResponse;
+import festival.dev.domain.gorupTDL.presentation.dto.response.GToDoListResponse;
 import festival.dev.domain.gorupTDL.repository.GroupJoinRepo;
 import festival.dev.domain.gorupTDL.repository.GroupListRepo;
 import festival.dev.domain.gorupTDL.repository.GroupNumberRepo;
@@ -78,7 +80,7 @@ public class GroupServiceImpl implements GroupService {
                     .ownerID(tdl.getUser().getName())
                     .memberID(receiver.getName())
                     .title(tdl.getTitle())
-                    .category(tdl.getCategory().getName())
+                    .category(tdl.getCategory().getCategoryName())
                     .completed(false)
                     .build();
             messagingTemplate.convertAndSend("/topic/group/" + groupNumber.getId(), response);
@@ -114,7 +116,9 @@ public class GroupServiceImpl implements GroupService {
                 .title(toDoList.getTitle())
                 .category(toDoList.getCategory().getName())
                 .userID(user.getName())
+                .endDate(toDoList.getEndDate())
                 .groupNumber(toDoList.getGroupNumber().getGroupNumber())
+                .startDate(toDoList.getStartDate())
                 .build();
     }
 
@@ -138,7 +142,7 @@ public class GroupServiceImpl implements GroupService {
 
         GResponse response = GResponse.builder()
                 .groupNumber(groupJoin.getGroupNumber().getId())
-                .category(groupJoin.getGroup().getCategory().getName())
+                .category(groupJoin.getGroup().getCategory().getCategoryName())
                 .ownerID(groupJoin.getGroup().getUser().getName())
                 .title(groupJoin.getGroup().getTitle())
                 .completed(groupJoin.isCompleted())
@@ -153,8 +157,7 @@ public class GroupServiceImpl implements GroupService {
         User user = getUser(userID);
         checkExist(user, request.getTitle());
         GroupNumber groupNumber = getGroupNum(request.getGroupNumber());
-        Category category = categoryRepository.findByName(request.getCategory())
-                .orElseThrow(() -> new IllegalArgumentException("해당 카테고리가 존재하지 않습니다."));
+        Category category = categoryRepository.findByCategoryName(request.getCategory());
         List<GroupList> GroupLists = groupListRepo.findByGroupNumberAndAccept(groupNumber,true);
         Group group = Group.builder()
                 .user(user)
@@ -174,7 +177,7 @@ public class GroupServiceImpl implements GroupService {
         }
         GResponse response = GResponse.builder()
                 .title(group.getTitle())
-                .category(group.getCategory().getName())
+                .category(group.getCategory().getCategoryName())
                 .ownerID(user.getName())
                 .memberID(user.getName())
                 .completed(false)
@@ -185,7 +188,7 @@ public class GroupServiceImpl implements GroupService {
 
     public GGetRes get(Long userID){
         User user = getUser(userID);
-        GroupList GroupList = groupListRepo.findByUserAndAcceptTrue(user).orElseThrow(()-> new IllegalArgumentException("그룹에 참가하지 않은 유저입니다."));
+        GroupList GroupList = groupListRepo.findByUserAndAccept(user,true).orElseThrow(()-> new IllegalArgumentException("그룹에 참가하지 않은 유저입니다."));
         GroupNumber groupNumber = GroupList.getGroupNumber();
         Long all = groupJoinRepo.countByUserAndGroupNumber(user,groupNumber);
         Long part = groupJoinRepo.countByCompletedAndUserAndGroupNumber(true,user,groupNumber);
@@ -200,7 +203,7 @@ public class GroupServiceImpl implements GroupService {
             Long tdlPart = groupJoinRepo.countByCompletedAndGroup(true,group);
             GetSup getSup = GetSup.builder()
                     .title(group.getTitle())
-                    .category(group.getCategory().getName())
+                    .category(group.getCategory().getCategoryName())
                     .userID(group.getUser().getName())
                     .groupNumber(groupNumber.getId())
                     .all(tdlAll)
@@ -214,7 +217,6 @@ public class GroupServiceImpl implements GroupService {
                 .build();
     }
 
-    @Transactional
     public void finish(Long userID,Long groupNumber){
         GroupNumber groupNum = getGroupNum(groupNumber);
         User user = getUser(userID);
@@ -249,32 +251,11 @@ public class GroupServiceImpl implements GroupService {
         calendarRepository.save(calendar);
     }
 
-    @Transactional
     public void deleteAll(Long userID, GChoiceRequest request){
         User user = getUser(userID);
         GroupNumber groupNumber = getGroupNum(request.getGroupNumber());
-        groupNumberRepo.deleteById(groupNumber.getId());
         groupRepository.deleteAllByGroupNumberAndUser(groupNumber,user);
     }
-
-    public List<GInviteGet> inviteGet(Long userID){
-        User user = getUser(userID);
-        List<GroupList> invitedList = groupListRepo.findByUserAndAcceptFalse(user);
-        List<GInviteGet> response = new ArrayList<>();
-        for(GroupList groupList: invitedList){
-            GroupNumber groupNumber = groupList.getGroupNumber();
-            User sender = groupRepository.findUserByGroupNumber(groupNumber);
-
-            response.add(GInviteGet.builder()
-                    .accepted(groupList.isAccept())
-                    .receiver(user.getName())
-                    .sender(sender.getName())
-                    .groupNumber(groupNumber.getId())
-                    .build());
-        }
-        return response;
-    }
-
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
 
     Group getGroupByTitleUser(String title, User user){
@@ -285,7 +266,7 @@ public class GroupServiceImpl implements GroupService {
         return groupNumberRepo.findById(groupID).orElseThrow(()-> new IllegalArgumentException("그룹이 없습니다."));
     }
 
-    Long create(GCreateRequest request, Long userID){
+    public Long create(GCreateRequest request, Long userID){
         User user = getUser(userID);
         Group response = new Group();
 
@@ -304,9 +285,10 @@ public class GroupServiceImpl implements GroupService {
 
         groupNumberRepo.save(groupNumberBuild);
         for (String title: request.getTitles()) {
-            Category category = categoryRepository.findByName(request.getCategory())
-                    .orElseThrow(() -> new IllegalArgumentException("해당 카테고리가 존재하지 않습니다."));
-            inputSetting(title, user, category);
+            Category category = categoryRepository.findByCategoryName(request.getCategory());
+            inputSetting(title, user, request.getEndDate(), category);
+
+            checkEndDate(request.getEndDate());
 
             Group group = Group.builder()
                     .groupNumber(groupNumberBuild)
@@ -321,6 +303,7 @@ public class GroupServiceImpl implements GroupService {
                     .group(group)
                     .build();
             groupJoinRepo.save(groupJoin);
+
             response = groupRepository.save(group);
         }
 
@@ -331,11 +314,10 @@ public class GroupServiceImpl implements GroupService {
         GroupNumber groupNumber = getGroupNum(groupNum);
         for (String req_receiver : receivers){
             User receiver = userRepository.findByUserCode(req_receiver).orElseThrow(() -> new IllegalArgumentException("없는 유저 입니다."));
-            if (friendshipRepository.findByRequesterAndAddressee(sender, receiver).isEmpty())
-                friendshipRepository.findByRequesterAndAddressee(receiver, sender).orElseThrow(()-> new IllegalArgumentException("친구로 추가가 안 되어있습니다."));
+            friendshipRepository.findByRequesterAndAddressee(sender, receiver).orElseThrow(() -> new IllegalArgumentException("친구로 추가가 안 되어있습니다."));
 
-            if (groupListRepo.existsByAcceptTrue()){
-                throw new IllegalArgumentException("이미 그룹에 포함된 사람은 초대가 불가합니다.");
+            if (groupListRepo.existsByUserAndGroupNumber(receiver,groupNumber)){
+                throw new IllegalArgumentException("이미 초대한 사람은 초대가 불가합니다.");
             }
             GroupList groupList = GroupList.builder()
                     .accept(false)

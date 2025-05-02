@@ -25,7 +25,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -56,8 +55,20 @@ public class CalendarServiceImpl implements CalendarService {
     CalendarResponse getDateCalendar(String date, Long userID, CTdlKind CTdlKind){
         try{
             User user = userGet(userID);
-            Calendar calendar = calendarRepository.findWithTDLIDsByUserDateKind(user.getId(),date, CTdlKind).orElseThrow(()-> new IllegalArgumentException("캘린더에 데이터가 존재하지 않습니다."));
-            List<CalendarDtoAsis> tdl = tdl(CTdlKind,calendar);
+            Calendar calendar = calendarRepository.findByYearMonthDayAndUser(date, user);
+            List<Calendar_tdl_ids> tdlIds = calendar.getToDoListId();
+            List<ToDoList> tdls =  toDoListRepository.findByIdIn(tdlIds.stream()
+                    .map(id->new Calendar_tdl_ids().getToDoListId())
+                    .collect(Collectors.toList()));
+
+            List<CalendarDtoAsis> tdl = tdls.stream()
+                    .map(toDoList -> CalendarDtoAsis.builder()
+                            .title(toDoList.getTitle())
+                            .startDate(toDoList.getStartDate())
+                            .endDate(toDoList.getEndDate())
+                            .completed(toDoList.getCompleted())
+                            .category(toDoList.getCategory().getName())
+                            .build()).toList();
 
             return CalendarResponse.builder()
                     .tdl(tdl)
@@ -111,7 +122,7 @@ public class CalendarServiceImpl implements CalendarService {
                     startDate = tdl.getStartDate();
                     endDate = tdl.getEndDate();
                     completed = tdl.getCompleted();
-                    category = tdl.getCategory().getName();
+                    category = tdl.getCategory().getCategoryName();
                     response.add(CalendarDtoAsis.builder()
                             .title(title)
                             .startDate(startDate)
@@ -127,7 +138,7 @@ public class CalendarServiceImpl implements CalendarService {
                     title = tdlId.getTitle();
                     category = categoryRepository.findById(tdlId.getCategory())
                             .orElseThrow(()-> new IllegalArgumentException("카테고리가 없습니다."))
-                            .getName();
+                            .getCategoryName();
                     startDate = "Group";
                     endDate = "Group";
                     completed = tdlId.isCompleted();
