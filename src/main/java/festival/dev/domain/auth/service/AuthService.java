@@ -80,4 +80,15 @@ public class AuthService {
         } while (userRepository.existsByUserCode(code));
         return code;
     }
+
+//    //로그아웃
+//    public void logout(String refreshToken) {
+//        if (!jwtUtil.isRefreshTokenValid(refreshToken)) {
+//            throw new RuntimeException("유효하지 않은 Refresh Token입니다.");
+//        }
+//        String email = jwtUtil.validateToken(refreshToken);
+//        jwtUtil.invalidateToken(refreshToken);
+//
+//
+//    }
 }

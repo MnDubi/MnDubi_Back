@@ -39,9 +39,9 @@ public class GroupController {
     }
 
     @PutMapping("/accept")
-    public ResponseEntity<?> accept(@Valid @RequestBody GChoiceRequest request,@AuthenticationPrincipal CustomUserDetails user) {
+    public ResponseEntity<?> accept(@AuthenticationPrincipal CustomUserDetails user) {
         try{
-            groupService.acceptInvite(request,user.getUserID());
+            groupService.acceptInvite(user.getUserID());
             return ResponseEntity.ok("success");
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -49,9 +49,9 @@ public class GroupController {
     }
 
     @DeleteMapping("/refuse")
-    public ResponseEntity<?> refuse(@Valid @RequestBody GChoiceRequest request,@AuthenticationPrincipal CustomUserDetails user) {
+    public ResponseEntity<?> refuse(@AuthenticationPrincipal CustomUserDetails user) {
         try{
-            groupService.refuseInvite(request,user.getUserID());
+            groupService.refuseInvite(user.getUserID());
             return ResponseEntity.ok("success");
         }
         catch (Exception e){
@@ -112,9 +112,9 @@ public class GroupController {
     }
 
     @PostMapping("/finish")
-    public ResponseEntity<?> finish(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GChoiceRequest request){
+    public ResponseEntity<?> finish(@AuthenticationPrincipal CustomUserDetails user){
         try {
-            groupService.finish(user.getUserID(),request.getGroupNumber());
+            groupService.finish(user.getUserID());
             return ResponseEntity.ok("success");
         }
         catch (Exception e) {
@@ -124,9 +124,9 @@ public class GroupController {
 
     //web socket으로 대충 그룹 삭제됐다는 거 알려줘야함.
     @DeleteMapping("/delete/all")
-    public ResponseEntity<?> deleteAll(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GChoiceRequest request){
+    public ResponseEntity<?> deleteAll(@AuthenticationPrincipal CustomUserDetails user){
        try {
-           groupService.deleteAll(user.getUserID(), request);
+           groupService.deleteAll(user.getUserID());
            return ResponseEntity.ok("success");
        }catch (Exception e) {
            return ResponseEntity.badRequest().body(e.getMessage());

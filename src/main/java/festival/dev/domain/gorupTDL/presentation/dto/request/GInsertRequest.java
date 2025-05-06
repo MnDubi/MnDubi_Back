@@ -6,8 +6,6 @@ import lombok.Getter;
 @Getter
 public class GInsertRequest {
     @NotNull
-    private Long groupNumber;
-    @NotNull
     private String category;
     @NotNull
     private String title;

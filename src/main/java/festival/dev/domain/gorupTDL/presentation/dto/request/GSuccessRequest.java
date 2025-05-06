@@ -10,7 +10,5 @@ public class GSuccessRequest {
     @NotNull
     private Boolean completed;
     @NotNull
-    private Long groupNumber;
-    @NotNull
     private String ownerID;
 }
