@@ -10,6 +10,7 @@ import festival.dev.domain.calendar.presentation.dto.Response.CalendarResponse;
 import festival.dev.domain.calendar.presentation.dto.Response.MonthResponse;
 import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.calendar.service.CalendarService;
+import festival.dev.domain.category.entity.Category;
 import festival.dev.domain.category.repository.CategoryRepository;
 import festival.dev.domain.gorupTDL.entity.GroupCalendar;
 import festival.dev.domain.user.entity.User;
@@ -25,6 +26,9 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -104,13 +108,20 @@ public class CalendarServiceImpl implements CalendarService {
         switch (kind) {
             case PRIVATE -> {
                 List<Calendar_tdl_ids> tdlIds = calendar.getToDoListId();
-                for (Calendar_tdl_ids tdlId : tdlIds) {
-                    ToDoList tdl = toDoListRepository.findById(tdlId.getTdlID()).orElseThrow(()-> new IllegalArgumentException("TDL이 없습니다."));
+
+                List<Long> tdlIdList = tdlIds.stream()
+                        .map(Calendar_tdl_ids::getTdlID)
+                        .collect(Collectors.toList());
+
+                List<ToDoList> toDoLists = toDoListRepository.findByIdIn(tdlIdList);
+
+                for (ToDoList tdl : toDoLists) {
                     title = tdl.getTitle();
                     startDate = tdl.getStartDate();
                     endDate = tdl.getEndDate();
                     completed = tdl.getCompleted();
                     category = tdl.getCategory().getCategoryName();
+
                     response.add(CalendarDtoAsis.builder()
                             .title(title)
                             .startDate(startDate)
@@ -119,17 +130,25 @@ public class CalendarServiceImpl implements CalendarService {
                             .completed(completed)
                             .build());
                 }
+
             }
             case GROUP ->{
                 List<GroupCalendar> tdlIds = calendar.getGroupCalendarId();
-                for (GroupCalendar tdlId : tdlIds) {
-                    title = tdlId.getTitle();
-                    category = categoryRepository.findById(tdlId.getCategory())
-                            .orElseThrow(()-> new IllegalArgumentException("카테고리가 없습니다."))
-                            .getCategoryName();
+
+                List<Long> categoryIds = tdlIds.stream()
+                        .map(GroupCalendar::getCategory)
+                        .collect(Collectors.toList());
+
+                Map<Long, String> categoryMap = categoryRepository.findAllById(categoryIds).stream()
+                        .collect(Collectors.toMap(Category::getId, Category::getCategoryName));
+
+                for (GroupCalendar tdl : tdlIds) {
+                    title = tdl.getTitle();
+                    category = categoryMap.getOrDefault(tdl.getCategory(), "알 수 없음");
                     startDate = "Group";
                     endDate = "Group";
-                    completed = tdlId.isCompleted();
+                    completed = tdl.isCompleted();
+
                     response.add(CalendarDtoAsis.builder()
                             .title(title)
                             .startDate(startDate)

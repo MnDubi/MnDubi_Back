@@ -1,9 +1,6 @@
 package festival.dev.domain.shareTDL.presentation;
 
-import festival.dev.domain.shareTDL.presentation.dto.request.ShareCreateReq;
-import festival.dev.domain.shareTDL.presentation.dto.request.ShareInsertReq;
-import festival.dev.domain.shareTDL.presentation.dto.request.ShareInviteReq;
-import festival.dev.domain.shareTDL.presentation.dto.request.ShareModifyReq;
+import festival.dev.domain.shareTDL.presentation.dto.request.*;
 import festival.dev.domain.shareTDL.service.ShareService;
 import festival.dev.domain.user.entity.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -28,6 +25,7 @@ public class ShareController {
         }
     }
 
+    //websocket으로 보내기
     @PostMapping("/invite")
     public ResponseEntity<?> invite(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody ShareInviteReq request) {
         try{
@@ -38,6 +36,7 @@ public class ShareController {
         }
     }
 
+    //websocket으로 보내기
     @PutMapping("/modify")
     public ResponseEntity<?> modify(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody ShareModifyReq request){
         try{
@@ -48,6 +47,7 @@ public class ShareController {
         }
     }
 
+    //websocket으로 보내기
     @PostMapping("/insert")
     public ResponseEntity<?> insert(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody ShareInsertReq request){
         try{
@@ -55,6 +55,29 @@ public class ShareController {
         }
         catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    //websocket으로 보내기
+    @DeleteMapping("/delete")
+    public ResponseEntity<?> delete(@AuthenticationPrincipal CustomUserDetails user,@Valid @RequestBody ShareDeleteReq request){
+        try{
+            shareService.deleteShare(user.getUserID(),request);
+            return ResponseEntity.ok("success");
+        }
+        catch (Exception e){
+            return  ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    //websocket으로 보내기
+    @PutMapping("/success")
+    public ResponseEntity<?> success(@AuthenticationPrincipal CustomUserDetails user,@Valid @RequestBody ShareSuccessReq request){
+        try{
+            return ResponseEntity.ok(shareService.success(user.getUserID(),request));
+        }
+        catch (Exception e){
+            return  ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 }

@@ -4,8 +4,9 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
 @Getter
-public class ShareInsertReq {
+public class ShareSuccessReq {
     @NotNull
     private String title;
-    private String category;
+    @NotNull
+    private boolean success;
 }
