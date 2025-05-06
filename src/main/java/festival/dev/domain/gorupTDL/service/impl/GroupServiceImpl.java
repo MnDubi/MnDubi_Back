@@ -77,15 +77,7 @@ public class GroupServiceImpl implements GroupService {
                     .groupNumber(groupNum)
                     .build();
 
-            GResponse response = GResponse.builder()
-                    .groupNumber(groupNum.getId())
-                    .ownerID(tdl.getUser().getName())
-                    .memberID(receiver.getName())
-                    .title(tdl.getTitle())
-                    .category(tdl.getCategory().getCategoryName())
-                    .completed(false)
-                    .build();
-            messagingTemplate.convertAndSend("/topic/group/" + groupNum.getId(), response);
+            messagingTemplate.convertAndSend("/topic/group/accept/" + groupNum.getId(), groupNum.getId());
             groupJoinRepo.save(groupJoin);
         }
     }
@@ -102,6 +94,7 @@ public class GroupServiceImpl implements GroupService {
                     throw new IllegalArgumentException("이미 수락한 요청입니다.");
                 });
         groupListRepo.deleteByGroupNumberAndUser(group,receiver);
+        messagingTemplate.convertAndSend("/topic/group/refuse/" + group.getId(),group.getId());
     }
 
     //바뀐 TDL이랑 관련된 모든 데이터를 보내야 할 듯? web socket으로
@@ -263,6 +256,7 @@ public class GroupServiceImpl implements GroupService {
         GroupNumber groupNumber = getGroupNum(groupList.getGroupNumber().getId());
         groupNumberRepo.deleteById(groupNumber.getId());
         groupRepository.deleteAllByGroupNumberAndUser(groupNumber,user);
+        messagingTemplate.convertAndSend("/topic/group/delete/all" + groupNumber.getId(), groupNumber.getId());
     }
 
     public List<GInviteGet> inviteGet(Long userID){

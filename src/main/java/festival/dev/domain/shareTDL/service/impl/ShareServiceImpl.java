@@ -148,6 +148,7 @@ public class ShareServiceImpl implements ShareService {
     }
 
     //---------------------
+
     User getUserByID(Long userID){
         return userRepository.findById(userID).orElseThrow(()-> new IllegalArgumentException("없는 유저입니다.(ID)"));
     }
