@@ -4,9 +4,11 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 
 @Getter
-public class SuccessRequest {
+public class ShareRequest {
     @NotNull
     private String title;
     @NotNull
-    private Boolean completed;
+    private Boolean shared;
+    @NotNull
+    private String endDate;
 }

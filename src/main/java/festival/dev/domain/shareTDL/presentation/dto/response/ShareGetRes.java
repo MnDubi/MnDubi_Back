@@ -9,5 +9,7 @@ import java.util.List;
 @Builder
 public class ShareGetRes {
     private String username;
+    private Long every;
+    private Long part;
     private List<ShareJoinRes> shareJoinRes;
 }

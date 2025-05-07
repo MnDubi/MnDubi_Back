@@ -16,6 +16,7 @@ import festival.dev.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -139,6 +140,15 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .build();
     }
 
+    @Transactional
+    public void shared(ShareRequest request, Long id){
+        User user = getUser(id);
+        ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user,request.getTitle(),request.getEndDate());
+        ToDoList changed = toDoList.toBuilder().shared(request.getShared()).build();
+        toDoListRepository.save(changed);
+    }
+
+
     @Scheduled(cron = "0 0 0 * * *")
     public void finish(){
         List<User> users = userRepository.findAll();
@@ -152,7 +162,6 @@ public class ToDoListServiceImpl implements ToDoListService {
                             .build())
                     .collect(Collectors.toList());
 
-            if (calendarRepository.findWithTDLIDsByUserDateKind(user.getId(), toDay(), CTdlKind.PRIVATE).isEmpty()) {
                 Calendar calendar = Calendar.builder()
                         .user(user)
                         .every(tdlIDs.size())
@@ -160,9 +169,6 @@ public class ToDoListServiceImpl implements ToDoListService {
                         .toDoListId(tdlIDs)
                         .build();
                 calendarRepository.save(calendar);
-            } else {
-                throw new IllegalArgumentException("하루에 두 번 이상 요청을 보내실 수 없습니다.");
-            }
         }
     }
 

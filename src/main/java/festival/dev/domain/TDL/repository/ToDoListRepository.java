@@ -39,6 +39,4 @@ public interface ToDoListRepository extends JpaRepository<ToDoList, Long> {
 
     @EntityGraph(attributePaths = {"category"})
     List<ToDoList> findByIdIn(List<Long> ids);
-
-
 }
