@@ -2,9 +2,7 @@ package festival.dev.domain.shareTDL.service;
 
 import festival.dev.domain.shareTDL.presentation.dto.request.*;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareGetRes;
-import festival.dev.domain.shareTDL.presentation.dto.response.ShareJoinRes;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareNumberRes;
-import festival.dev.domain.shareTDL.presentation.dto.response.ShareRes;
 
 import java.util.List;
 

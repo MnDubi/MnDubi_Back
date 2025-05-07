@@ -1,7 +1,7 @@
 package festival.dev.domain.shareTDL.service.impl;
 
-import festival.dev.domain.category.entity.Category;
-import festival.dev.domain.category.repository.CategoryRepository;
+import festival.dev.domain.TDL.entity.ToDoList;
+import festival.dev.domain.TDL.repository.ToDoListRepository;
 import festival.dev.domain.friendship.repository.FriendshipRepository;
 import festival.dev.domain.shareTDL.entity.Share;
 import festival.dev.domain.shareTDL.entity.ShareNumber;
@@ -9,18 +9,24 @@ import festival.dev.domain.shareTDL.presentation.dto.request.*;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareGetRes;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareJoinRes;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareNumberRes;
-import festival.dev.domain.shareTDL.presentation.dto.response.ShareRes;
 import festival.dev.domain.shareTDL.repository.ShareNumberRepo;
 import festival.dev.domain.shareTDL.repository.ShareRepository;
 import festival.dev.domain.shareTDL.service.ShareService;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +35,8 @@ public class ShareServiceImpl implements ShareService {
     private final ShareNumberRepo shareNumberRepo;
     private final UserRepository userRepository;
     private final FriendshipRepository friendshipRepository;
-    private final CategoryRepository categoryRepository;
+    private final ToDoListRepository toDoListRepository;
+    private final Logger logger = LoggerFactory.getLogger(ShareServiceImpl.class);
 
     @Transactional
     public ShareNumberRes createShare(ShareCreateReq request, Long userID) {
@@ -96,7 +103,29 @@ public class ShareServiceImpl implements ShareService {
         User user = getUserByID(userId);
         ShareNumber shareNumber = getShareNumber(user);
         List<ShareGetRes> shareGetResList = new ArrayList<>();
+        List<Share> shares = shareRepository.findByShareNumberAndAcceptedTrue(shareNumber);
+        for (Share share : shares) {
+            User member = share.getUser();
+            List<ShareJoinRes> shareJoinResList = new ArrayList<>();
 
+            List<ToDoList> tdls = toDoListRepository.findByCurrentDateAndUserIDAndSharedIsTrue(toDay(), member.getId());
+            for(ToDoList tdl : tdls) {
+                ShareJoinRes shareJoinRes = ShareJoinRes.builder()
+                        .title(tdl.getTitle())
+                        .category(tdl.getCategory().getCategoryName())
+                        .shareNumber(shareNumber.getId())
+                        .user_code(member.getUserCode())
+                        .completed(tdl.getCompleted())
+                        .build();
+
+                shareJoinResList.add(shareJoinRes);
+            }
+            ShareGetRes response = ShareGetRes.builder()
+                    .username(member.getName())
+                    .shareJoinRes(shareJoinResList)
+                    .build();
+            shareGetResList.add(response);
+        }
         return shareGetResList;
     }
     //---------------------
@@ -130,5 +159,10 @@ public class ShareServiceImpl implements ShareService {
     }
     ShareNumber getShareNumber(User user){
         return getShareByUserAndAccept(user,true).getShareNumber();
+    }
+    public String toDay(){
+        LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
+        DateTimeFormatter yearMonthDayFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
+        return createAt.format(yearMonthDayFormatter);
     }
 }

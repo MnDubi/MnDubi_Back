@@ -26,6 +26,9 @@ public interface ToDoListRepository extends JpaRepository<ToDoList, Long> {
     @Query("SELECT t FROM ToDoList t WHERE t.startDate <= :currentDate AND t.endDate >= :currentDate AND t.user.id = :userID")
     List<ToDoList> findByCurrentDateAndUserID(@Param("currentDate") String currentDate, @Param("userID") Long userID);
 
+    @Query("SELECT t FROM ToDoList t WHERE t.startDate <= :currentDate AND t.endDate >= :currentDate AND t.user.id = :userID And t.shared = true")
+    List<ToDoList> findByCurrentDateAndUserIDAndSharedIsTrue(@Param("currentDate") String currentDate, @Param("userID") Long userID);
+
     @Modifying
     @Query("UPDATE ToDoList t set t.title = :change, t.startDate = :changeDate, t.endDate = :changeDate  WHERE t.title = :title AND t.user.id = :userID AND t.endDate = :fromDate")
     void changeTitle(@Param("change") String change, @Param("title") String title, @Param("userID") Long userID, @Param("changeDate") String changeDate, @Param("fromDate") String fromDate);
