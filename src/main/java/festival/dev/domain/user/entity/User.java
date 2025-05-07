@@ -6,7 +6,6 @@ import festival.dev.domain.gorupTDL.entity.Group;
 import festival.dev.domain.gorupTDL.entity.GroupJoin;
 import festival.dev.domain.gorupTDL.entity.GroupList;
 import festival.dev.domain.shareTDL.entity.Share;
-import festival.dev.domain.shareTDL.entity.ShareJoin;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -61,9 +60,6 @@ public class User {
 
     @OneToMany(mappedBy = "user",cascade = CascadeType.ALL,orphanRemoval = true)
     private List<GroupJoin> group_joins;
-
-    @OneToMany(mappedBy = "user",cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ShareJoin> share_joins;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
