@@ -2,6 +2,10 @@ package festival.dev.domain.shareTDL.service.impl;
 
 import festival.dev.domain.TDL.entity.ToDoList;
 import festival.dev.domain.TDL.repository.ToDoListRepository;
+import festival.dev.domain.calendar.entity.CTdlKind;
+import festival.dev.domain.calendar.entity.Calendar;
+import festival.dev.domain.calendar.entity.Calendar_tdl_ids;
+import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.friendship.repository.FriendshipRepository;
 import festival.dev.domain.shareTDL.entity.Share;
 import festival.dev.domain.shareTDL.entity.ShareNumber;
@@ -15,8 +19,7 @@ import festival.dev.domain.shareTDL.service.ShareService;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +39,7 @@ public class ShareServiceImpl implements ShareService {
     private final UserRepository userRepository;
     private final FriendshipRepository friendshipRepository;
     private final ToDoListRepository toDoListRepository;
-    private final Logger logger = LoggerFactory.getLogger(ShareServiceImpl.class);
+    private final CalendarRepository calendarRepository;
 
     @Transactional
     public ShareNumberRes createShare(ShareCreateReq request, Long userID) {
@@ -107,7 +110,7 @@ public class ShareServiceImpl implements ShareService {
         for (Share share : shares) {
             User member = share.getUser();
             List<ShareJoinRes> shareJoinResList = new ArrayList<>();
-
+            Long part = 0L;
             List<ToDoList> tdls = toDoListRepository.findByCurrentDateAndUserIDAndSharedIsTrue(toDay(), member.getId());
             for(ToDoList tdl : tdls) {
                 ShareJoinRes shareJoinRes = ShareJoinRes.builder()
@@ -119,14 +122,61 @@ public class ShareServiceImpl implements ShareService {
                         .build();
 
                 shareJoinResList.add(shareJoinRes);
+                if(tdl.getCompleted()){
+                    part++;
+                }
             }
-            ShareGetRes response = ShareGetRes.builder()
-                    .username(member.getName())
-                    .shareJoinRes(shareJoinResList)
-                    .build();
-            shareGetResList.add(response);
+            if (share.isShowShared()) {
+                ShareGetRes response = ShareGetRes.builder()
+                        .username(member.getName())
+                        .every((long) tdls.size())
+                        .part(part)
+                        .shareJoinRes(shareJoinResList)
+                        .build();
+                shareGetResList.add(response);
+            }
+            else{
+                ShareGetRes response = ShareGetRes.builder()
+                        .username(member.getName())
+                        .shareJoinRes(shareJoinResList)
+                        .build();
+                shareGetResList.add(response);
+            }
+
         }
         return shareGetResList;
+    }
+
+    @Scheduled(cron = "0 0 0 * * *")
+    @Transactional
+    public void reset(){
+        List<ShareNumber> shareNumbers = shareNumberRepo.findAll();
+        for (ShareNumber shareNumber : shareNumbers) {
+            List<Share> shares = shareRepository.findByShareNumberAndAcceptedTrue(shareNumber);
+            for (Share share : shares) {
+                if (share.isIncludeShared()) {
+                    List<ToDoList> tdls = toDoListRepository.findByUserAndEndDate(share.getUser(), toDay());
+                    int part = toDoListRepository.findByUserAndEndDateAndCompleted(share.getUser(), toDay(), true).size();
+                    List<Calendar_tdl_ids> tdlIDs = tdls.stream()
+                            .map(tdl -> Calendar_tdl_ids.builder()
+                                    .tdlID(tdl.getId())
+                                    .kind(CTdlKind.SHARE)
+                                    .build())
+                            .collect(Collectors.toList());
+                    if (calendarRepository.findWithTDLIDsByUserDateKind(share.getUser().getId(), toDay(), CTdlKind.PRIVATE).isEmpty()) {
+                        Calendar calendar = Calendar.builder()
+                                .user(share.getUser())
+                                .every(tdlIDs.size())
+                                .part(part)
+                                .toDoListId(tdlIDs)
+                                .build();
+                        calendarRepository.save(calendar);
+                    } else {
+                        throw new IllegalArgumentException("하루에 두 번 이상 요청을 보내실 수 없습니다.");
+                    }
+                }
+            }
+        }
     }
     //---------------------
 

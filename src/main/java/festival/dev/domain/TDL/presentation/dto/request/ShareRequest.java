@@ -8,7 +8,7 @@ public class ShareRequest {
     @NotNull
     private String title;
     @NotNull
-    private Boolean Shared;
+    private Boolean shared;
     @NotNull
     private String endDate;
 }
