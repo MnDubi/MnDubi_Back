@@ -162,7 +162,6 @@ public class ToDoListServiceImpl implements ToDoListService {
                             .build())
                     .collect(Collectors.toList());
 
-            if (calendarRepository.findWithTDLIDsByUserDateKind(user.getId(), toDay(), CTdlKind.PRIVATE).isEmpty()) {
                 Calendar calendar = Calendar.builder()
                         .user(user)
                         .every(tdlIDs.size())
@@ -170,9 +169,6 @@ public class ToDoListServiceImpl implements ToDoListService {
                         .toDoListId(tdlIDs)
                         .build();
                 calendarRepository.save(calendar);
-            } else {
-                throw new IllegalArgumentException("하루에 두 번 이상 요청을 보내실 수 없습니다.");
-            }
         }
     }
 

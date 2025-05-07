@@ -106,7 +106,7 @@ public class CalendarServiceImpl implements CalendarService {
 
         List<CalendarDtoAsis> response = new ArrayList<>(List.of());
         switch (kind) {
-            case PRIVATE -> {
+            case PRIVATE,SHARE -> {
                 List<Calendar_tdl_ids> tdlIds = calendar.getToDoListId();
 
                 List<Long> tdlIdList = tdlIds.stream()
