@@ -11,8 +11,6 @@ import java.time.format.DateTimeFormatter;
 
 @Getter
 public class UpdateRequest {
-//    @NotNull
-//    private String userID;
     @NotNull
     private String title;
     @NotNull

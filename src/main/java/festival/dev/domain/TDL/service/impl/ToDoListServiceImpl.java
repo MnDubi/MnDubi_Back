@@ -16,6 +16,7 @@ import festival.dev.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -138,6 +139,15 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .userID(user.getName())
                 .build();
     }
+
+    @Transactional
+    public void shared(ShareRequest request, Long id){
+        User user = getUser(id);
+        ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user,request.getTitle(),request.getEndDate());
+        ToDoList changed = toDoList.toBuilder().shared(request.getShared()).build();
+        toDoListRepository.save(changed);
+    }
+
 
     @Scheduled(cron = "0 0 0 * * *")
     public void finish(){
