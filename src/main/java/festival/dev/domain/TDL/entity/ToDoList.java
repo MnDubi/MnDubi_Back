@@ -29,6 +29,8 @@ public class ToDoList {
 
     private String endDate;
 
+    private boolean shared;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
     private Category category;

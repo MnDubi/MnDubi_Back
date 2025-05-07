@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -319,6 +320,11 @@ public class GroupServiceImpl implements GroupService {
         messagingTemplate.convertAndSend(path, responses);
     }
 
+    @Transactional
+    @Scheduled(cron = "0 0 0 * * *")
+    public void reset(){
+        groupJoinRepo.updateAllFalse();
+    }
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
     GroupList getGroupListByUser(User user){
         return groupListRepo.findByUser(user).orElseThrow(()-> new IllegalArgumentException("GroupList에 없습니다."));
