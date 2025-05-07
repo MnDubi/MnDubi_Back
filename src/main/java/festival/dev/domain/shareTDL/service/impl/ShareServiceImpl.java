@@ -7,6 +7,7 @@ import festival.dev.domain.shareTDL.entity.Share;
 import festival.dev.domain.shareTDL.entity.ShareJoin;
 import festival.dev.domain.shareTDL.entity.ShareNumber;
 import festival.dev.domain.shareTDL.presentation.dto.request.*;
+import festival.dev.domain.shareTDL.presentation.dto.response.ShareGetRes;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareJoinRes;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareNumberRes;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareRes;
@@ -19,6 +20,9 @@ import festival.dev.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -146,7 +150,27 @@ public class ShareServiceImpl implements ShareService {
                 .completed(shareJoin.isCompleted())
                 .build();
     }
-
+    public List<ShareGetRes> get(Long userId){
+        User user = getUserByID(userId);
+        ShareNumber shareNumber = getShareNumber(user);
+        List<ShareJoin> shareJoins = shareJoinRepo.findByShareNumber(shareNumber);
+        List<ShareGetRes> shareGetResList = new ArrayList<>();
+        for (ShareJoin shareJoin : shareJoins) {
+            ShareJoinRes shareJoinRes = ShareJoinRes.builder()
+                    .user_code(shareJoin.getUser().getUserCode())
+                    .shareNumber(shareJoin.getShareNumber().getId())
+                    .title(shareJoin.getTitle())
+                    .category(shareJoin.getCategory().getCategoryName())
+                    .completed(shareJoin.isCompleted())
+                    .build();
+            ShareGetRes response = ShareGetRes.builder()
+                    .shareJoinRes(shareJoinRes)
+                    .username(user.getName())
+                    .build();
+            shareGetResList.add(response);
+        }
+        return shareGetResList;
+    }
     //---------------------
 
     User getUserByID(Long userID){

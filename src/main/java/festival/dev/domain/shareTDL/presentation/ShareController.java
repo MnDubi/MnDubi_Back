@@ -80,4 +80,14 @@ public class ShareController {
             return  ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/get")
+    public ResponseEntity<?> get(@AuthenticationPrincipal CustomUserDetails user){
+        try{
+            return ResponseEntity.ok(shareService.get(user.getUserID()));
+        }
+        catch (Exception e){
+            return  ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
