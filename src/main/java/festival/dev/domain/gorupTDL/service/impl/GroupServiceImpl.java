@@ -214,40 +214,41 @@ public class GroupServiceImpl implements GroupService {
                 .build();
     }
 
-    @Transactional
-    public void finish(Long userID){
-        User user = getUser(userID);
-        GroupList groupList = getGroupListByUser(user);
-        GroupNumber groupNum = getGroupNum(groupList.getGroupNumber().getId());
-        List<GroupJoin> groupJoins = groupJoinRepo.findByGroupNumberAndUser(groupNum,user);
-        List<Calendar_tdl_ids> tdlIds = new ArrayList<>();
-        List<GroupCalendar> groupCalendars = new ArrayList<>();
-        Long all = groupJoinRepo.countByUserAndGroupNumber(user,groupNum);
-        Long part = groupJoinRepo.countByCompletedAndUserAndGroupNumber(true,user,groupNum);
+    public void finish(){
+        List<User> users = userRepository.findAll();
+        for(User user : users) {
+            GroupList groupList = getGroupListByUser(user);
+            GroupNumber groupNum = getGroupNum(groupList.getGroupNumber().getId());
+            List<GroupJoin> groupJoins = groupJoinRepo.findByGroupNumberAndUser(groupNum, user);
+            List<Calendar_tdl_ids> tdlIds = new ArrayList<>();
+            List<GroupCalendar> groupCalendars = new ArrayList<>();
+            Long all = groupJoinRepo.countByUserAndGroupNumber(user, groupNum);
+            Long part = groupJoinRepo.countByCompletedAndUserAndGroupNumber(true, user, groupNum);
 
-        for(GroupJoin groupjoin: groupJoins){
-            Group group = groupjoin.getGroup();
-            Calendar_tdl_ids tdlId = Calendar_tdl_ids.builder()
-                    .kind(CTdlKind.GROUP)
-                    .tdlID(group.getId())
-                    .build();
-            tdlIds.add(tdlId);
+            for (GroupJoin groupjoin : groupJoins) {
+                Group group = groupjoin.getGroup();
+                Calendar_tdl_ids tdlId = Calendar_tdl_ids.builder()
+                        .kind(CTdlKind.GROUP)
+                        .tdlID(group.getId())
+                        .build();
+                tdlIds.add(tdlId);
 
-            GroupCalendar groupCalendar = GroupCalendar.builder()
-                    .title(group.getTitle())
-                    .category(group.getCategory().getId())
-                    .completed(groupjoin.isCompleted())
+                GroupCalendar groupCalendar = GroupCalendar.builder()
+                        .title(group.getTitle())
+                        .category(group.getCategory().getId())
+                        .completed(groupjoin.isCompleted())
+                        .build();
+                groupCalendars.add(groupCalendar);
+            }
+            Calendar calendar = Calendar.builder()
+                    .toDoListId(tdlIds)
+                    .user(user)
+                    .every(all.intValue())
+                    .part(part.intValue())
+                    .groupCalendarId(groupCalendars)
                     .build();
-            groupCalendars.add(groupCalendar);
+            calendarRepository.save(calendar);
         }
-        Calendar calendar = Calendar.builder()
-                .toDoListId(tdlIds)
-                .user(user)
-                .every(all.intValue())
-                .part(part.intValue())
-                .groupCalendarId(groupCalendars)
-                .build();
-        calendarRepository.save(calendar);
     }
 
     @Transactional
@@ -323,6 +324,7 @@ public class GroupServiceImpl implements GroupService {
     @Transactional
     @Scheduled(cron = "0 0 0 * * *")
     public void reset(){
+        finish();
         groupJoinRepo.updateAllFalse();
     }
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들

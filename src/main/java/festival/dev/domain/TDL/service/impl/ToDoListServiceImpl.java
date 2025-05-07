@@ -14,6 +14,7 @@ import festival.dev.domain.category.repository.CategoryRepository;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -138,28 +139,30 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .build();
     }
 
-    public void finish(Long userID){
-        User user = getUser(userID);
-        List<ToDoList> tdls = toDoListRepository.findByUserAndEndDate(user,toDay());
-        int part = toDoListRepository.findByUserAndEndDateAndCompleted(user,toDay(),true).size();
-        List<Calendar_tdl_ids> tdlIDs = tdls.stream()
-                .map(tdl -> Calendar_tdl_ids.builder()
-                        .tdlID(tdl.getId())
-                        .kind(CTdlKind.PRIVATE)
-                        .build())
-                .collect(Collectors.toList());
+    @Scheduled(cron = "0 0 0 * * *")
+    public void finish(){
+        List<User> users = userRepository.findAll();
+        for(User user : users) {
+            List<ToDoList> tdls = toDoListRepository.findByUserAndEndDate(user, toDay());
+            int part = toDoListRepository.findByUserAndEndDateAndCompleted(user, toDay(), true).size();
+            List<Calendar_tdl_ids> tdlIDs = tdls.stream()
+                    .map(tdl -> Calendar_tdl_ids.builder()
+                            .tdlID(tdl.getId())
+                            .kind(CTdlKind.PRIVATE)
+                            .build())
+                    .collect(Collectors.toList());
 
-        if (calendarRepository.findWithTDLIDsByUserDateKind(user.getId(),toDay(), CTdlKind.PRIVATE).isEmpty()) {
-            Calendar calendar = Calendar.builder()
-                    .user(user)
-                    .every(tdlIDs.size())
-                    .part(part)
-                    .toDoListId(tdlIDs)
-                    .build();
-            calendarRepository.save(calendar);
-        }
-        else{
-            throw new IllegalArgumentException("하루에 두 번 이상 요청을 보내실 수 없습니다.");
+            if (calendarRepository.findWithTDLIDsByUserDateKind(user.getId(), toDay(), CTdlKind.PRIVATE).isEmpty()) {
+                Calendar calendar = Calendar.builder()
+                        .user(user)
+                        .every(tdlIDs.size())
+                        .part(part)
+                        .toDoListId(tdlIDs)
+                        .build();
+                calendarRepository.save(calendar);
+            } else {
+                throw new IllegalArgumentException("하루에 두 번 이상 요청을 보내실 수 없습니다.");
+            }
         }
     }
 

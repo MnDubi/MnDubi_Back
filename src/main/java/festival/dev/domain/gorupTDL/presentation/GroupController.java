@@ -111,17 +111,6 @@ public class GroupController {
         }
     }
 
-    @PostMapping("/finish")
-    public ResponseEntity<?> finish(@AuthenticationPrincipal CustomUserDetails user){
-        try {
-            groupService.finish(user.getUserID());
-            return ResponseEntity.ok("success");
-        }
-        catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
     //web socket으로 대충 그룹 삭제됐다는 거 알려줘야함.
     @DeleteMapping("/delete/all")
     public ResponseEntity<?> deleteAll(@AuthenticationPrincipal CustomUserDetails user){
