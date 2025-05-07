@@ -5,6 +5,8 @@ import festival.dev.domain.gorupTDL.entity.GroupJoin;
 import festival.dev.domain.gorupTDL.entity.GroupNumber;
 import festival.dev.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,4 +22,8 @@ public interface GroupJoinRepo extends JpaRepository<GroupJoin, Long> {
     Long countByCompletedAndGroup(boolean completed, Group group);
     Long countByGroup(Group group);
     List<GroupJoin> findByGroupNumberAndUser(GroupNumber groupNumber , User user);
+
+    @Modifying
+    @Query("UPDATE GroupJoin g SET g.completed=false")
+    void updateAllFalse();
 }
