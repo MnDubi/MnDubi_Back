@@ -322,7 +322,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Transactional
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "59 59 23 * * *")
     public void reset(){
         finish();
         groupJoinRepo.updateAllFalse();

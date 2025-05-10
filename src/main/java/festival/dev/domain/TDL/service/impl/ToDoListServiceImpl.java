@@ -149,12 +149,13 @@ public class ToDoListServiceImpl implements ToDoListService {
     }
 
 
-    @Scheduled(cron = "0 0 0 * * *")
+    @Transactional
+    @Scheduled(cron = "59 59 23 * * *")
     public void finish(){
         List<User> users = userRepository.findAll();
         for(User user : users) {
-            List<ToDoList> tdls = toDoListRepository.findByUserAndEndDate(user, toDay());
-            int part = toDoListRepository.findByUserAndEndDateAndCompleted(user, toDay(), true).size();
+            List<ToDoList> tdls = toDoListRepository.findByUserAndEndDate(user, "2025.05.10");
+            int part = toDoListRepository.findByUserAndEndDateAndCompleted(user, "2025.05.10", true).size();
             List<Calendar_tdl_ids> tdlIDs = tdls.stream()
                     .map(tdl -> Calendar_tdl_ids.builder()
                             .tdlID(tdl.getId())
@@ -162,13 +163,13 @@ public class ToDoListServiceImpl implements ToDoListService {
                             .build())
                     .collect(Collectors.toList());
 
-                Calendar calendar = Calendar.builder()
-                        .user(user)
-                        .every(tdlIDs.size())
-                        .part(part)
-                        .toDoListId(tdlIDs)
-                        .build();
-                calendarRepository.save(calendar);
+            Calendar calendar = Calendar.builder()
+                    .user(user)
+                    .every(tdlIDs.size())
+                    .part(part)
+                    .toDoListId(tdlIDs)
+                    .build();
+            calendarRepository.save(calendar);
         }
     }
 

@@ -56,6 +56,14 @@ public class CalendarServiceImpl implements CalendarService {
         return getByMonth(userID, CTdlKind.GROUP);
     }
 
+    public CalendarResponse getDateCalendarWithShare(String date,Long userID){
+        return getDateCalendar(date, userID, CTdlKind.SHARE);
+    }
+
+    public MonthResponse getByMonthWithShare(Long userID){
+        return getByMonth(userID, CTdlKind.SHARE);
+    }
+
     CalendarResponse getDateCalendar(String date, Long userID, CTdlKind CTdlKind){
         try{
             User user = userGet(userID);
