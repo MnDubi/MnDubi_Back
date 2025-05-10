@@ -196,16 +196,11 @@ public class ShareServiceImpl implements ShareService {
     Share getShareByUser(User user){
         return shareRepository.findByUser(user).orElseThrow(()-> new IllegalArgumentException("공유 TDL에 참가하지 않은 사용자입니다."));
     }
-    Share getShareByUserAndAccept(User user, boolean accept){
-        if(accept){
-            return shareRepository.findByUserAndAcceptedTrue(user).orElseThrow(()-> new IllegalArgumentException("공유 TDL에 참가하지 않은 사용자입니다. accept True"));
-        }
-        else{
-            return shareRepository.findByUserAndAcceptedFalse(user).orElseThrow(()-> new IllegalArgumentException("공유 TDL에 참가하지 않은 사용자입니다. accept False"));
-        }
+    Share getShareByUserAndAccept(User user){
+        return shareRepository.findByUserAndAcceptedTrue(user).orElseThrow(()-> new IllegalArgumentException("공유 TDL에 참가하지 않은 사용자입니다. accept True"));
     }
     ShareNumber getShareNumber(User user){
-        return getShareByUserAndAccept(user,true).getShareNumber();
+        return getShareByUserAndAccept(user).getShareNumber();
     }
     public String toDay(){
         LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
