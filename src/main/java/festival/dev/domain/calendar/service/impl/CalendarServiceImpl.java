@@ -18,6 +18,8 @@ import festival.dev.domain.user.repository.UserRepository;
 import jakarta.persistence.Tuple;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -39,6 +41,7 @@ public class CalendarServiceImpl implements CalendarService {
     private final UserRepository userRepository;
     private final ToDoListRepository toDoListRepository;
     private final CategoryRepository categoryRepository;
+    private final Logger logger = LoggerFactory.getLogger(CalendarServiceImpl.class);
 
     public CalendarResponse getDateCalendarWithPrivate(String date, Long userID){
         return getDateCalendar(date, userID, CTdlKind.PRIVATE);
@@ -91,7 +94,7 @@ public class CalendarServiceImpl implements CalendarService {
 
         User user = userGet(userID);
 
-        List<Tuple> result = calendarRepository.findByMonth(month, userID, CTdlKind);
+        List<Tuple> result = calendarRepository.findByMonth(month, userID, String.valueOf(CTdlKind));
 
         Tuple tuple = result.get(0);
         Long monthEvery = tuple.get("monthEvery", Number.class) != null ? tuple.get("monthEvery", Number.class).longValue() : 0L;

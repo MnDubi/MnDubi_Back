@@ -167,6 +167,7 @@ public class ToDoListServiceImpl implements ToDoListService {
                     .user(user)
                     .every(tdlIDs.size())
                     .part(part)
+                    .kind("PRIVATE")
                     .toDoListId(tdlIDs)
                     .build();
             calendarRepository.save(calendar);

@@ -245,6 +245,7 @@ public class GroupServiceImpl implements GroupService {
                     .user(user)
                     .every(all.intValue())
                     .part(part.intValue())
+                    .kind("GROUP")
                     .groupCalendarId(groupCalendars)
                     .build();
             calendarRepository.save(calendar);

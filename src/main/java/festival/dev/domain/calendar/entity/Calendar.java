@@ -37,4 +37,6 @@ import java.util.List;
         @ElementCollection(fetch = FetchType.LAZY)
         @CollectionTable(name = "group_calendar", joinColumns = @JoinColumn(name = "calendar_id"))
         private List<GroupCalendar> groupCalendarId;
+
+        private String kind;
     }
