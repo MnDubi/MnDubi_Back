@@ -148,7 +148,7 @@ public class ShareServiceImpl implements ShareService {
     }
 
     @Transactional
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "59 59 23 * * *")
     public void reset(){
         List<ShareNumber> shareNumbers = shareNumberRepo.findAll();
         for (ShareNumber shareNumber : shareNumbers) {

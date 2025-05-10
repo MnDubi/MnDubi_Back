@@ -8,4 +8,6 @@ public interface CalendarService {
     MonthResponse getByMonthWithPrivate(Long userID);
     CalendarResponse getDateCalendarWithGroup(String date, Long userID);
     MonthResponse getByMonthWithGroup(Long userID);
+    MonthResponse getByMonthWithShare(Long userID);
+    CalendarResponse getDateCalendarWithShare(String date,Long userID);
 }
