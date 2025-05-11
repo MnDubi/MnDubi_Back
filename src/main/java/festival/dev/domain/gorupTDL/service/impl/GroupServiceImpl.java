@@ -201,11 +201,12 @@ public class GroupServiceImpl implements GroupService {
             GetSup getSup = GetSup.builder()
                     .title(group.getTitle())
                     .category(group.getCategory().getCategoryName())
-                    .userID(group.getUser().getName())
+                    .ownername(group.getUser().getName())
                     .groupNumber(groupNumber.getId())
                     .all(tdlAll)
                     .part(tdlPart)
                     .tdlID(group.getId())
+                    .ownerCode(group.getUser().getUserCode())
                     .build();
             getSups.add(getSup);
         }
