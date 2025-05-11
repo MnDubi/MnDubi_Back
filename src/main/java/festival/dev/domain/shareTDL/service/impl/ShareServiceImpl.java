@@ -13,6 +13,7 @@ import festival.dev.domain.shareTDL.presentation.dto.request.*;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareGetRes;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareJoinRes;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareNumberRes;
+import festival.dev.domain.shareTDL.presentation.dto.response.ShareUserList;
 import festival.dev.domain.shareTDL.repository.ShareNumberRepo;
 import festival.dev.domain.shareTDL.repository.ShareRepository;
 import festival.dev.domain.shareTDL.service.ShareService;
@@ -176,6 +177,21 @@ public class ShareServiceImpl implements ShareService {
         }
     }
 
+    public List<ShareUserList> getUserList(Long userId){
+        User user = getUserByID(userId);
+        ShareNumber shareNumber = getShareNumber(user);
+        List<ShareUserList> shareUserLists = new ArrayList<>();
+        List<Share> shares = shareRepository.findByShareNumberAndAcceptedTrue(shareNumber);
+        for (Share share : shares) {
+            ShareUserList shareUserList = ShareUserList.builder()
+                    .email(share.getUser().getEmail())
+                    .name(share.getUser().getName())
+                    .userCode(share.getUser().getUserCode())
+                    .build();
+            shareUserLists.add(shareUserList);
+        }
+        return shareUserLists;
+    }
     //---------------------
 
     User getUserByID(Long userID){

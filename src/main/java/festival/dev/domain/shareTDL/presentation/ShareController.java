@@ -45,4 +45,14 @@ public class ShareController {
             return  ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/user-list")
+    public ResponseEntity<?> getUserList(@AuthenticationPrincipal CustomUserDetails user){
+        try{
+            return ResponseEntity.ok(shareService.getUserList(user.getUserID()));
+        }
+        catch (Exception e){
+            return  ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

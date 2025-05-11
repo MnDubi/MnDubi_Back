@@ -9,8 +9,9 @@ public class GetSup {
     private Long tdlID;
     private Long all;
     private Long part;
-    private String userID;
+    private String ownername;
     private String title;
     private Long groupNumber;
     private String category;
+    private String ownerCode;
 }
