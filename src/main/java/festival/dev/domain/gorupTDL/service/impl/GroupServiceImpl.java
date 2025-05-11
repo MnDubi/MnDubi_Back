@@ -329,14 +329,19 @@ public class GroupServiceImpl implements GroupService {
         groupJoinRepo.updateAllFalse();
     }
 
-    public List<String> userList(Long userid){
+    public List<GCreateWsRes> userList(Long userid){
         User user = getUser(userid);
-        List<String> userList = new ArrayList<>();
+        List<GCreateWsRes> userList = new ArrayList<>();
         GroupList GroupList = groupListRepo.findByUserAndAcceptTrue(user).orElseThrow(()-> new IllegalArgumentException("그룹에 참가하지 않은 유저입니다."));
         GroupNumber groupNumber = getGroupNum(GroupList.getGroupNumber().getId());
         List<GroupList> groupLists = groupListRepo.findByGroupNumberAndAccept(groupNumber,true);
         for (GroupList groupList : groupLists) {
-            userList.add(groupList.getUser().getName());
+            GCreateWsRes gCreateWsRes = GCreateWsRes.builder()
+                    .userCode(groupList.getUser().getUserCode())
+                    .email(groupList.getUser().getEmail())
+                    .name(groupList.getUser().getName())
+                    .build();
+            userList.add(gCreateWsRes);
         }
 
         return userList;
