@@ -154,8 +154,8 @@ public class ToDoListServiceImpl implements ToDoListService {
     public void finish(){
         List<User> users = userRepository.findAll();
         for(User user : users) {
-            List<ToDoList> tdls = toDoListRepository.findByUserAndEndDate(user, "2025.05.10");
-            int part = toDoListRepository.findByUserAndEndDateAndCompleted(user, "2025.05.10", true).size();
+            List<ToDoList> tdls = toDoListRepository.findByUserAndEndDate(user, toDay());
+            int part = toDoListRepository.findByUserAndEndDateAndCompleted(user, toDay(), true).size();
             List<Calendar_tdl_ids> tdlIDs = tdls.stream()
                     .map(tdl -> Calendar_tdl_ids.builder()
                             .tdlID(tdl.getId())
@@ -167,6 +167,7 @@ public class ToDoListServiceImpl implements ToDoListService {
                     .user(user)
                     .every(tdlIDs.size())
                     .part(part)
+                    .kind("PRIVATE")
                     .toDoListId(tdlIDs)
                     .build();
             calendarRepository.save(calendar);

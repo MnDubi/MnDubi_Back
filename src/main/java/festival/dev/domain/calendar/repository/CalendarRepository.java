@@ -18,6 +18,6 @@ public interface CalendarRepository extends JpaRepository<Calendar, Long> {
     @Query("select c FROM Calendar c LEFT JOIN FETCH c.toDoListId t WHERE c.user.id = :userID AND c.yearMonthDay = :date AND t.kind = :kind")
     Optional<Calendar> findWithTDLIDsByUserDateKind(@Param("userID") Long userID,@Param("date") String date, @Param("kind") CTdlKind kind);
 
-    @Query("SELECT AVG(c.every) as monthEvery, AVG(c.part) as monthPart FROM Calendar c JOIN c.toDoListId t WHERE c.user.id = :userID AND SUBSTRING(c.formattedDate, 1, 2) = :month AND t.kind = :kind")
-    List<Tuple> findByMonth(@Param("month") String month, @Param("userID") Long userID, @Param("kind") CTdlKind kind);
+    @Query("SELECT SUM(c.every) as monthEvery, SUM(c.part) as monthPart FROM Calendar c WHERE c.user.id = :userID AND SUBSTRING(c.formattedDate, 1, 2) = :month AND c.kind = :kind")
+    List<Tuple> findByMonth(@Param("month") String month, @Param("userID") Long userID, @Param("kind") String kind);
 }

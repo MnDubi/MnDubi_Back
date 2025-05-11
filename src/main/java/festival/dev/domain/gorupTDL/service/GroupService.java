@@ -18,4 +18,5 @@ public interface GroupService {
     void deleteAll(Long userID);
     List<GInviteGet> inviteGet(Long userid);
     void createWs(GCreateWsReq request);
+    List<String> userList(Long userid);
 }

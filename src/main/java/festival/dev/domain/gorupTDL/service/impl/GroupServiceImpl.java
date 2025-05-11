@@ -245,6 +245,7 @@ public class GroupServiceImpl implements GroupService {
                     .user(user)
                     .every(all.intValue())
                     .part(part.intValue())
+                    .kind("GROUP")
                     .groupCalendarId(groupCalendars)
                     .build();
             calendarRepository.save(calendar);
@@ -326,6 +327,19 @@ public class GroupServiceImpl implements GroupService {
     public void reset(){
         finish();
         groupJoinRepo.updateAllFalse();
+    }
+
+    public List<String> userList(Long userid){
+        User user = getUser(userid);
+        List<String> userList = new ArrayList<>();
+        GroupList GroupList = groupListRepo.findByUserAndAcceptTrue(user).orElseThrow(()-> new IllegalArgumentException("그룹에 참가하지 않은 유저입니다."));
+        GroupNumber groupNumber = getGroupNum(GroupList.getGroupNumber().getId());
+        List<GroupList> groupLists = groupListRepo.findByGroupNumberAndAccept(groupNumber,true);
+        for (GroupList groupList : groupLists) {
+            userList.add(groupList.getUser().getName());
+        }
+
+        return userList;
     }
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
     GroupList getGroupListByUser(User user){

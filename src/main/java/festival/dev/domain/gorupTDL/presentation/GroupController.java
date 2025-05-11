@@ -131,4 +131,14 @@ public class GroupController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/userlist")
+    public ResponseEntity<?> userList(@AuthenticationPrincipal CustomUserDetails user){
+        try{
+            return ResponseEntity.ok(groupService.userList(user.getUserID()));
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

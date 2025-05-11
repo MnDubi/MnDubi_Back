@@ -167,6 +167,7 @@ public class ShareServiceImpl implements ShareService {
                             .user(share.getUser())
                             .every(tdlIDs.size())
                             .part(part)
+                            .kind("SHARE")
                             .toDoListId(tdlIDs)
                             .build();
                     calendarRepository.save(calendar);
