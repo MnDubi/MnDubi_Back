@@ -78,7 +78,7 @@ public class GroupServiceImpl implements GroupService {
                     .groupNumber(groupNum)
                     .build();
 
-            messagingTemplate.convertAndSend("/topic/group/accept/" + groupNum.getId(), groupNum.getId());
+            messagingTemplate.convertAndSend("/topic/group/accept", groupNum.getId());
             groupJoinRepo.save(groupJoin);
         }
     }
@@ -95,7 +95,7 @@ public class GroupServiceImpl implements GroupService {
                     throw new IllegalArgumentException("이미 수락한 요청입니다.");
                 });
         groupListRepo.deleteByGroupNumberAndUser(group,receiver);
-        messagingTemplate.convertAndSend("/topic/group/refuse/" + group.getId(),group.getId());
+        messagingTemplate.convertAndSend("/topic/group/refuse",group.getId());
     }
 
     //바뀐 TDL이랑 관련된 모든 데이터를 보내야 할 듯? web socket으로

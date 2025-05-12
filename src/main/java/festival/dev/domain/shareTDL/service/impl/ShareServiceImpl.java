@@ -20,6 +20,7 @@ import festival.dev.domain.shareTDL.service.ShareService;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +42,7 @@ public class ShareServiceImpl implements ShareService {
     private final FriendshipRepository friendshipRepository;
     private final ToDoListRepository toDoListRepository;
     private final CalendarRepository calendarRepository;
+    private final SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public ShareNumberRes createShare(ShareCreateReq request, Long userID) {
@@ -199,6 +201,7 @@ public class ShareServiceImpl implements ShareService {
 
         Share change = share.toBuilder().accepted(true).build();
         shareRepository.save(change);
+        messagingTemplate.convertAndSend("/topic/share/accept",share.getShareNumber().getId());
     }
 
     public void refuse(Long userId,ShareChoiceRequest request){
@@ -206,6 +209,7 @@ public class ShareServiceImpl implements ShareService {
         Share share = getShareByShareNumber(shareNumberRepo.findById(request.getShareNumber()).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 shareNumber입니다.")),user);
 
         shareRepository.deleteById(share.getId());
+        messagingTemplate.convertAndSend("/topic/share/refuse",share.getShareNumber().getId());
     }
     //---------------------
 
