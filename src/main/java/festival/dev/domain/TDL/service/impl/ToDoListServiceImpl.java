@@ -15,12 +15,14 @@ import festival.dev.domain.category.repository.CategoryRepository;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import festival.dev.domain.ai.service.AIClassifierService;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -61,17 +63,17 @@ public class ToDoListServiceImpl implements ToDoListService {
         );
 
         inputSetting(title, user, request.getEndDate(), category);
+
         checkEndDate(request.getEndDate());
 
         ToDoList toDoList = ToDoList.builder()
-                .title(title)
+                .title(request.getTitle())
                 .completed(false)
                 .user(user)
                 .startDate(request.getEndDate())
                 .endDate(request.getEndDate())
                 .category(category)
                 .build();
-
         toDoListRepository.save(toDoList);
     }
 
@@ -102,22 +104,20 @@ public class ToDoListServiceImpl implements ToDoListService {
         checkExist(user, title, request.getEndDate());
 
         toDoListRepository.save(ToDoList.builder()
-                .title(title)
-                .completed(false)
-                .user(user)
-                .startDate(request.getStartDate())
-                .endDate(request.getEndDate())
-                .category(category)
+                        .title(title)
+                        .completed(false)
+                        .user(user)
+                        .startDate(request.getStartDate())
+                        .endDate(request.getEndDate())
+                        .category(category)
                 .build());
     }
-
 
     public ToDoListResponse update(UpdateRequest request, Long userID) {
         User user = getUser(userID);
         checkNotExist(user, request.getTitle(), request.getEndDate());
         checkExist(user, request.getChange(), request.getChangeDate());
-
-        if (toDay().compareTo(request.getEndDate()) > 0)
+        if(toDay().compareTo(request.getEndDate()) > 0)
             throw new IllegalArgumentException("이미 끝난 TDL은 변경이 불가능합니다.");
 
         toDoListRepository.changeTitle(request.getChange(), request.getTitle(), userID, request.getChangeDate(), request.getEndDate());
@@ -176,28 +176,37 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .build();
     }
 
-    public void finish(Long userID){
-        User user = getUser(userID);
-        List<ToDoList> tdls = toDoListRepository.findByUserAndEndDate(user,toDay());
-        int part = toDoListRepository.findByUserAndEndDateAndCompleted(user,toDay(),true).size();
-        List<Calendar_tdl_ids> tdlIDs = tdls.stream()
-                .map(tdl -> Calendar_tdl_ids.builder()
-                        .tdlID(tdl.getId())
-                        .kind(CTdlKind.PRIVATE)
-                        .build())
-                .collect(Collectors.toList());
+    @Transactional
+    public void shared(ShareRequest request, Long id){
+        User user = getUser(id);
+        ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user,request.getTitle(),request.getEndDate());
+        ToDoList changed = toDoList.toBuilder().shared(request.getShared()).build();
+        toDoListRepository.save(changed);
+    }
 
-        if (calendarRepository.findWithTDLIDsByUserDateKind(user.getId(),toDay(), CTdlKind.PRIVATE).isEmpty()) {
+
+    @Transactional
+    @Scheduled(cron = "59 59 23 * * *")
+    public void finish(){
+        List<User> users = userRepository.findAll();
+        for(User user : users) {
+            List<ToDoList> tdls = toDoListRepository.findByUserAndEndDate(user, toDay());
+            int part = toDoListRepository.findByUserAndEndDateAndCompleted(user, toDay(), true).size();
+            List<Calendar_tdl_ids> tdlIDs = tdls.stream()
+                    .map(tdl -> Calendar_tdl_ids.builder()
+                            .tdlID(tdl.getId())
+                            .kind(CTdlKind.PRIVATE)
+                            .build())
+                    .collect(Collectors.toList());
+
             Calendar calendar = Calendar.builder()
                     .user(user)
                     .every(tdlIDs.size())
                     .part(part)
+                    .kind("PRIVATE")
                     .toDoListId(tdlIDs)
                     .build();
             calendarRepository.save(calendar);
-        }
-        else{
-            throw new IllegalArgumentException("하루에 두 번 이상 요청을 보내실 수 없습니다.");
         }
     }
 

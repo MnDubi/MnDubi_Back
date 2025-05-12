@@ -58,6 +58,26 @@ public class CalendarController {
         }
     }
 
+    @GetMapping("/share")
+    public ResponseEntity<?> findShare(@AuthenticationPrincipal CustomUserDetails user, @RequestParam String date){
+        try{
+            return ResponseEntity.ok(calendarService.getDateCalendarWithShare(date, user.getUserID()));
+        }
+        catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/share/month")
+    public ResponseEntity<?> findMonthShare(@AuthenticationPrincipal CustomUserDetails user){
+        try{
+            return ResponseEntity.ok(calendarService.getByMonthWithShare(user.getUserID()));
+        }
+        catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 //    public Long getUserID(String auth) {
 //        String token = auth.replace("Bearer ", "");
 //

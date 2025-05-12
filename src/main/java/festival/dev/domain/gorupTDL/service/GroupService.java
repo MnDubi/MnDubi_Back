@@ -15,8 +15,8 @@ public interface GroupService {
     GResponse success(GSuccessRequest request, Long userid);
     Long insert(GInsertRequest request, Long userid);
     GGetRes get(Long userID);
-    void finish(Long userid);
     void deleteAll(Long userID);
     List<GInviteGet> inviteGet(Long userid);
     void createWs(GCreateWsReq request);
+    List<GCreateWsRes> userList(Long userid);
 }

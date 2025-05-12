@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -86,15 +87,7 @@ public class GroupServiceImpl implements GroupService {
                     .groupNumber(groupNum)
                     .build();
 
-            GResponse response = GResponse.builder()
-                    .groupNumber(groupNum.getId())
-                    .ownerID(tdl.getUser().getName())
-                    .memberID(receiver.getName())
-                    .title(tdl.getTitle())
-                    .category(tdl.getCategory().getName())
-                    .completed(false)
-                    .build();
-            messagingTemplate.convertAndSend("/topic/group/" + groupNum.getId(), response);
+            messagingTemplate.convertAndSend("/topic/group/accept", groupNum.getId());
             groupJoinRepo.save(groupJoin);
         }
     }
@@ -111,6 +104,7 @@ public class GroupServiceImpl implements GroupService {
                     throw new IllegalArgumentException("이미 수락한 요청입니다.");
                 });
         groupListRepo.deleteByGroupNumberAndUser(group,receiver);
+        messagingTemplate.convertAndSend("/topic/group/refuse",group.getId());
     }
 
     //바뀐 TDL이랑 관련된 모든 데이터를 보내야 할 듯? web socket으로
@@ -229,11 +223,12 @@ public class GroupServiceImpl implements GroupService {
             GetSup getSup = GetSup.builder()
                     .title(group.getTitle())
                     .category(group.getCategory().getName())
-                    .userID(group.getUser().getName())
+                    .ownername(group.getUser().getName())
                     .groupNumber(groupNumber.getId())
                     .all(tdlAll)
                     .part(tdlPart)
                     .tdlID(group.getId())
+                    .ownerCode(group.getUser().getUserCode())
                     .build();
             getSups.add(getSup);
         }
@@ -242,40 +237,42 @@ public class GroupServiceImpl implements GroupService {
                 .build();
     }
 
-    @Transactional
-    public void finish(Long userID){
-        User user = getUser(userID);
-        GroupList groupList = getGroupListByUser(user);
-        GroupNumber groupNum = getGroupNum(groupList.getGroupNumber().getId());
-        List<GroupJoin> groupJoins = groupJoinRepo.findByGroupNumberAndUser(groupNum,user);
-        List<Calendar_tdl_ids> tdlIds = new ArrayList<>();
-        List<GroupCalendar> groupCalendars = new ArrayList<>();
-        Long all = groupJoinRepo.countByUserAndGroupNumber(user,groupNum);
-        Long part = groupJoinRepo.countByCompletedAndUserAndGroupNumber(true,user,groupNum);
+    public void finish(){
+        List<User> users = userRepository.findAll();
+        for(User user : users) {
+            GroupList groupList = getGroupListByUser(user);
+            GroupNumber groupNum = getGroupNum(groupList.getGroupNumber().getId());
+            List<GroupJoin> groupJoins = groupJoinRepo.findByGroupNumberAndUser(groupNum, user);
+            List<Calendar_tdl_ids> tdlIds = new ArrayList<>();
+            List<GroupCalendar> groupCalendars = new ArrayList<>();
+            Long all = groupJoinRepo.countByUserAndGroupNumber(user, groupNum);
+            Long part = groupJoinRepo.countByCompletedAndUserAndGroupNumber(true, user, groupNum);
 
-        for(GroupJoin groupjoin: groupJoins){
-            Group group = groupjoin.getGroup();
-            Calendar_tdl_ids tdlId = Calendar_tdl_ids.builder()
-                    .kind(CTdlKind.GROUP)
-                    .tdlID(group.getId())
-                    .build();
-            tdlIds.add(tdlId);
+            for (GroupJoin groupjoin : groupJoins) {
+                Group group = groupjoin.getGroup();
+                Calendar_tdl_ids tdlId = Calendar_tdl_ids.builder()
+                        .kind(CTdlKind.GROUP)
+                        .tdlID(group.getId())
+                        .build();
+                tdlIds.add(tdlId);
 
-            GroupCalendar groupCalendar = GroupCalendar.builder()
-                    .title(group.getTitle())
-                    .category(group.getCategory().getId())
-                    .completed(groupjoin.isCompleted())
+                GroupCalendar groupCalendar = GroupCalendar.builder()
+                        .title(group.getTitle())
+                        .category(group.getCategory().getId())
+                        .completed(groupjoin.isCompleted())
+                        .build();
+                groupCalendars.add(groupCalendar);
+            }
+            Calendar calendar = Calendar.builder()
+                    .toDoListId(tdlIds)
+                    .user(user)
+                    .every(all.intValue())
+                    .part(part.intValue())
+                    .kind("GROUP")
+                    .groupCalendarId(groupCalendars)
                     .build();
-            groupCalendars.add(groupCalendar);
+            calendarRepository.save(calendar);
         }
-        Calendar calendar = Calendar.builder()
-                .toDoListId(tdlIds)
-                .user(user)
-                .every(all.intValue())
-                .part(part.intValue())
-                .groupCalendarId(groupCalendars)
-                .build();
-        calendarRepository.save(calendar);
     }
 
     @Transactional
@@ -285,6 +282,7 @@ public class GroupServiceImpl implements GroupService {
         GroupNumber groupNumber = getGroupNum(groupList.getGroupNumber().getId());
         groupNumberRepo.deleteById(groupNumber.getId());
         groupRepository.deleteAllByGroupNumberAndUser(groupNumber,user);
+        messagingTemplate.convertAndSend("/topic/group/delete/all" + groupNumber.getId(), groupNumber.getId());
     }
 
     public List<GInviteGet> inviteGet(Long userID){
@@ -347,6 +345,30 @@ public class GroupServiceImpl implements GroupService {
         messagingTemplate.convertAndSend(path, responses);
     }
 
+    @Transactional
+    @Scheduled(cron = "59 59 23 * * *")
+    public void reset(){
+        finish();
+        groupJoinRepo.updateAllFalse();
+    }
+
+    public List<GCreateWsRes> userList(Long userid){
+        User user = getUser(userid);
+        List<GCreateWsRes> userList = new ArrayList<>();
+        GroupList GroupList = groupListRepo.findByUserAndAcceptTrue(user).orElseThrow(()-> new IllegalArgumentException("그룹에 참가하지 않은 유저입니다."));
+        GroupNumber groupNumber = getGroupNum(GroupList.getGroupNumber().getId());
+        List<GroupList> groupLists = groupListRepo.findByGroupNumberAndAccept(groupNumber,true);
+        for (GroupList groupList : groupLists) {
+            GCreateWsRes gCreateWsRes = GCreateWsRes.builder()
+                    .userCode(groupList.getUser().getUserCode())
+                    .email(groupList.getUser().getEmail())
+                    .name(groupList.getUser().getName())
+                    .build();
+            userList.add(gCreateWsRes);
+        }
+
+        return userList;
+    }
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
     GroupList getGroupListByUser(User user){
         return groupListRepo.findByUser(user).orElseThrow(()-> new IllegalArgumentException("GroupList에 없습니다."));

@@ -1,17 +1,19 @@
 package festival.dev.domain.shareTDL.service.impl;
 
-import festival.dev.domain.category.entity.Category;
-import festival.dev.domain.category.repository.CategoryRepository;
+import festival.dev.domain.TDL.entity.ToDoList;
+import festival.dev.domain.TDL.repository.ToDoListRepository;
+import festival.dev.domain.calendar.entity.CTdlKind;
+import festival.dev.domain.calendar.entity.Calendar;
+import festival.dev.domain.calendar.entity.Calendar_tdl_ids;
+import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.friendship.repository.FriendshipRepository;
 import festival.dev.domain.shareTDL.entity.Share;
-import festival.dev.domain.shareTDL.entity.ShareJoin;
 import festival.dev.domain.shareTDL.entity.ShareNumber;
-import festival.dev.domain.shareTDL.presentation.dto.request.ShareCreateReq;
-import festival.dev.domain.shareTDL.presentation.dto.request.ShareInsertReq;
-import festival.dev.domain.shareTDL.presentation.dto.request.ShareInviteReq;
-import festival.dev.domain.shareTDL.presentation.dto.request.ShareModifyReq;
+import festival.dev.domain.shareTDL.presentation.dto.request.*;
+import festival.dev.domain.shareTDL.presentation.dto.response.ShareGetRes;
+import festival.dev.domain.shareTDL.presentation.dto.response.ShareJoinRes;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareNumberRes;
-import festival.dev.domain.shareTDL.repository.ShareJoinRepo;
+import festival.dev.domain.shareTDL.presentation.dto.response.ShareUserList;
 import festival.dev.domain.shareTDL.repository.ShareNumberRepo;
 import festival.dev.domain.shareTDL.repository.ShareRepository;
 import festival.dev.domain.shareTDL.service.ShareService;
@@ -20,20 +22,32 @@ import festival.dev.domain.user.repository.UserRepository;
 import festival.dev.domain.ai.service.AIClassifierService;
 import festival.dev.domain.category.service.CategoryService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class ShareServiceImpl implements ShareService {
     private final ShareRepository shareRepository;
-    private final ShareJoinRepo shareJoinRepo;
     private final ShareNumberRepo shareNumberRepo;
     private final UserRepository userRepository;
     private final FriendshipRepository friendshipRepository;
+    private final ToDoListRepository toDoListRepository;
+    private final CalendarRepository calendarRepository;
+    private final SimpMessagingTemplate messagingTemplate;
     private final CategoryRepository categoryRepository;
     private final CategoryService categoryService;
     private final AIClassifierService aiClassifierService;
@@ -100,37 +114,114 @@ public class ShareServiceImpl implements ShareService {
                 .build();
     }
 
-    @Transactional
-    public ShareJoin modifyShare(Long userID, ShareModifyReq request){
-        User user = getUserByID(userID);
-        Share share = getShareByUserAndAccept(user,true);
-        ShareNumber shareNumber = share.getShareNumber();
-        ShareJoin shareJoin = shareJoinRepo.findByTitleAndShareNumber(request.getTitle(), shareNumber).orElseThrow(()-> new IllegalArgumentException("존재하지 않은 TDL입니다ㅓ."));
-        if (shareJoinRepo.findByTitleAndShareNumber(request.getChange(), shareNumber).isPresent())
-            throw new IllegalArgumentException("이미 존재하는 TDL입니다.");
-        shareJoin = shareJoin.toBuilder()
-                .title(request.getChange())
-                .build();
-        shareJoinRepo.save(shareJoin);
-        return shareJoin;
+    public List<ShareGetRes> get(Long userId){
+        User user = getUserByID(userId);
+        ShareNumber shareNumber = getShareNumber(user);
+        List<ShareGetRes> shareGetResList = new ArrayList<>();
+        List<Share> shares = shareRepository.findByShareNumberAndAcceptedTrue(shareNumber);
+        for (Share share : shares) {
+            User member = share.getUser();
+            List<ShareJoinRes> shareJoinResList = new ArrayList<>();
+            Long part = 0L;
+            List<ToDoList> tdls = toDoListRepository.findByCurrentDateAndUserIDAndSharedIsTrue(toDay(), member.getId());
+            for(ToDoList tdl : tdls) {
+                ShareJoinRes shareJoinRes = ShareJoinRes.builder()
+                        .title(tdl.getTitle())
+                        .category(tdl.getCategory().getName())
+                        .shareNumber(shareNumber.getId())
+                        .user_code(member.getUserCode())
+                        .completed(tdl.getCompleted())
+                        .build();
+
+                shareJoinResList.add(shareJoinRes);
+                if(tdl.getCompleted()){
+                    part++;
+                }
+            }
+            if (share.isShowShared()) {
+                ShareGetRes response = ShareGetRes.builder()
+                        .username(member.getName())
+                        .every((long) tdls.size())
+                        .part(part)
+                        .shareJoinRes(shareJoinResList)
+                        .build();
+                shareGetResList.add(response);
+            }
+            else{
+                ShareGetRes response = ShareGetRes.builder()
+                        .username(member.getName())
+                        .shareJoinRes(shareJoinResList)
+                        .build();
+                shareGetResList.add(response);
+            }
+
+        }
+        return shareGetResList;
     }
 
     @Transactional
-    public ShareJoin insertShare(Long userID, ShareInsertReq request){
-        User user = getUserByID(userID);
-        Share share = getShareByUserAndAccept(user, true);
-        ShareNumber shareNumber = share.getShareNumber();
-        ShareJoin shareJoin = ShareJoin.builder()
-                .shareNumber(shareNumber)
-                .category(getCategory(request.getCategory()))
-                .title(request.getTitle())
-                .completed(false)
-                .build();
-        shareJoinRepo.save(shareJoin);
-        return shareJoin;
+    @Scheduled(cron = "59 59 23 * * *")
+    public void reset(){
+        List<ShareNumber> shareNumbers = shareNumberRepo.findAll();
+        for (ShareNumber shareNumber : shareNumbers) {
+            List<Share> shares = shareRepository.findByShareNumberAndAcceptedTrue(shareNumber);
+            for (Share share : shares) {
+                if (share.isIncludeShared()) {
+                    List<ToDoList> tdls = toDoListRepository.findByUserAndEndDate(share.getUser(), toDay());
+                    int part = toDoListRepository.findByUserAndEndDateAndCompleted(share.getUser(), toDay(), true).size();
+                    List<Calendar_tdl_ids> tdlIDs = tdls.stream()
+                            .map(tdl -> Calendar_tdl_ids.builder()
+                                    .tdlID(tdl.getId())
+                                    .kind(CTdlKind.SHARE)
+                                    .build())
+                            .collect(Collectors.toList());
+                    Calendar calendar = Calendar.builder()
+                            .user(share.getUser())
+                            .every(tdlIDs.size())
+                            .part(part)
+                            .kind("SHARE")
+                            .toDoListId(tdlIDs)
+                            .build();
+                    calendarRepository.save(calendar);
+                }
+            }
+        }
     }
 
+    public List<ShareUserList> getUserList(Long userId){
+        User user = getUserByID(userId);
+        ShareNumber shareNumber = getShareNumber(user);
+        List<ShareUserList> shareUserLists = new ArrayList<>();
+        List<Share> shares = shareRepository.findByShareNumberAndAcceptedTrue(shareNumber);
+        for (Share share : shares) {
+            ShareUserList shareUserList = ShareUserList.builder()
+                    .email(share.getUser().getEmail())
+                    .name(share.getUser().getName())
+                    .userCode(share.getUser().getUserCode())
+                    .build();
+            shareUserLists.add(shareUserList);
+        }
+        return shareUserLists;
+    }
+
+    public void accept(Long userId,ShareChoiceRequest request){
+        User user = getUserByID(userId);
+        Share share = getShareByShareNumber(shareNumberRepo.findById(request.getShareNumber()).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 shareNumber입니다.")),user);
+
+        Share change = share.toBuilder().accepted(true).build();
+        shareRepository.save(change);
+        messagingTemplate.convertAndSend("/topic/share/accept",share.getShareNumber().getId());
+    }
+
+    public void refuse(Long userId,ShareChoiceRequest request){
+        User user = getUserByID(userId);
+        Share share = getShareByShareNumber(shareNumberRepo.findById(request.getShareNumber()).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 shareNumber입니다.")),user);
+
+        shareRepository.deleteById(share.getId());
+        messagingTemplate.convertAndSend("/topic/share/refuse",share.getShareNumber().getId());
+    }
     //---------------------
+
     User getUserByID(Long userID){
         return userRepository.findById(userID).orElseThrow(()-> new IllegalArgumentException("없는 유저입니다.(ID)"));
     }
@@ -144,32 +235,24 @@ public class ShareServiceImpl implements ShareService {
     }
     void checkShareByUser(User user){
         if(shareRepository.existsByUser(user)){
-            throw new IllegalArgumentException("이미 공유 TDL에 존재하는 유저입니다. " + user.getName() + user.getUserCode());
+            throw new IllegalArgumentException("이미 공유 TDL에 존재하는 유저입니다. " + user.getUserCode());
         }
     }
     Share getShareByUser(User user){
         return shareRepository.findByUser(user).orElseThrow(()-> new IllegalArgumentException("공유 TDL에 참가하지 않은 사용자입니다."));
     }
-    Share getShareByUserAndAccept(User user, boolean accept){
-        if(accept){
-            return shareRepository.findByUserAndAcceptedTrue(user).orElseThrow(()-> new IllegalArgumentException("공유 TDL에 참가하지 않은 사용자입니다. accept True"));
-        }
-        else{
-            return shareRepository.findByUserAndAcceptedFalse(user).orElseThrow(()-> new IllegalArgumentException("공유 TDL에 참가하지 않은 사용자입니다. accept False"));
-        }
+    Share getShareByUserAndAccept(User user){
+        return shareRepository.findByUserAndAcceptedTrue(user).orElseThrow(()-> new IllegalArgumentException("공유 TDL에 참가하지 않은 사용자입니다. accept True"));
     }
-    Category getCategory(String categoryName) {
-        Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
-                .collect(Collectors.toMap(
-                        Category::getName,
-                        c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
-                ));
-
-        String classifiedCategoryName = aiClassifierService.classifyCategoryWithAI(categoryName, categoryMap);
-
-        return categoryService.findOrCreateByName(classifiedCategoryName,
-                categoryMap.containsKey(classifiedCategoryName)
-                        ? categoryMap.get(classifiedCategoryName)
-                        : categoryService.getEmbeddingFromText(classifiedCategoryName));
+    ShareNumber getShareNumber(User user){
+        return getShareByUserAndAccept(user).getShareNumber();
+    }
+    public String toDay(){
+        LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
+        DateTimeFormatter yearMonthDayFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
+        return createAt.format(yearMonthDayFormatter);
+    }
+    Share getShareByShareNumber(ShareNumber shareNumber, User user){
+        return shareRepository.findByShareNumberAndUserAndAcceptedFalse(shareNumber,user).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 공유 방입니다."));
     }
 }

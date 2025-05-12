@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -75,13 +76,13 @@ public class ToDoListController {
         }
     }
 
-    @PostMapping("/finish")
-    public ResponseEntity<String> finish(/*@RequestHeader String authorization*/@AuthenticationPrincipal CustomUserDetails user){
-//        Long userID = getUserID(authorization);
-        try {
-            toDoListService.finish(/*userID*/user.getUserID());
-            return ResponseEntity.ok("Success");
-        }catch (Exception e) {
+    @PutMapping("/shared")
+    public ResponseEntity<?> shared(@Valid @RequestBody ShareRequest request, @AuthenticationPrincipal CustomUserDetails user){
+        try{
+            toDoListService.shared(request,user.getUserID());
+            return ResponseEntity.ok("success");
+        }
+        catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -98,17 +99,4 @@ public class ToDoListController {
         }
     }
 
-//    public Long getUserID(String auth){
-//        String token = auth.replace("Bearer ","");
-//
-//        Claims claims = Jwts.parserBuilder()
-//                .setSigningKey(secret.getBytes())
-//                .build()
-//                .parseClaimsJws(token).getBody();
-//        return claims.get("userId",Long.class);
-//
-////        DecodedJWT jwt = JWT.decode(token);
-////
-////        return jwt.getClaim("userId").asLong();
-//    }
 }
