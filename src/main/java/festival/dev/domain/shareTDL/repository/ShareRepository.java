@@ -12,6 +12,7 @@ import java.util.Optional;
 @Repository
 public interface ShareRepository extends JpaRepository<Share, Long> {
     boolean existsByUser(User user);
+    Optional<Share> findByShareNumberAndUserAndAcceptedFalse(ShareNumber shareNumber,User user);
     Share findByShareNumberAndOwnerIsTrue(ShareNumber shareNumber);
     Optional<Share> findByUser(User user);
     Optional<Share> findByUserAndAcceptedTrue(User user);

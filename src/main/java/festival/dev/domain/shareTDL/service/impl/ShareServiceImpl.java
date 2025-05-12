@@ -192,6 +192,21 @@ public class ShareServiceImpl implements ShareService {
         }
         return shareUserLists;
     }
+
+    public void accept(Long userId,ShareChoiceRequest request){
+        User user = getUserByID(userId);
+        Share share = getShareByShareNumber(shareNumberRepo.findById(request.getShareNumber()).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 shareNumber입니다.")),user);
+
+        Share change = share.toBuilder().accepted(true).build();
+        shareRepository.save(change);
+    }
+
+    public void refuse(Long userId,ShareChoiceRequest request){
+        User user = getUserByID(userId);
+        Share share = getShareByShareNumber(shareNumberRepo.findById(request.getShareNumber()).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 shareNumber입니다.")),user);
+
+        shareRepository.deleteById(share.getId());
+    }
     //---------------------
 
     User getUserByID(Long userID){
@@ -207,7 +222,7 @@ public class ShareServiceImpl implements ShareService {
     }
     void checkShareByUser(User user){
         if(shareRepository.existsByUser(user)){
-            throw new IllegalArgumentException("이미 공유 TDL에 존재하는 유저입니다. " + user.getName() + user.getUserCode());
+            throw new IllegalArgumentException("이미 공유 TDL에 존재하는 유저입니다. " + user.getUserCode());
         }
     }
     Share getShareByUser(User user){
@@ -223,5 +238,8 @@ public class ShareServiceImpl implements ShareService {
         LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
         DateTimeFormatter yearMonthDayFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
         return createAt.format(yearMonthDayFormatter);
+    }
+    Share getShareByShareNumber(ShareNumber shareNumber, User user){
+        return shareRepository.findByShareNumberAndUserAndAcceptedFalse(shareNumber,user).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 공유 방입니다."));
     }
 }
