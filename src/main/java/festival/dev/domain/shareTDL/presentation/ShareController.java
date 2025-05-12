@@ -55,4 +55,26 @@ public class ShareController {
             return  ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PutMapping("/accept")
+    public ResponseEntity<?> accept(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody ShareChoiceRequest request){
+        try{
+            shareService.accept(user.getUserID(),request);
+            return ResponseEntity.ok("success");
+        }
+        catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("refuse")
+    public ResponseEntity<?> refuse(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody ShareChoiceRequest request){
+        try{
+            shareService.refuse(user.getUserID(),request);
+            return ResponseEntity.ok("success");
+        }
+        catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }
