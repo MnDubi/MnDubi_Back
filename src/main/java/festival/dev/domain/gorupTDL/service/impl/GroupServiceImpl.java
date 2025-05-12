@@ -17,6 +17,8 @@ import festival.dev.domain.gorupTDL.repository.GroupRepository;
 import festival.dev.domain.gorupTDL.service.GroupService;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
+import festival.dev.domain.ai.service.AIClassifierService;
+import festival.dev.domain.category.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +29,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -42,6 +47,10 @@ public class GroupServiceImpl implements GroupService {
     private final SimpMessagingTemplate messagingTemplate;
     private final CalendarRepository calendarRepository;
     private final Logger logger = LoggerFactory.getLogger(GroupServiceImpl.class);
+
+    private final AIClassifierService aiClassifierService;
+    private final CategoryService categoryService;
+
 
     @Transactional
     public GInsertRes invite(GCreateRequest request, Long userID){
@@ -82,7 +91,7 @@ public class GroupServiceImpl implements GroupService {
                     .ownerID(tdl.getUser().getName())
                     .memberID(receiver.getName())
                     .title(tdl.getTitle())
-                    .category(tdl.getCategory().getCategoryName())
+                    .category(tdl.getCategory().getName())
                     .completed(false)
                     .build();
             messagingTemplate.convertAndSend("/topic/group/" + groupNum.getId(), response);
@@ -117,7 +126,7 @@ public class GroupServiceImpl implements GroupService {
 
         return GToDoListResponse.builder()
                 .title(toDoList.getTitle())
-                .category(toDoList.getCategory().getCategoryName())
+                .category(toDoList.getCategory().getName())
                 .userID(user.getName())
                 .groupNumber(toDoList.getGroupNumber().getGroupNumber())
                 .build();
@@ -144,7 +153,7 @@ public class GroupServiceImpl implements GroupService {
 
         GResponse response = GResponse.builder()
                 .groupNumber(groupJoin.getGroupNumber().getId())
-                .category(groupJoin.getGroup().getCategory().getCategoryName())
+                .category(groupJoin.getGroup().getCategory().getName())
                 .ownerID(groupJoin.getGroup().getUser().getName())
                 .title(groupJoin.getGroup().getTitle())
                 .completed(groupJoin.isCompleted())
@@ -160,7 +169,20 @@ public class GroupServiceImpl implements GroupService {
         checkExist(user, request.getTitle());
         GroupList groupList = getGroupListByUser(user);
         GroupNumber groupNumber = getGroupNum(groupList.getGroupNumber().getId());
-        Category category = categoryRepository.findByCategoryName(request.getCategory());
+        // AI 카테고리 이름을 가져오는 부분
+        Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        Category::getName,
+                        c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                ));
+
+        String categoryName = aiClassifierService.classifyCategoryWithAI(request.getTitle(), categoryMap);
+
+        Category category = categoryService.findOrCreateByName(categoryName,
+                categoryMap.containsKey(categoryName)
+                        ? categoryMap.get(categoryName)
+                        : categoryService.getEmbeddingFromText(categoryName));
+
         List<GroupList> GroupLists = groupListRepo.findByGroupNumberAndAccept(groupNumber,true);
         Group group = Group.builder()
                 .user(user)
@@ -180,7 +202,7 @@ public class GroupServiceImpl implements GroupService {
         }
         GResponse response = GResponse.builder()
                 .title(group.getTitle())
-                .category(group.getCategory().getCategoryName())
+                .category(group.getCategory().getName())
                 .ownerID(user.getName())
                 .memberID(user.getName())
                 .completed(false)
@@ -206,7 +228,7 @@ public class GroupServiceImpl implements GroupService {
             Long tdlPart = groupJoinRepo.countByCompletedAndGroup(true,group);
             GetSup getSup = GetSup.builder()
                     .title(group.getTitle())
-                    .category(group.getCategory().getCategoryName())
+                    .category(group.getCategory().getName())
                     .userID(group.getUser().getName())
                     .groupNumber(groupNumber.getId())
                     .all(tdlAll)
@@ -357,8 +379,21 @@ public class GroupServiceImpl implements GroupService {
 
         groupNumberRepo.save(groupNumberBuild);
         for (String title: request.getTitles()) {
-            Category category = categoryRepository.findByCategoryName(request.getCategory());
+            Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                    .collect(Collectors.toMap(
+                            Category::getName,
+                            c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                    ));
+
+            String categoryName = aiClassifierService.classifyCategoryWithAI(title, categoryMap);
+
+            Category category = categoryService.findOrCreateByName(categoryName,
+                    categoryMap.containsKey(categoryName)
+                            ? categoryMap.get(categoryName)
+                            : categoryService.getEmbeddingFromText(categoryName));
+
             inputSetting(title, user, category);
+
 
             Group group = Group.builder()
                     .groupNumber(groupNumberBuild)

@@ -17,9 +17,14 @@ import festival.dev.domain.shareTDL.repository.ShareRepository;
 import festival.dev.domain.shareTDL.service.ShareService;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
+import festival.dev.domain.ai.service.AIClassifierService;
+import festival.dev.domain.category.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +35,9 @@ public class ShareServiceImpl implements ShareService {
     private final UserRepository userRepository;
     private final FriendshipRepository friendshipRepository;
     private final CategoryRepository categoryRepository;
+    private final CategoryService categoryService;
+    private final AIClassifierService aiClassifierService;
+
 
     @Transactional
     public ShareNumberRes createShare(ShareCreateReq request, Long userID) {
@@ -150,7 +158,18 @@ public class ShareServiceImpl implements ShareService {
             return shareRepository.findByUserAndAcceptedFalse(user).orElseThrow(()-> new IllegalArgumentException("공유 TDL에 참가하지 않은 사용자입니다. accept False"));
         }
     }
-    Category getCategory(String category){
-        return categoryRepository.findByCategoryName(category);
+    Category getCategory(String categoryName) {
+        Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        Category::getName,
+                        c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                ));
+
+        String classifiedCategoryName = aiClassifierService.classifyCategoryWithAI(categoryName, categoryMap);
+
+        return categoryService.findOrCreateByName(classifiedCategoryName,
+                categoryMap.containsKey(classifiedCategoryName)
+                        ? categoryMap.get(classifiedCategoryName)
+                        : categoryService.getEmbeddingFromText(classifiedCategoryName));
     }
 }
