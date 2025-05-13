@@ -39,9 +39,9 @@ public class GroupController {
     }
 
     @PutMapping("/accept")
-    public ResponseEntity<?> accept(@AuthenticationPrincipal CustomUserDetails user) {
+    public ResponseEntity<?> accept(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GChoiceReq req) {
         try{
-            groupService.acceptInvite(user.getUserID());
+            groupService.acceptInvite(user.getUserID(),req);
             return ResponseEntity.ok("success");
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -49,9 +49,9 @@ public class GroupController {
     }
 
     @DeleteMapping("/refuse")
-    public ResponseEntity<?> refuse(@AuthenticationPrincipal CustomUserDetails user) {
+    public ResponseEntity<?> refuse(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GChoiceReq req) {
         try{
-            groupService.refuseInvite(user.getUserID());
+            groupService.refuseInvite(user.getUserID(),req);
             return ResponseEntity.ok("success");
         }
         catch (Exception e){

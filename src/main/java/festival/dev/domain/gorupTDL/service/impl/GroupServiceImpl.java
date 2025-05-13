@@ -63,10 +63,9 @@ public class GroupServiceImpl implements GroupService {
 
     //초대를 응답하는 것이기 때문에 받은 사람은 나
     @Transactional
-    public void acceptInvite(Long userID){
+    public void acceptInvite(Long userID, GChoiceReq req){
         User receiver = getUser(userID);
-        GroupList groupList = getGroupListByUser(receiver);
-        GroupNumber groupNum = getGroupNum(groupList.getGroupNumber().getId());
+        GroupNumber groupNum = groupNumberRepo.findById(req.getGroupNum()).orElseThrow(()-> new IllegalArgumentException("없는 그룹방입니다."));
         checkInvite(groupNum, receiver);
         groupListRepo.updateAccept(groupNum.getId(), receiver.getId());
         List<Group> tdls = groupRepository.findByGroupNumber(groupNum);
@@ -85,10 +84,10 @@ public class GroupServiceImpl implements GroupService {
 
     //초대를 응답하는 것이기 때문에 받은 사람은 나
     @Transactional
-    public void refuseInvite(Long userID){
+    public void refuseInvite(Long userID, GChoiceReq req){
         User receiver = getUser(userID);
         GroupList groupList = getGroupListByUser(receiver);
-        GroupNumber group = getGroupNum(groupList.getGroupNumber().getId());
+        GroupNumber group = groupNumberRepo.findById(req.getGroupNum()).orElseThrow(()-> new IllegalArgumentException("없는 그룹방입니다."));
         checkInvite(group,receiver);
         groupListRepo.findByGroupNumberAndUserAndAccept(group, receiver, true)
                 .ifPresent(GroupList -> {
@@ -185,6 +184,8 @@ public class GroupServiceImpl implements GroupService {
 
     public GGetRes get(Long userID){
         User user = getUser(userID);
+        String ownerName = "";
+        String ownerCode = "";
         GroupList GroupList = groupListRepo.findByUserAndAcceptTrue(user).orElseThrow(()-> new IllegalArgumentException("그룹에 참가하지 않은 유저입니다."));
         GroupNumber groupNumber = GroupList.getGroupNumber();
         Long all = groupJoinRepo.countByUserAndGroupNumber(user,groupNumber);
@@ -201,18 +202,19 @@ public class GroupServiceImpl implements GroupService {
             GetSup getSup = GetSup.builder()
                     .title(group.getTitle())
                     .category(group.getCategory().getCategoryName())
-                    .ownername(group.getUser().getName())
                     .groupNumber(groupNumber.getId())
                     .all(tdlAll)
                     .part(tdlPart)
                     .tdlID(group.getId())
-                    .ownerCode(group.getUser().getUserCode())
                     .build();
             getSups.add(getSup);
+            ownerName = group.getUser().getName();
+            ownerCode = group.getUser().getUserCode();
         }
         return response.toBuilder()
                 .getSups(getSups)
-                .build();
+                .ownerName(ownerName)
+                .ownerCode(ownerCode).build();
     }
 
     public void finish(){
