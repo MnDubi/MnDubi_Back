@@ -218,7 +218,11 @@ public class GroupServiceImpl implements GroupService {
     public void finish(){
         List<User> users = userRepository.findAll();
         for(User user : users) {
-            GroupList groupList = getGroupListByUser(user);
+            Optional<GroupList> optionalGroupList = groupListRepo.findByUserAndAcceptTrue(user);
+            if(optionalGroupList.isEmpty()){
+                continue;
+            }
+            GroupList groupList = optionalGroupList.get();
             GroupNumber groupNum = getGroupNum(groupList.getGroupNumber().getId());
             List<GroupJoin> groupJoins = groupJoinRepo.findByGroupNumberAndUser(groupNum, user);
             List<Calendar_tdl_ids> tdlIds = new ArrayList<>();
