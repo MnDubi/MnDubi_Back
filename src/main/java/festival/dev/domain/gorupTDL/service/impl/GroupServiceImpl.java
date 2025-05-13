@@ -117,6 +117,27 @@ public class GroupServiceImpl implements GroupService {
 
         Group toDoList = getGroupByTitleUser(request.getChange(), user);
 
+        Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        Category::getName,
+                        c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                ));
+
+        // AI로 새 제목 분류
+        String newCategoryName = aiClassifierService.classifyCategoryWithAI(request.getChange(), categoryMap);
+
+        // 분류된 카테고리 조회 또는 생성
+        Category newCategory = categoryService.findOrCreateByName(
+                newCategoryName,
+                categoryMap.containsKey(newCategoryName)
+                        ? categoryMap.get(newCategoryName)
+                        : categoryService.getEmbeddingFromText(newCategoryName)
+        );
+
+        // 카테고리 업데이트
+        toDoList.setCategory(newCategory);
+        groupRepository.save(toDoList);
+
         return GToDoListResponse.builder()
                 .title(toDoList.getTitle())
                 .category(toDoList.getCategory().getName())
@@ -224,9 +245,8 @@ public class GroupServiceImpl implements GroupService {
             Long tdlPart = groupJoinRepo.countByCompletedAndGroup(true,group);
             GetSup getSup = GetSup.builder()
                     .title(group.getTitle())
-                    .completed(groupJoin.isCompleted())
                     .category(group.getCategory().getName())
-                    .ownername(group.getUser().getName())
+                    .completed(groupJoin.isCompleted())
                     .groupNumber(groupNumber.getId())
                     .all(tdlAll)
                     .part(tdlPart)
@@ -378,6 +398,13 @@ public class GroupServiceImpl implements GroupService {
 
         return userList;
     }
+
+    @Override
+    public boolean isGroupMember(Long userId) {
+        User user = getUser(userId);
+        return groupListRepo.findByUserAndAcceptTrue(user).isPresent();
+    }
+
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
     GroupList getGroupListByUser(User user){
         return groupListRepo.findByUser(user).orElseThrow(()-> new IllegalArgumentException("GroupList에 없습니다."));
@@ -503,4 +530,6 @@ public class GroupServiceImpl implements GroupService {
             throw new IllegalArgumentException("존재하지 않은 카테고리입니다.");
         }
     }
+
+
 }

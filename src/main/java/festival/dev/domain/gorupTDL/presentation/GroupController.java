@@ -141,4 +141,15 @@ public class GroupController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @GetMapping("/isMember")
+    public ResponseEntity<?> isGroupMember(@AuthenticationPrincipal CustomUserDetails user) {
+        try {
+            boolean isMember = groupService.isGroupMember(user.getUserID());
+            return ResponseEntity.ok(isMember);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 }

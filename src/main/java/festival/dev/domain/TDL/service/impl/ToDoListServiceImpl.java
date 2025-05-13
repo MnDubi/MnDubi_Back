@@ -124,6 +124,25 @@ public class ToDoListServiceImpl implements ToDoListService {
 
         ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user, request.getChange(), request.getChangeDate());
 
+        Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        Category::getName,
+                        c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                ));
+
+        String newCategoryName = aiClassifierService.classifyCategoryWithAI(request.getChange(), categoryMap);
+
+        Category newCategory = categoryService.findOrCreateByName(
+                newCategoryName,
+                categoryMap.containsKey(newCategoryName)
+                        ? categoryMap.get(newCategoryName)
+                        : categoryService.getEmbeddingFromText(newCategoryName)
+        );
+
+        // toBuilder로 category만 바꿔서 저장
+        toDoList.setCategory(newCategory);
+        toDoListRepository.save(toDoList);
+
         return ToDoListResponse.builder()
                 .title(toDoList.getTitle())
                 .completed(toDoList.getCompleted())

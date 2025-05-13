@@ -19,4 +19,6 @@ public interface GroupService {
     List<GInviteGet> inviteGet(Long userid);
     void createWs(GCreateWsReq request);
     List<GCreateWsRes> userList(Long userid);
+    boolean isGroupMember(Long userId);
+
 }

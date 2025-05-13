@@ -3,10 +3,7 @@ package festival.dev.domain.TDL.entity;
 import festival.dev.domain.category.entity.Category;
 import festival.dev.domain.user.entity.User;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
 
@@ -33,6 +30,7 @@ public class ToDoList {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
+    @Setter
     private Category category;
 
     @ManyToOne(fetch = FetchType.LAZY)
