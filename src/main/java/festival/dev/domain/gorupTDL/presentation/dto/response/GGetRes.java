@@ -11,5 +11,7 @@ public class GGetRes {
     private Long all;
     private Long part;
     private String name;
+    private String ownerName;
+    private String ownerCode;
     private List<GetSup> getSups;
 }

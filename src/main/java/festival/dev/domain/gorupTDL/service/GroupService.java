@@ -8,8 +8,8 @@ import java.util.List;
 public interface GroupService {
     GInsertRes invite(GCreateRequest gCreateRequest, Long userid);
     void invite(GInviteReq request, Long userid);
-    void acceptInvite(Long userid);
-    void refuseInvite(Long userid);
+    void acceptInvite(Long userid, GChoiceReq request);
+    void refuseInvite(Long userid, GChoiceReq request);
     GToDoListResponse update(GUpdateRequest gUpdateReq, Long userid);
     void delete(GDeleteRequest gDeleteReq, Long userid);
     GResponse success(GSuccessRequest request, Long userid);
