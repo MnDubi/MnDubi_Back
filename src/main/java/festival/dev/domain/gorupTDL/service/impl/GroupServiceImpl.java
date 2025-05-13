@@ -419,12 +419,17 @@ public class GroupServiceImpl implements GroupService {
                 throw new IllegalArgumentException("친구로 추가가 안 되어있습니다.");
             }
 
+            if (groupListRepo.existsByGroupNumberAndUser(groupNumber,receiver)){
+                throw new IllegalArgumentException("이미 초대한 사람은 초대가 불가합니다.");
+            }
+
             if (groupListRepo.existsByAcceptTrueAndUser(receiver)){
                 throw new IllegalArgumentException("이미 그룹에 포함된 사람은 초대가 불가합니다.");
             }
 
             GroupList groupList = GroupList.builder()
-                    .accept(false)
+                    //false로 바꿔야함
+                    .accept(true)
                     .groupNumber(groupNumber)
                     .user(receiver)
                     .build();
