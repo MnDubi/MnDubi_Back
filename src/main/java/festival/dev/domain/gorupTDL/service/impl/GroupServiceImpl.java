@@ -428,7 +428,8 @@ public class GroupServiceImpl implements GroupService {
             }
 
             GroupList groupList = GroupList.builder()
-                    .accept(false)
+                    //false로 바꿔야함
+                    .accept(true)
                     .groupNumber(groupNumber)
                     .user(receiver)
                     .build();
