@@ -12,4 +12,5 @@ public class GetSup {
     private String title;
     private Long groupNumber;
     private String category;
+    private boolean completed;
 }
