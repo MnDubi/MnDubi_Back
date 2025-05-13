@@ -130,8 +130,8 @@ public class GroupServiceImpl implements GroupService {
         User sender = userRepository.findByUserCode(request.getOwnerID()).orElseThrow(()->new IllegalArgumentException("그 유저는 없는 유저입니다."));
         GroupList groupList = getGroupListByUser(sender);
         GroupNumber groupNumber = getGroupNum(groupList.getGroupNumber().getId());
-        Group group = getGroupByTitleUser(request.getTitle(),sender);
         User user = getUser(userID);
+        Group group = getGroupByTitleUser(request.getTitle(),user);
         GroupJoin groupJoin = groupJoinRepo.findByGroupAndGroupNumberAndUser(group,groupNumber,user).orElseThrow(()-> new IllegalArgumentException("TDL이 없습니다."));
         groupJoinRepo.save(groupJoin.toBuilder().completed(request.getCompleted()).build());
 
@@ -197,11 +197,13 @@ public class GroupServiceImpl implements GroupService {
                 .name(user.getName()).build();
         List<GetSup> getSups = new ArrayList<>();
         for(Group group: groups){
+            GroupJoin groupJoin = groupJoinRepo.findByGroupAndGroupNumberAndUser(group,groupNumber,user).orElseThrow(()-> new IllegalArgumentException("없는 TDL입니다."));
             Long tdlAll = groupJoinRepo.countByGroup(group);
             Long tdlPart = groupJoinRepo.countByCompletedAndGroup(true,group);
             GetSup getSup = GetSup.builder()
                     .title(group.getTitle())
                     .category(group.getCategory().getCategoryName())
+                    .completed(groupJoin.isCompleted())
                     .groupNumber(groupNumber.getId())
                     .all(tdlAll)
                     .part(tdlPart)

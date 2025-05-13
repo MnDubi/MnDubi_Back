@@ -23,6 +23,7 @@ public interface GroupJoinRepo extends JpaRepository<GroupJoin, Long> {
     Long countByGroup(Group group);
     List<GroupJoin> findByGroupNumberAndUser(GroupNumber groupNumber , User user);
 
+
     @Modifying
     @Query("UPDATE GroupJoin g SET g.completed=false")
     void updateAllFalse();
