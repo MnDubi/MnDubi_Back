@@ -72,10 +72,9 @@ public class GroupServiceImpl implements GroupService {
 
     //초대를 응답하는 것이기 때문에 받은 사람은 나
     @Transactional
-    public void acceptInvite(Long userID){
+    public void acceptInvite(Long userID, GChoiceReq req){
         User receiver = getUser(userID);
-        GroupList groupList = getGroupListByUser(receiver);
-        GroupNumber groupNum = getGroupNum(groupList.getGroupNumber().getId());
+        GroupNumber groupNum = groupNumberRepo.findById(req.getGroupNum()).orElseThrow(()-> new IllegalArgumentException("없는 그룹방입니다."));
         checkInvite(groupNum, receiver);
         groupListRepo.updateAccept(groupNum.getId(), receiver.getId());
         List<Group> tdls = groupRepository.findByGroupNumber(groupNum);
@@ -94,10 +93,10 @@ public class GroupServiceImpl implements GroupService {
 
     //초대를 응답하는 것이기 때문에 받은 사람은 나
     @Transactional
-    public void refuseInvite(Long userID){
+    public void refuseInvite(Long userID, GChoiceReq req){
         User receiver = getUser(userID);
         GroupList groupList = getGroupListByUser(receiver);
-        GroupNumber group = getGroupNum(groupList.getGroupNumber().getId());
+        GroupNumber group = groupNumberRepo.findById(req.getGroupNum()).orElseThrow(()-> new IllegalArgumentException("없는 그룹방입니다."));
         checkInvite(group,receiver);
         groupListRepo.findByGroupNumberAndUserAndAccept(group, receiver, true)
                 .ifPresent(GroupList -> {
@@ -140,8 +139,8 @@ public class GroupServiceImpl implements GroupService {
         User sender = userRepository.findByUserCode(request.getOwnerID()).orElseThrow(()->new IllegalArgumentException("그 유저는 없는 유저입니다."));
         GroupList groupList = getGroupListByUser(sender);
         GroupNumber groupNumber = getGroupNum(groupList.getGroupNumber().getId());
-        Group group = getGroupByTitleUser(request.getTitle(),sender);
         User user = getUser(userID);
+        Group group = getGroupByTitleUser(request.getTitle(),user);
         GroupJoin groupJoin = groupJoinRepo.findByGroupAndGroupNumberAndUser(group,groupNumber,user).orElseThrow(()-> new IllegalArgumentException("TDL이 없습니다."));
         groupJoinRepo.save(groupJoin.toBuilder().completed(request.getCompleted()).build());
 
@@ -207,6 +206,8 @@ public class GroupServiceImpl implements GroupService {
 
     public GGetRes get(Long userID){
         User user = getUser(userID);
+        String ownerName = "";
+        String ownerCode = "";
         GroupList GroupList = groupListRepo.findByUserAndAcceptTrue(user).orElseThrow(()-> new IllegalArgumentException("그룹에 참가하지 않은 유저입니다."));
         GroupNumber groupNumber = GroupList.getGroupNumber();
         Long all = groupJoinRepo.countByUserAndGroupNumber(user,groupNumber);
@@ -218,29 +219,37 @@ public class GroupServiceImpl implements GroupService {
                 .name(user.getName()).build();
         List<GetSup> getSups = new ArrayList<>();
         for(Group group: groups){
+            GroupJoin groupJoin = groupJoinRepo.findByGroupAndGroupNumberAndUser(group,groupNumber,user).orElseThrow(()-> new IllegalArgumentException("없는 TDL입니다."));
             Long tdlAll = groupJoinRepo.countByGroup(group);
             Long tdlPart = groupJoinRepo.countByCompletedAndGroup(true,group);
             GetSup getSup = GetSup.builder()
                     .title(group.getTitle())
+                    .completed(groupJoin.isCompleted())
                     .category(group.getCategory().getName())
                     .ownername(group.getUser().getName())
                     .groupNumber(groupNumber.getId())
                     .all(tdlAll)
                     .part(tdlPart)
                     .tdlID(group.getId())
-                    .ownerCode(group.getUser().getUserCode())
                     .build();
             getSups.add(getSup);
+            ownerName = group.getUser().getName();
+            ownerCode = group.getUser().getUserCode();
         }
         return response.toBuilder()
                 .getSups(getSups)
-                .build();
+                .ownerName(ownerName)
+                .ownerCode(ownerCode).build();
     }
 
     public void finish(){
         List<User> users = userRepository.findAll();
         for(User user : users) {
-            GroupList groupList = getGroupListByUser(user);
+            Optional<GroupList> optionalGroupList = groupListRepo.findByUserAndAcceptTrue(user);
+            if(optionalGroupList.isEmpty()){
+                continue;
+            }
+            GroupList groupList = optionalGroupList.get();
             GroupNumber groupNum = getGroupNum(groupList.getGroupNumber().getId());
             List<GroupJoin> groupJoins = groupJoinRepo.findByGroupNumberAndUser(groupNum, user);
             List<Calendar_tdl_ids> tdlIds = new ArrayList<>();
@@ -416,7 +425,6 @@ public class GroupServiceImpl implements GroupService {
 
             inputSetting(title, user, category);
 
-
             Group group = Group.builder()
                     .groupNumber(groupNumberBuild)
                     .category(category)
@@ -446,12 +454,17 @@ public class GroupServiceImpl implements GroupService {
                 throw new IllegalArgumentException("친구로 추가가 안 되어있습니다.");
             }
 
+            if (groupListRepo.existsByGroupNumberAndUser(groupNumber,receiver)){
+                throw new IllegalArgumentException("이미 초대한 사람은 초대가 불가합니다.");
+            }
+
             if (groupListRepo.existsByAcceptTrueAndUser(receiver)){
                 throw new IllegalArgumentException("이미 그룹에 포함된 사람은 초대가 불가합니다.");
             }
 
             GroupList groupList = GroupList.builder()
-                    .accept(false)
+                    //false로 바꿔야함
+                    .accept(true)
                     .groupNumber(groupNumber)
                     .user(receiver)
                     .build();

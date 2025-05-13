@@ -21,6 +21,7 @@ import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import festival.dev.domain.ai.service.AIClassifierService;
 import festival.dev.domain.category.service.CategoryService;
+import festival.dev.domain.category.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
