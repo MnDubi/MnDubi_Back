@@ -8,6 +8,7 @@ import festival.dev.domain.auth.service.AuthService;
 import festival.dev.global.security.oauth.dto.OAuthCodeInfo;
 import festival.dev.global.security.oauth.OAuthCodeStore;
 import festival.dev.global.security.jwt.JwtUtil;
+import festival.dev.domain.auth.dto.RefreshRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -45,10 +46,12 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponseDto> refreshAccessToken(@RequestHeader("Authorization") String refreshToken) {
+    public ResponseEntity<AuthResponseDto> refreshAccessToken(@RequestBody RefreshRequest request) {
+        String refreshToken = request.getRefreshToken();
         AuthResponseDto tokenResponse = authService.refreshAccessToken(refreshToken);
         return ResponseEntity.ok(tokenResponse);
     }
+
 
     @PostMapping("/token")
     public ResponseEntity<?> issueToken(@RequestBody Map<String, String> body) {

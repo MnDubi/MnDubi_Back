@@ -62,9 +62,10 @@ public class JwtUtil {
                     .build()
                     .verify(token)
                     .getExpiresAt();
-            return expiration.before(new Date());
+            return expiration.after(new Date());
         } catch (Exception e) {
-            return true; // 토큰 검증 실패 시 만료된 것으로 간주
+            return false;
         }
     }
+
 }
