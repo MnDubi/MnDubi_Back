@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class JwtUtil {
@@ -13,6 +15,8 @@ public class JwtUtil {
     private final Algorithm algorithm;
     private final long expirationTime;
     private final long refreshExpirationTime;
+
+    private final Set<String> invalidatedTokens = ConcurrentHashMap.newKeySet();
 
     public JwtUtil(@Value("${jwt.secret}") String secret,
                    @Value("${jwt.access}") long expirationTime,
@@ -58,9 +62,10 @@ public class JwtUtil {
                     .build()
                     .verify(token)
                     .getExpiresAt();
-            return expiration.before(new Date());
+            return expiration.after(new Date());
         } catch (Exception e) {
-            return true; // 토큰 검증 실패 시 만료된 것으로 간주
+            return false;
         }
     }
+
 }

@@ -17,6 +17,8 @@ import festival.dev.domain.gorupTDL.repository.GroupRepository;
 import festival.dev.domain.gorupTDL.service.GroupService;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
+import festival.dev.domain.ai.service.AIClassifierService;
+import festival.dev.domain.category.service.CategoryService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +30,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +48,10 @@ public class GroupServiceImpl implements GroupService {
     private final SimpMessagingTemplate messagingTemplate;
     private final CalendarRepository calendarRepository;
     private final Logger logger = LoggerFactory.getLogger(GroupServiceImpl.class);
+
+    private final AIClassifierService aiClassifierService;
+    private final CategoryService categoryService;
+
 
     @Transactional
     public GInsertRes invite(GCreateRequest request, Long userID){
@@ -108,9 +117,30 @@ public class GroupServiceImpl implements GroupService {
 
         Group toDoList = getGroupByTitleUser(request.getChange(), user);
 
+        Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        Category::getName,
+                        c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                ));
+
+        // AI로 새 제목 분류
+        String newCategoryName = aiClassifierService.classifyCategoryWithAI(request.getChange(), categoryMap);
+
+        // 분류된 카테고리 조회 또는 생성
+        Category newCategory = categoryService.findOrCreateByName(
+                newCategoryName,
+                categoryMap.containsKey(newCategoryName)
+                        ? categoryMap.get(newCategoryName)
+                        : categoryService.getEmbeddingFromText(newCategoryName)
+        );
+
+        // 카테고리 업데이트
+        toDoList.setCategory(newCategory);
+        groupRepository.save(toDoList);
+
         return GToDoListResponse.builder()
                 .title(toDoList.getTitle())
-                .category(toDoList.getCategory().getCategoryName())
+                .category(toDoList.getCategory().getName())
                 .userID(user.getName())
                 .groupNumber(toDoList.getGroupNumber().getGroupNumber())
                 .build();
@@ -137,7 +167,7 @@ public class GroupServiceImpl implements GroupService {
 
         GResponse response = GResponse.builder()
                 .groupNumber(groupJoin.getGroupNumber().getId())
-                .category(groupJoin.getGroup().getCategory().getCategoryName())
+                .category(groupJoin.getGroup().getCategory().getName())
                 .ownerID(groupJoin.getGroup().getUser().getName())
                 .title(groupJoin.getGroup().getTitle())
                 .completed(groupJoin.isCompleted())
@@ -153,7 +183,20 @@ public class GroupServiceImpl implements GroupService {
         checkExist(user, request.getTitle());
         GroupList groupList = getGroupListByUser(user);
         GroupNumber groupNumber = getGroupNum(groupList.getGroupNumber().getId());
-        Category category = categoryRepository.findByCategoryName(request.getCategory());
+        // AI 카테고리 이름을 가져오는 부분
+        Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        Category::getName,
+                        c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                ));
+
+        String categoryName = aiClassifierService.classifyCategoryWithAI(request.getTitle(), categoryMap);
+
+        Category category = categoryService.findOrCreateByName(categoryName,
+                categoryMap.containsKey(categoryName)
+                        ? categoryMap.get(categoryName)
+                        : categoryService.getEmbeddingFromText(categoryName));
+
         List<GroupList> GroupLists = groupListRepo.findByGroupNumberAndAccept(groupNumber,true);
         Group group = Group.builder()
                 .user(user)
@@ -173,7 +216,7 @@ public class GroupServiceImpl implements GroupService {
         }
         GResponse response = GResponse.builder()
                 .title(group.getTitle())
-                .category(group.getCategory().getCategoryName())
+                .category(group.getCategory().getName())
                 .ownerID(user.getName())
                 .memberID(user.getName())
                 .completed(false)
@@ -202,7 +245,7 @@ public class GroupServiceImpl implements GroupService {
             Long tdlPart = groupJoinRepo.countByCompletedAndGroup(true,group);
             GetSup getSup = GetSup.builder()
                     .title(group.getTitle())
-                    .category(group.getCategory().getCategoryName())
+                    .category(group.getCategory().getName())
                     .completed(groupJoin.isCompleted())
                     .groupNumber(groupNumber.getId())
                     .all(tdlAll)
@@ -355,6 +398,13 @@ public class GroupServiceImpl implements GroupService {
 
         return userList;
     }
+
+    @Override
+    public boolean isGroupMember(Long userId) {
+        User user = getUser(userId);
+        return groupListRepo.findByUserAndAcceptTrue(user).isPresent();
+    }
+
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
     GroupList getGroupListByUser(User user){
         return groupListRepo.findByUser(user).orElseThrow(()-> new IllegalArgumentException("GroupList에 없습니다."));
@@ -387,7 +437,19 @@ public class GroupServiceImpl implements GroupService {
 
         groupNumberRepo.save(groupNumberBuild);
         for (String title: request.getTitles()) {
-            Category category = categoryRepository.findByCategoryName(request.getCategory());
+            Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                    .collect(Collectors.toMap(
+                            Category::getName,
+                            c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                    ));
+
+            String categoryName = aiClassifierService.classifyCategoryWithAI(title, categoryMap);
+
+            Category category = categoryService.findOrCreateByName(categoryName,
+                    categoryMap.containsKey(categoryName)
+                            ? categoryMap.get(categoryName)
+                            : categoryService.getEmbeddingFromText(categoryName));
+
             inputSetting(title, user, category);
 
             Group group = Group.builder()
@@ -468,4 +530,6 @@ public class GroupServiceImpl implements GroupService {
             throw new IllegalArgumentException("존재하지 않은 카테고리입니다.");
         }
     }
+
+
 }

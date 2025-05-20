@@ -19,11 +19,17 @@ import festival.dev.domain.shareTDL.repository.ShareRepository;
 import festival.dev.domain.shareTDL.service.ShareService;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
+import festival.dev.domain.ai.service.AIClassifierService;
+import festival.dev.domain.category.service.CategoryService;
+import festival.dev.domain.category.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -43,6 +49,10 @@ public class ShareServiceImpl implements ShareService {
     private final ToDoListRepository toDoListRepository;
     private final CalendarRepository calendarRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final CategoryRepository categoryRepository;
+    private final CategoryService categoryService;
+    private final AIClassifierService aiClassifierService;
+
 
     @Transactional
     public ShareNumberRes createShare(ShareCreateReq request, Long userID) {
@@ -118,7 +128,7 @@ public class ShareServiceImpl implements ShareService {
             for(ToDoList tdl : tdls) {
                 ShareJoinRes shareJoinRes = ShareJoinRes.builder()
                         .title(tdl.getTitle())
-                        .category(tdl.getCategory().getCategoryName())
+                        .category(tdl.getCategory().getName())
                         .shareNumber(shareNumber.getId())
                         .user_code(member.getUserCode())
                         .completed(tdl.getCompleted())
