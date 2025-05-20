@@ -205,7 +205,7 @@ public class ToDoListServiceImpl implements ToDoListService {
 
 
     @Transactional
-    @Scheduled(cron = "59 59 23 * * *")
+    @Scheduled(cron = "0 42 15 * * *")
     public void finish(){
         List<User> users = userRepository.findAll();
         for(User user : users) {
