@@ -79,7 +79,8 @@ public class SecurityConfig {
 
         config.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
-                "https://endlessly-cuddly-salmon.ngrok-free.app"
+                "https://endlessly-cuddly-salmon.ngrok-free.app",
+                "https://asis-beta-imo8.vercel.app"
         ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowCredentials(true);

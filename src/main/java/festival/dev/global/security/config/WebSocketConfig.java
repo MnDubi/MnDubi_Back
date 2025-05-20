@@ -12,7 +12,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOriginPatterns("http://localhost:3000", "https://endlessly-cuddly-salmon.ngrok-free.app","https://immortal-vervet-humbly.ngrok-free.app")
+                .setAllowedOriginPatterns("http://localhost:3000", "https://endlessly-cuddly-salmon.ngrok-free.app","https://immortal-vervet-humbly.ngrok-free.app","https://asis-beta-imo8.vercel.app")
                 .withSockJS();
     }
 
