@@ -7,6 +7,8 @@ import festival.dev.domain.gorupTDL.service.GroupService;
 import festival.dev.domain.user.entity.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -15,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("group/toDoList")
 @RequiredArgsConstructor
 public class GroupController {
-
+    private static final Logger log = LoggerFactory.getLogger(GroupController.class);
     private final GroupService groupService;
 
     @PostMapping("/invite")

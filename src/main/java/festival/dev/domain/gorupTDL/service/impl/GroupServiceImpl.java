@@ -24,14 +24,20 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Service
 @RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
+    private final Map<Long, CopyOnWriteArrayList<SseEmitter>> groupEmitters = new ConcurrentHashMap<>();
 
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
@@ -105,15 +111,27 @@ public class GroupServiceImpl implements GroupService {
         checkExist(user, request.getChange());
 
         groupRepository.changeTitle(request.getChange(), request.getTitle(), userID);
-
         Group toDoList = getGroupByTitleUser(request.getChange(), user);
+        Long groupNum = toDoList.getGroupNumber().getId();
 
-        return GToDoListResponse.builder()
+        List<SseEmitter> emitters = groupEmitters.get(groupNum);
+        GToDoListResponse response = GToDoListResponse.builder()
                 .title(toDoList.getTitle())
                 .category(toDoList.getCategory().getCategoryName())
                 .userID(user.getName())
-                .groupNumber(toDoList.getGroupNumber().getGroupNumber())
+                .groupNumber(groupNum)
                 .build();
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("group-message")
+                        .data(response));
+            } catch (IOException e) {
+                emitters.remove(emitter); // 전송 실패하면 제거
+            }
+        }
+
+        return  response;
     }
 
     @Transactional
@@ -354,6 +372,38 @@ public class GroupServiceImpl implements GroupService {
         }
 
         return userList;
+    }
+
+    public SseEmitter sseConnect(Long groupNumber){
+        SseEmitter emitter = new SseEmitter(60 * 1000L);
+        groupEmitters.putIfAbsent(groupNumber, new CopyOnWriteArrayList<>());
+        groupEmitters.get(groupNumber).add(emitter);
+
+        emitter.onCompletion(() -> groupEmitters.get(groupNumber).remove(emitter));
+        emitter.onTimeout(() -> groupEmitters.get(groupNumber).remove(emitter));
+        emitter.onError(e -> groupEmitters.get(groupNumber).remove(emitter));
+
+        try {
+            emitter.send(SseEmitter.event().name("connected").data("SSE 연결됨 (그룹: " + groupNumber + ")"));
+        } catch (IOException e) {
+            groupEmitters.get(groupNumber).remove(emitter);
+        }
+        return emitter;
+    }
+
+    public void sseSend(GSseTest test){
+        List<SseEmitter> emitters = groupEmitters.get(test.getGroupNum());
+        if (emitters == null) return;
+
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("group-message")
+                        .data(test.getMessage()));
+            } catch (IOException e) {
+                emitters.remove(emitter); // 전송 실패하면 제거
+            }
+        }
     }
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
     GroupList getGroupListByUser(User user){
