@@ -7,23 +7,17 @@ import festival.dev.domain.gorupTDL.service.GroupService;
 import festival.dev.domain.user.entity.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 @RestController
 @RequestMapping("group/toDoList")
 @RequiredArgsConstructor
 public class GroupController {
-    private final List<SseEmitter> emitters = new CopyOnWriteArrayList<>();
-    private final Map<String, SseEmitter> emitterMap = new ConcurrentHashMap<>();
+    private static final Logger log = LoggerFactory.getLogger(GroupController.class);
     private final GroupService groupService;
 
     @PostMapping("/invite")
@@ -148,24 +142,5 @@ public class GroupController {
         catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
-    }
-
-    @GetMapping("/sse")
-    public SseEmitter connect() {
-        SseEmitter emitter = new SseEmitter();
-
-        emitters.add(emitter);
-
-        emitter.onCompletion(() -> emitters.remove(emitter));
-        emitter.onTimeout(() -> emitters.remove(emitter));
-        emitter.onError((e) -> emitters.remove(emitter));
-
-        try {
-            emitter.send(SseEmitter.event().name("connected").data("SSE 연결됨"));
-        } catch (IOException e) {
-            emitters.remove(emitter);
-        }
-
-        return emitter;
     }
 }
