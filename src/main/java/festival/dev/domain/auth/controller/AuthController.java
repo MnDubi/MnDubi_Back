@@ -63,7 +63,7 @@ public class AuthController {
         }
 
         String token = jwtUtil.generateAccessToken(info.getEmail(), info.getRole(), info.getUserId());
-        return ResponseEntity.ok(Map.of("accessToken", token));
+        return ResponseEntity.ok(Map.of("access_token", token));
     }
 
     // OAuth 로그인 후 사용자 정보 반환 (JWT 포함)
