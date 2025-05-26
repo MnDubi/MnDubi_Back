@@ -2,6 +2,7 @@ package festival.dev.global.security.oauth;
 
 import festival.dev.domain.user.entity.User;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,17 +13,11 @@ import java.util.List;
 import java.util.Map;
 
 @Getter
+@RequiredArgsConstructor
 public class CustomOAuth2User implements OAuth2User, UserDetails {
 
     private final User user;
     private final Map<String, Object> attributes;
-    private final String token;
-
-    public CustomOAuth2User(User user, Map<String, Object> attributes, String token) {
-        this.user = user;
-        this.attributes = attributes;
-        this.token = token;
-    }
 
     // OAuth2User
     @Override
@@ -76,8 +71,5 @@ public class CustomOAuth2User implements OAuth2User, UserDetails {
         return true;
     }
 
-    // JWT 토큰 반환 (Optional)
-    public String getToken() {
-        return token;
-    }
+
 }

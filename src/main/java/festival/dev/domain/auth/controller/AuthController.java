@@ -11,6 +11,8 @@ import festival.dev.global.security.jwt.JwtUtil;
 import festival.dev.domain.auth.dto.RefreshRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Cookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -33,23 +35,29 @@ public class AuthController {
 
     // 자체 회원가입
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody OAuthUserInfoDto request) {
-        authService.registerUser(request.getEmail(), request.getPassword(), request.getName());
-        return ResponseEntity.ok("회원가입이 완료되었습니다.");
+    public ResponseEntity<?> register(@RequestBody OAuthUserInfoDto request, HttpServletResponse response) {
+        authService.register(request.getEmail(), request.getPassword(), request.getName(), response);
+        return ResponseEntity.ok("회원가입 완료");
     }
 
     // 자체 로그인 (이메일 & 비밀번호)
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDto> loginUser(@RequestBody AuthRequestDto request, HttpServletResponse response) {
-        AuthResponseDto tokenResponse = authService.login(request);
-        return ResponseEntity.ok(tokenResponse);
+    public ResponseEntity<?> login(@RequestBody AuthRequestDto request, HttpServletResponse response) {
+        authService.login(request, response);
+        return ResponseEntity.ok("로그인 성공");
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponseDto> refreshAccessToken(@RequestBody RefreshRequest request) {
-        String refreshToken = request.getRefreshToken();
-        AuthResponseDto tokenResponse = authService.refreshAccessToken(refreshToken);
-        return ResponseEntity.ok(tokenResponse);
+    public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {
+        String refreshToken = extractTokenFromCookies(request, "refresh_token");
+        authService.refreshTokenFromCookie(refreshToken, response);
+        return ResponseEntity.ok("Access Token 재발급 완료");
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletResponse response) {
+        authService.logout(response);
+        return ResponseEntity.ok("로그아웃 완료");
     }
 
 
@@ -63,7 +71,7 @@ public class AuthController {
         }
 
         String token = jwtUtil.generateAccessToken(info.getEmail(), info.getRole(), info.getUserId());
-        return ResponseEntity.ok(Map.of("access_token", token));
+        return ResponseEntity.ok(Map.of("accessToken", token));
     }
 
     // OAuth 로그인 후 사용자 정보 반환 (JWT 포함)
@@ -75,11 +83,15 @@ public class AuthController {
         return ResponseEntity.ok(oAuth2User);
     }
 
-    // OAuth 로그인 후 JWT 발급
-    @GetMapping("/oauth2/callback")
-    public ResponseEntity<AuthResponseDto> oauthCallback(OAuth2AuthenticationToken authToken) {
-        CustomOAuth2User oAuth2User = (CustomOAuth2User) authToken.getPrincipal();
-        AuthResponseDto tokenResponse = new AuthResponseDto(oAuth2User.getToken(), null);
-        return ResponseEntity.ok(tokenResponse);
+    private String extractTokenFromCookies(HttpServletRequest request, String cookieName) {
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if (cookie.getName().equals(cookieName)) {
+                    return cookie.getValue();
+                }
+            }
+        }
+        return null;
     }
 }
+

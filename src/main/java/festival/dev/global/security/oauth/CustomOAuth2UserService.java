@@ -54,7 +54,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         User user = saveOrUpdate(userInfo, provider);
         String jwtToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
 
-        return new CustomOAuth2User(user, attributes, jwtToken);
+        return new CustomOAuth2User(user, attributes);
     }
 
     private OAuth2User handleNaver(OAuth2UserRequest userRequest) {
@@ -80,9 +80,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         OAuth2UserInfo userInfo = new NaverUserInfo(attributes);
         User user = saveOrUpdate(userInfo, "naver");
-        String jwt = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
 
-        return new CustomOAuth2User(user, attributes, jwt);
+        return new CustomOAuth2User(user, attributes);
     }
 
 
@@ -119,9 +118,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         OAuth2UserInfo userInfo = new KakaoUserInfo(attributes);
         User user = saveOrUpdate(userInfo, "kakao");
-        String jwt = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
 
-        return new CustomOAuth2User(user, attributes, jwt);
+        return new CustomOAuth2User(user, attributes);
     }
 
 

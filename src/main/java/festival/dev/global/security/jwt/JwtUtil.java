@@ -2,28 +2,32 @@ package festival.dev.global.security.jwt;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 @Component
 public class JwtUtil {
 
-    private final Algorithm algorithm;
-    private final long expirationTime;
-    private final long refreshExpirationTime;
+    private Algorithm algorithm;
 
-    private final Set<String> invalidatedTokens = ConcurrentHashMap.newKeySet();
+    @Value("${jwt.secret}")
+    private String secret;
 
-    public JwtUtil(@Value("${jwt.secret}") String secret,
-                   @Value("${jwt.access}") long expirationTime,
-                   @Value("${jwt.refresh}") long refreshExpirationTime) {
+    @Value("${jwt.access}")
+    private long expirationTime;
+
+    @Value("${jwt.refresh}")
+    private long refreshExpirationTime;
+
+    @PostConstruct
+    public void init() {
         this.algorithm = Algorithm.HMAC256(secret);
-        this.expirationTime = expirationTime;
-        this.refreshExpirationTime = refreshExpirationTime;
     }
 
     public String generateAccessToken(String email, String role,Long userId) {
@@ -50,8 +54,9 @@ public class JwtUtil {
             return JWT.require(algorithm)
                     .build()
                     .verify(token)
-                    .getSubject(); // 정상적인 토큰이면 이메일 반환
-        } catch (Exception e) {
+                    .getSubject();
+        } catch (JWTVerificationException e) {
+            log.warn("JWT 검증 실패: {}", e.getMessage());
             throw new RuntimeException("Invalid JWT token: " + e.getMessage());
         }
     }
