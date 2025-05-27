@@ -24,13 +24,18 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,6 +48,7 @@ public class ShareServiceImpl implements ShareService {
     private final ToDoListRepository toDoListRepository;
     private final CalendarRepository calendarRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final Map<Long, CopyOnWriteArrayList<SseEmitter>> shareEmitters = new ConcurrentHashMap<>();
 
     @Transactional
     public ShareNumberRes createShare(ShareCreateReq request, Long userID) {
@@ -210,6 +216,24 @@ public class ShareServiceImpl implements ShareService {
 
         shareRepository.deleteById(share.getId());
         messagingTemplate.convertAndSend("/topic/share/refuse",share.getShareNumber().getId());
+    }
+
+    public SseEmitter sseConnect(Long shareNumber){
+        SseEmitter emitter = new SseEmitter(300 * 1000L);
+        shareEmitters.computeIfAbsent(shareNumber,  key -> new CopyOnWriteArrayList<>())
+                .add(emitter);
+        shareEmitters.get(shareNumber).add(emitter);
+
+        emitter.onCompletion(() -> shareEmitters.get(shareNumber).remove(emitter));
+        emitter.onTimeout(() -> shareEmitters.get(shareNumber).remove(emitter));
+        emitter.onError(e -> shareEmitters.get(shareNumber).remove(emitter));
+
+        try {
+            emitter.send(SseEmitter.event().name("connected").data("SSE 연결됨 (공유 : " + shareNumber + ")"));
+        } catch (IOException e) {
+            shareEmitters.get(shareNumber).remove(emitter);
+        }
+        return emitter;
     }
     //---------------------
 
