@@ -1,6 +1,5 @@
 package festival.dev.domain.sse.presentation;
 
-import festival.dev.domain.gorupTDL.presentation.dto.request.GSseTest;
 import festival.dev.domain.gorupTDL.service.GroupService;
 import festival.dev.domain.shareTDL.service.ShareService;
 import lombok.RequiredArgsConstructor;
@@ -22,13 +21,9 @@ public class SseController {
         return groupService.sseConnect(groupNum);
     }
 
-    @PostMapping("/send-to-group")
-    public void sendToGroup(@RequestBody GSseTest test) {
-        groupService.sseSend(test);
-    }
-
     @GetMapping("/share")
     public SseEmitter share(@RequestParam Long shareNum) {
         return shareService.sseConnect(shareNum);
     }
+
 }

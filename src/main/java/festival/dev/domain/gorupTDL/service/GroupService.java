@@ -21,5 +21,4 @@ public interface GroupService {
     void createWs(GCreateWsReq request);
     List<GCreateWsRes> userList(Long userid);
     SseEmitter sseConnect(Long groupNum);
-    void sseSend(GSseTest test);
 }

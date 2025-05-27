@@ -17,6 +17,8 @@ import festival.dev.domain.gorupTDL.repository.GroupRepository;
 import festival.dev.domain.gorupTDL.service.GroupService;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,14 +33,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.*;
 
 @Service
 @RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
     private final Map<Long, CopyOnWriteArrayList<SseEmitter>> groupEmitters = new ConcurrentHashMap<>();
-
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
@@ -49,6 +49,7 @@ public class GroupServiceImpl implements GroupService {
     private final SimpMessagingTemplate messagingTemplate;
     private final CalendarRepository calendarRepository;
     private final Logger logger = LoggerFactory.getLogger(GroupServiceImpl.class);
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     @Transactional
     public GInsertRes invite(GCreateRequest request, Long userID){
@@ -391,20 +392,6 @@ public class GroupServiceImpl implements GroupService {
         return emitter;
     }
 
-    public void sseSend(GSseTest test){
-        List<SseEmitter> emitters = groupEmitters.get(test.getGroupNum());
-        if (emitters == null) return;
-
-        for (SseEmitter emitter : emitters) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .name("group-message")
-                        .data(test.getMessage()));
-            } catch (IOException e) {
-                emitters.remove(emitter); // 전송 실패하면 제거
-            }
-        }
-    }
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
     GroupList getGroupListByUser(User user){
         return groupListRepo.findByUser(user).orElseThrow(()-> new IllegalArgumentException("GroupList에 없습니다."));
@@ -517,5 +504,31 @@ public class GroupServiceImpl implements GroupService {
         if (category == null) {
             throw new IllegalArgumentException("존재하지 않은 카테고리입니다.");
         }
+    }
+
+
+    @PostConstruct
+    public void startPingTask() {
+        scheduler.scheduleAtFixedRate(() -> {
+            for (Map.Entry<Long, CopyOnWriteArrayList<SseEmitter>> entry : groupEmitters.entrySet()) {
+                List<SseEmitter> emitters = entry.getValue();
+                for (SseEmitter emitter : emitters) {
+                    try {
+                        emitter.send(SseEmitter.event()
+                                .name("ping")
+                                .data("keepalive"));
+                    } catch (IOException e) {
+                        logger.info("Ping 실패로 emitter 제거: {}", e.getMessage());
+                        emitter.completeWithError(e);
+                        emitters.remove(emitter);
+                    }
+                }
+            }
+        }, 10, 30, TimeUnit.SECONDS);
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        scheduler.shutdown();
     }
 }
