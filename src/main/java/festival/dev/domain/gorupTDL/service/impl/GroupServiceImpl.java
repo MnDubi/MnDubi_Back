@@ -46,7 +46,6 @@ public class GroupServiceImpl implements GroupService {
     private final CategoryRepository categoryRepository;
     private final GroupNumberRepo groupNumberRepo;
     private final GroupJoinRepo groupJoinRepo;
-    private final SimpMessagingTemplate messagingTemplate;
     private final CalendarRepository calendarRepository;
     private final Logger logger = LoggerFactory.getLogger(GroupServiceImpl.class);
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -57,22 +56,22 @@ public class GroupServiceImpl implements GroupService {
         Long groupNum = create(request,userID);
         inviteFor(sender,groupNum,request.getReceivers());
         return GInsertRes.builder()
-                .id(groupNum)
+                .groupNumber(groupNum)
                 .build();
     }
 
     @Transactional
     public void invite(GInviteReq request, Long userID){
         User sender = getUser(userID);
-        Long groupId = request.getGroupID();
+        Long groupId = request.getGroupNumber();
         inviteFor(sender,groupId,request.getReceivers());
     }
 
-    //초대를 응답하는 것이기 때문에 받은 사람은 나
+    // SSE 필요
     @Transactional
     public void acceptInvite(Long userID, GChoiceReq req){
         User receiver = getUser(userID);
-        GroupNumber groupNum = groupNumberRepo.findById(req.getGroupNum()).orElseThrow(()-> new IllegalArgumentException("없는 그룹방입니다."));
+        GroupNumber groupNum = groupNumberRepo.findById(req.getGroupNumber()).orElseThrow(()-> new IllegalArgumentException("없는 그룹방입니다."));
         checkInvite(groupNum, receiver);
         groupListRepo.updateAccept(groupNum.getId(), receiver.getId());
         List<Group> tdls = groupRepository.findByGroupNumber(groupNum);
@@ -84,27 +83,24 @@ public class GroupServiceImpl implements GroupService {
                     .groupNumber(groupNum)
                     .build();
 
-            messagingTemplate.convertAndSend("/topic/group/accept", groupNum.getId());
             groupJoinRepo.save(groupJoin);
         }
     }
 
-    //초대를 응답하는 것이기 때문에 받은 사람은 나
+    // SSE 필요
     @Transactional
     public void refuseInvite(Long userID, GChoiceReq req){
         User receiver = getUser(userID);
         GroupList groupList = getGroupListByUser(receiver);
-        GroupNumber group = groupNumberRepo.findById(req.getGroupNum()).orElseThrow(()-> new IllegalArgumentException("없는 그룹방입니다."));
+        GroupNumber group = groupNumberRepo.findById(req.getGroupNumber()).orElseThrow(()-> new IllegalArgumentException("없는 그룹방입니다."));
         checkInvite(group,receiver);
         groupListRepo.findByGroupNumberAndUserAndAccept(group, receiver, true)
                 .ifPresent(GroupList -> {
                     throw new IllegalArgumentException("이미 수락한 요청입니다.");
                 });
         groupListRepo.deleteByGroupNumberAndUser(group,receiver);
-        messagingTemplate.convertAndSend("/topic/group/refuse",group.getId());
     }
 
-    //바뀐 TDL이랑 관련된 모든 데이터를 보내야 할 듯? web socket으로
     @Transactional
     public GToDoListResponse update(GUpdateRequest request, Long userID) {
         User user = getUser(userID);
@@ -119,7 +115,7 @@ public class GroupServiceImpl implements GroupService {
         GToDoListResponse response = GToDoListResponse.builder()
                 .title(toDoList.getTitle())
                 .category(toDoList.getCategory().getCategoryName())
-                .userID(user.getName())
+                .ownerName(user.getName())
                 .groupNumber(groupNum)
                 .build();
         for (SseEmitter emitter : emitters) {
@@ -135,15 +131,16 @@ public class GroupServiceImpl implements GroupService {
         return  response;
     }
 
+    // SSE 필요
     @Transactional
     public void delete(GDeleteRequest request, Long userID){
         User user = getUser(userID);
         checkNotExist(user, request.getTitle());
         Group group = getGroupByTitleUser(request.getTitle(),user);
-        messagingTemplate.convertAndSend("/topic/group/" + group.getGroupNumber()+"/deleted", group.getId());
         groupRepository.deleteByUserAndTitle(user, request.getTitle());
     }
 
+    // SSE 필요
     @Transactional
     public GResponse success(GSuccessRequest request, Long userID){
         User sender = userRepository.findByUserCode(request.getOwnerID()).orElseThrow(()->new IllegalArgumentException("그 유저는 없는 유저입니다."));
@@ -157,15 +154,15 @@ public class GroupServiceImpl implements GroupService {
         GResponse response = GResponse.builder()
                 .groupNumber(groupJoin.getGroupNumber().getId())
                 .category(groupJoin.getGroup().getCategory().getCategoryName())
-                .ownerID(groupJoin.getGroup().getUser().getName())
+                .ownerName(groupJoin.getGroup().getUser().getName())
                 .title(groupJoin.getGroup().getTitle())
                 .completed(groupJoin.isCompleted())
-                .memberID(user.getName())
+                .memberName(user.getName())
                 .build();
-        messagingTemplate.convertAndSend("/topic/group/"+response.getGroupNumber(), response);
         return response;
     }
 
+    // SSE 필요
     @Transactional
     public Long insert(GInsertRequest request, Long userID){
         User user = getUser(userID);
@@ -193,11 +190,10 @@ public class GroupServiceImpl implements GroupService {
         GResponse response = GResponse.builder()
                 .title(group.getTitle())
                 .category(group.getCategory().getCategoryName())
-                .ownerID(user.getName())
-                .memberID(user.getName())
+                .ownerName(user.getName())
+                .memberName(user.getName())
                 .completed(false)
                 .build();
-        messagingTemplate.convertAndSend("/topic/group/" + groupNumber.getId(), response);
         return groupNumber.getId();
     }
 
@@ -280,6 +276,7 @@ public class GroupServiceImpl implements GroupService {
         }
     }
 
+    // SSE 필요
     @Transactional
     public void deleteAll(Long userID){
         User user = getUser(userID);
@@ -287,7 +284,6 @@ public class GroupServiceImpl implements GroupService {
         GroupNumber groupNumber = getGroupNum(groupList.getGroupNumber().getId());
         groupNumberRepo.deleteById(groupNumber.getId());
         groupRepository.deleteAllByGroupNumberAndUser(groupNumber,user);
-        messagingTemplate.convertAndSend("/topic/group/delete/all" + groupNumber.getId(), groupNumber.getId());
     }
 
     public List<GInviteGet> inviteGet(Long userID){
@@ -306,48 +302,6 @@ public class GroupServiceImpl implements GroupService {
                     .build());
         }
         return response;
-    }
-
-    public void createWs(GCreateWsReq request) {
-        String email = request.getEmail();
-        String path = "/topic/group/create/" + email;
-
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-        if (optionalUser.isEmpty()) {
-            logger.error("1");
-            return;
-        }
-
-        User user = optionalUser.get();
-        List<GCreateWsRes> responses = new ArrayList<>();
-        List<User> friends = userRepository.findByName(request.getFriend());
-
-        if (friends.isEmpty()) {
-            logger.error("2");
-            return;
-        }
-
-        for (User friend : friends) {
-            if (friendshipRepository.existsByRequesterAndAddressee(user, friend) || friendshipRepository.existsByRequesterAndAddressee(friend, user)) {
-                responses.add(GCreateWsRes.builder()
-                        .userCode(friend.getUserCode())
-                        .email(friend.getEmail())
-                        .name(friend.getName())
-                        .build());
-            } else {
-                logger.error("3");
-                return;
-            }
-        }
-
-        logger.info(path);
-        for (GCreateWsRes response : responses) {
-            logger.info(response.getName());
-            logger.info(response.getUserCode());
-            logger.info(response.getEmail());
-        }
-
-        messagingTemplate.convertAndSend(path, responses);
     }
 
     @Transactional
@@ -446,6 +400,7 @@ public class GroupServiceImpl implements GroupService {
         return response.getGroupNumber().getId();
     }
 
+    // SSE 필요
     void inviteFor(User sender, Long groupNum, List<String> receivers){
         GroupNumber groupNumber = getGroupNum(groupNum);
 
@@ -466,11 +421,10 @@ public class GroupServiceImpl implements GroupService {
 
             GroupList groupList = GroupList.builder()
                     //false로 바꿔야함
-                    .accept(true)
+                    .accept(false)
                     .groupNumber(groupNumber)
                     .user(receiver)
                     .build();
-            messagingTemplate.convertAndSend("/topic/invite/"+req_receiver,groupNumber.getId());
             groupListRepo.save(groupList);
         }
     }

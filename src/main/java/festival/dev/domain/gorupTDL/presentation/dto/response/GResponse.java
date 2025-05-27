@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GResponse {
-    private String ownerID;
+    private String ownerName;
     private String title;
     private boolean completed;
     private Long groupNumber;
     private String category;
-    private String memberID;
+    private String memberName;
 }

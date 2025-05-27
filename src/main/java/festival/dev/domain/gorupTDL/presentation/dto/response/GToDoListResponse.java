@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GToDoListResponse {
-    private String userID;
+    private String ownerName;
     private String title;
     private Long groupNumber;
     private String category;
