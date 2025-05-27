@@ -18,8 +18,6 @@ public interface GroupService {
     GGetRes get(Long userID);
     void deleteAll(Long userID);
     List<GInviteGet> inviteGet(Long userid);
-    void createWs(GCreateWsReq request);
     List<GCreateWsRes> userList(Long userid);
     SseEmitter sseConnect(Long groupNum);
-    void sseSend(GSseTest test);
 }

@@ -4,6 +4,7 @@ import festival.dev.domain.shareTDL.presentation.dto.request.*;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareGetRes;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareNumberRes;
 import festival.dev.domain.shareTDL.presentation.dto.response.ShareUserList;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -14,4 +15,5 @@ public interface ShareService {
     List<ShareUserList> getUserList(Long userId);
     void accept(Long userId,ShareChoiceRequest request);
     void refuse(Long userId,ShareChoiceRequest request);
+    SseEmitter sseConnect(Long shareNumber);
 }

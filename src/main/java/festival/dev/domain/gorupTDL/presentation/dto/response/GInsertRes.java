@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GInsertRes {
-    private Long id;
+    private Long groupNumber;
 }

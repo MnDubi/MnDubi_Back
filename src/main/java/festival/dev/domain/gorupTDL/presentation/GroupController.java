@@ -34,7 +34,7 @@ public class GroupController {
     @PostMapping("/create")
     public ResponseEntity<?> create(@Valid @RequestBody GCreateRequest request, @AuthenticationPrincipal CustomUserDetails user) {
         try {
-            return ResponseEntity.ok(groupService.invite(request,user.getUserID())    );
+            return ResponseEntity.ok(groupService.invite(request,user.getUserID()));
         }catch (Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -107,7 +107,7 @@ public class GroupController {
     @PostMapping("/insert")
     public ResponseEntity<?> insert(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody GInsertRequest request) {
         try {
-            return ResponseEntity.ok(GInsertRes.builder().id(groupService.insert(request,user.getUserID())).build());
+            return ResponseEntity.ok(GInsertRes.builder().groupNumber(groupService.insert(request,user.getUserID())).build());
         }catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
