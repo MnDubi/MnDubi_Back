@@ -82,7 +82,6 @@ public class GroupController {
         }
     }
 
-    //이미 변경한 속성이면 불가능해야함
     @PutMapping("success")
     public ResponseEntity<?> success(@Valid @RequestBody GSuccessRequest request, @AuthenticationPrincipal CustomUserDetails user) {
         try{
@@ -113,7 +112,6 @@ public class GroupController {
         }
     }
 
-    //web socket으로 대충 그룹 삭제됐다는 거 알려줘야함.
     @DeleteMapping("/delete/all")
     public ResponseEntity<?> deleteAll(@AuthenticationPrincipal CustomUserDetails user){
        try {
