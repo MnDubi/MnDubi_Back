@@ -12,8 +12,9 @@ import lombok.NoArgsConstructor;
 public class ToDoListResponse {
     private String endDate;
     private String startDate;
-    private String userID;
+    private String userName;
     private String title;
+    private boolean shared;
     private boolean completed;
     private String category;
 }

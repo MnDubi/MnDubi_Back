@@ -11,18 +11,29 @@ import festival.dev.domain.calendar.entity.CTdlKind;
 import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.category.entity.Category;
 import festival.dev.domain.category.repository.CategoryRepository;
+import festival.dev.domain.shareTDL.entity.Share;
+import festival.dev.domain.shareTDL.entity.ShareNumber;
+import festival.dev.domain.shareTDL.repository.ShareRepository;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,6 +44,10 @@ public class ToDoListServiceImpl implements ToDoListService {
     private final CalendarRepository calendarRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
+    private final Map<Long, CopyOnWriteArrayList<SseEmitter>> shareEmitters = new ConcurrentHashMap<>();
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final Logger log = LoggerFactory.getLogger(ToDoListServiceImpl.class);
+    private final ShareRepository shareRepository;
 
     public void input(InsertRequest request, Long id) {
         String title = request.getTitle();
@@ -47,10 +62,36 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .title(request.getTitle())
                 .completed(false)
                 .user(user)
+                .shared(true)
                 .startDate(request.getEndDate())
                 .endDate(request.getEndDate())
                 .category(category)
                 .build();
+
+
+        ToDoListResponse response = ToDoListResponse.builder()
+                .userName(user.getName())
+                .category(category.getCategoryName())
+                .shared(toDoList.isShared())
+                .title(title)
+                .endDate(toDoList.getEndDate())
+                .completed(toDoList.getCompleted())
+                .startDate(toDoList.getStartDate())
+                .build();
+
+        Long shareNumber = getShareNum(user);
+        List<SseEmitter> emitters = shareEmitters.get(shareNumber);
+        if (toDoList.isShared()) {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("share")
+                            .data(response));
+                } catch (IOException e) {
+                    emitters.remove(emitter); // 전송 실패하면 제거
+                }
+            }
+        }
         toDoListRepository.save(toDoList);
     }
 
@@ -66,15 +107,40 @@ public class ToDoListServiceImpl implements ToDoListService {
         checkEndDate(request.getEndDate());
 
         inputSetting(title, user, request.getEndDate(), category);
+        ToDoList toDoList = ToDoList.builder()
+                .title(title)
+                .completed(false)
+                .shared(true)
+                .user(user)
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .category(category)
+                .build();
 
-        toDoListRepository.save(ToDoList.builder()
-                        .title(title)
-                        .completed(false)
-                        .user(user)
-                        .startDate(request.getStartDate())
-                        .endDate(request.getEndDate())
-                        .category(category)
-                .build());
+        ToDoListResponse response = ToDoListResponse.builder()
+                .userName(user.getName())
+                .category(category.getCategoryName())
+                .shared(toDoList.isShared())
+                .title(title)
+                .endDate(toDoList.getEndDate())
+                .completed(toDoList.getCompleted())
+                .startDate(toDoList.getStartDate())
+                .build();
+
+        Long shareNumber = getShareNum(user);
+        List<SseEmitter> emitters = shareEmitters.get(shareNumber);
+        if (toDoList.isShared()) {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("share")
+                            .data(response));
+                } catch (IOException e) {
+                    emitters.remove(emitter); // 전송 실패하면 제거
+                }
+            }
+        }
+        toDoListRepository.save(toDoList);
     }
 
     public ToDoListResponse update(UpdateRequest request, Long userID) {
@@ -88,16 +154,32 @@ public class ToDoListServiceImpl implements ToDoListService {
 
         ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user, request.getChange(), request.getChangeDate());
 
-        return ToDoListResponse.builder()
+        ToDoListResponse response = ToDoListResponse.builder()
                 .title(toDoList.getTitle())
                 .completed(toDoList.getCompleted())
                 .category(toDoList.getCategory().getCategoryName())
-                .userID(user.getName())
+                .userName(user.getName())
                 .endDate(toDoList.getEndDate())
+                .shared(toDoList.isShared())
                 .startDate(toDoList.getStartDate())
                 .build();
+        Long shareNumber = getShareNum(user);
+        List<SseEmitter> emitters = shareEmitters.get(shareNumber);
+        if (toDoList.isShared()) {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("share")
+                            .data(response));
+                } catch (IOException e) {
+                    emitters.remove(emitter); // 전송 실패하면 제거
+                }
+            }
+        }
+        return response;
     }
 
+    //SSE
     public void delete(DeleteRequest request,Long id) {
         User user = getUser(id);
         checkNotExist(user, request.getTitle(), request.getEndDate());
@@ -118,11 +200,13 @@ public class ToDoListServiceImpl implements ToDoListService {
                         .category(tdl.getCategory().getCategoryName())  // 카테고리 이름을 포함
                         .endDate(tdl.getEndDate())
                         .startDate(tdl.getStartDate())
-                        .userID(user.getName())
+                        .userName(user.getName())
+                        .shared(tdl.isShared())
                         .build())
                 .collect(Collectors.toList());
     }
 
+    //SSE
     public ToDoListResponse success(SuccessRequest request, Long userID) {
         String yearMonthDay = toDay();
         User user = getUser(userID);
@@ -136,10 +220,12 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .category(toDoList.getCategory().getCategoryName())
                 .endDate(toDoList.getEndDate())
                 .startDate(toDoList.getStartDate())
-                .userID(user.getName())
+                .userName(user.getName())
+                .shared(toDoList.isShared())
                 .build();
     }
 
+    //SSE
     @Transactional
     public void shared(ShareRequest request, Long id){
         User user = getUser(id);
@@ -172,6 +258,24 @@ public class ToDoListServiceImpl implements ToDoListService {
                     .build();
             calendarRepository.save(calendar);
         }
+    }
+
+    public SseEmitter sseConnect(Long shareNumber){
+        SseEmitter emitter = new SseEmitter(300 * 1000L);
+        shareEmitters.computeIfAbsent(shareNumber,  key -> new CopyOnWriteArrayList<>())
+                .add(emitter);
+        shareEmitters.get(shareNumber).add(emitter);
+
+        emitter.onCompletion(() -> shareEmitters.get(shareNumber).remove(emitter));
+        emitter.onTimeout(() -> shareEmitters.get(shareNumber).remove(emitter));
+        emitter.onError(e -> shareEmitters.get(shareNumber).remove(emitter));
+
+        try {
+            emitter.send(SseEmitter.event().name("connected").data("SSE 연결됨 (공유 : " + shareNumber + ")"));
+        } catch (IOException e) {
+            shareEmitters.get(shareNumber).remove(emitter);
+        }
+        return emitter;
     }
 
     public String toDay(){
@@ -211,5 +315,40 @@ public class ToDoListServiceImpl implements ToDoListService {
         if (toDay().compareTo(endDate) > 0){
             throw new IllegalArgumentException("끝나는 날짜는 현재 날짜보다 빠를 수 없습니다.");
         }
+    }
+
+    @PostConstruct
+    public void startPingTask() {
+        scheduler.scheduleAtFixedRate(() -> {
+            for (Map.Entry<Long, CopyOnWriteArrayList<SseEmitter>> entry : shareEmitters.entrySet()) {
+                List<SseEmitter> emitters = entry.getValue();
+                for (SseEmitter emitter : emitters) {
+                    try {
+                        emitter.send(SseEmitter.event()
+                                .name("ping")
+                                .data("keepalive"));
+                    } catch (IOException e) {
+                        log.info("Ping 실패로 emitter 제거: {}", e.getMessage());
+                        emitter.completeWithError(e);
+                        emitters.remove(emitter);
+                    }
+                }
+            }
+        }, 10, 30, TimeUnit.SECONDS);
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        scheduler.shutdown();
+    }
+
+    Share getShareByUser(User user){
+        return shareRepository.findByUser(user).orElseThrow(()-> new IllegalArgumentException("공유 TDL에 참가하지 않은 사용자입니다."));
+    }
+
+    Long getShareNum(User user) {
+        Share share = getShareByUser(user);
+        ShareNumber shareNumber = share.getShareNumber();
+        return shareNumber.getId();
     }
 }

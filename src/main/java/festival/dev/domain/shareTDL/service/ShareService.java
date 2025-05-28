@@ -15,5 +15,4 @@ public interface ShareService {
     List<ShareUserList> getUserList(Long userId);
     void accept(Long userId,ShareChoiceRequest request);
     void refuse(Long userId,ShareChoiceRequest request);
-    SseEmitter sseConnect(Long shareNumber);
 }

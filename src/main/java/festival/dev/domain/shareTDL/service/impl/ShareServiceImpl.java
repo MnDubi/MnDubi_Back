@@ -51,8 +51,6 @@ public class ShareServiceImpl implements ShareService {
     private final ToDoListRepository toDoListRepository;
     private final CalendarRepository calendarRepository;
     private final SimpMessagingTemplate messagingTemplate;
-    private final Map<Long, CopyOnWriteArrayList<SseEmitter>> shareEmitters = new ConcurrentHashMap<>();
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final Logger log = LoggerFactory.getLogger(ShareServiceImpl.class);
 
     @Transactional
@@ -223,23 +221,6 @@ public class ShareServiceImpl implements ShareService {
         messagingTemplate.convertAndSend("/topic/share/refuse",share.getShareNumber().getId());
     }
 
-    public SseEmitter sseConnect(Long shareNumber){
-        SseEmitter emitter = new SseEmitter(300 * 1000L);
-        shareEmitters.computeIfAbsent(shareNumber,  key -> new CopyOnWriteArrayList<>())
-                .add(emitter);
-        shareEmitters.get(shareNumber).add(emitter);
-
-        emitter.onCompletion(() -> shareEmitters.get(shareNumber).remove(emitter));
-        emitter.onTimeout(() -> shareEmitters.get(shareNumber).remove(emitter));
-        emitter.onError(e -> shareEmitters.get(shareNumber).remove(emitter));
-
-        try {
-            emitter.send(SseEmitter.event().name("connected").data("SSE 연결됨 (공유 : " + shareNumber + ")"));
-        } catch (IOException e) {
-            shareEmitters.get(shareNumber).remove(emitter);
-        }
-        return emitter;
-    }
     //---------------------
 
     User getUserByID(Long userID){
@@ -276,28 +257,5 @@ public class ShareServiceImpl implements ShareService {
         return shareRepository.findByShareNumberAndUserAndAcceptedFalse(shareNumber,user).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 공유 방입니다."));
     }
 
-    @PostConstruct
-    public void startPingTask() {
-        scheduler.scheduleAtFixedRate(() -> {
-            for (Map.Entry<Long, CopyOnWriteArrayList<SseEmitter>> entry : shareEmitters.entrySet()) {
-                List<SseEmitter> emitters = entry.getValue();
-                for (SseEmitter emitter : emitters) {
-                    try {
-                        emitter.send(SseEmitter.event()
-                                .name("ping")
-                                .data("keepalive"));
-                    } catch (IOException e) {
-                        log.info("Ping 실패로 emitter 제거: {}", e.getMessage());
-                        emitter.completeWithError(e);
-                        emitters.remove(emitter);
-                    }
-                }
-            }
-        }, 10, 30, TimeUnit.SECONDS);
-    }
 
-    @PreDestroy
-    public void shutdown() {
-        scheduler.shutdown();
-    }
 }

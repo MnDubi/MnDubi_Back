@@ -2,6 +2,7 @@ package festival.dev.domain.TDL.service;
 
 import festival.dev.domain.TDL.presentation.dto.request.*;
 import festival.dev.domain.TDL.presentation.dto.response.ToDoListResponse;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -13,4 +14,5 @@ public interface ToDoListService {
     ToDoListResponse success(SuccessRequest request, Long id);
     void input(InsertUntilRequest request, Long id);
     void shared(ShareRequest request, Long id);
+    SseEmitter sseConnect(Long shareNumber);
 }
