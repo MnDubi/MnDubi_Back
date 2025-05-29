@@ -68,30 +68,9 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .category(category)
                 .build();
 
+        ToDoListResponse response = toDoListResponseBuild(user, category, toDoList);
 
-        ToDoListResponse response = ToDoListResponse.builder()
-                .userName(user.getName())
-                .category(category.getCategoryName())
-                .shared(toDoList.isShared())
-                .title(title)
-                .endDate(toDoList.getEndDate())
-                .completed(toDoList.getCompleted())
-                .startDate(toDoList.getStartDate())
-                .build();
-
-        Long shareNumber = getShareNum(user);
-        List<SseEmitter> emitters = shareEmitters.get(shareNumber);
-        if (toDoList.isShared()) {
-            for (SseEmitter emitter : emitters) {
-                try {
-                    emitter.send(SseEmitter.event()
-                            .name("share")
-                            .data(response));
-                } catch (IOException e) {
-                    emitters.remove(emitter); // 전송 실패하면 제거
-                }
-            }
-        }
+        sendToShare(toDoList, response, user);
         toDoListRepository.save(toDoList);
     }
 
@@ -117,29 +96,10 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .category(category)
                 .build();
 
-        ToDoListResponse response = ToDoListResponse.builder()
-                .userName(user.getName())
-                .category(category.getCategoryName())
-                .shared(toDoList.isShared())
-                .title(title)
-                .endDate(toDoList.getEndDate())
-                .completed(toDoList.getCompleted())
-                .startDate(toDoList.getStartDate())
-                .build();
+        ToDoListResponse response = toDoListResponseBuild(user, category, toDoList);
 
-        Long shareNumber = getShareNum(user);
-        List<SseEmitter> emitters = shareEmitters.get(shareNumber);
-        if (toDoList.isShared()) {
-            for (SseEmitter emitter : emitters) {
-                try {
-                    emitter.send(SseEmitter.event()
-                            .name("share")
-                            .data(response));
-                } catch (IOException e) {
-                    emitters.remove(emitter); // 전송 실패하면 제거
-                }
-            }
-        }
+        sendToShare(toDoList, response, user);
+
         toDoListRepository.save(toDoList);
     }
 
@@ -154,28 +114,9 @@ public class ToDoListServiceImpl implements ToDoListService {
 
         ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user, request.getChange(), request.getChangeDate());
 
-        ToDoListResponse response = ToDoListResponse.builder()
-                .title(toDoList.getTitle())
-                .completed(toDoList.getCompleted())
-                .category(toDoList.getCategory().getCategoryName())
-                .userName(user.getName())
-                .endDate(toDoList.getEndDate())
-                .shared(toDoList.isShared())
-                .startDate(toDoList.getStartDate())
-                .build();
-        Long shareNumber = getShareNum(user);
-        List<SseEmitter> emitters = shareEmitters.get(shareNumber);
-        if (toDoList.isShared()) {
-            for (SseEmitter emitter : emitters) {
-                try {
-                    emitter.send(SseEmitter.event()
-                            .name("share")
-                            .data(response));
-                } catch (IOException e) {
-                    emitters.remove(emitter); // 전송 실패하면 제거
-                }
-            }
-        }
+        ToDoListResponse response = toDoListResponseBuild(user, toDoList.getCategory(), toDoList);
+        sendToShare(toDoList, response, user);
+
         return response;
     }
 
@@ -214,15 +155,9 @@ public class ToDoListServiceImpl implements ToDoListService {
         toDoListRepository.changeCompleted(request.getCompleted(), request.getTitle(), userID, yearMonthDay);
         ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user,request.getTitle(), yearMonthDay);
 
-        return ToDoListResponse.builder()
-                .title(toDoList.getTitle())
-                .completed(toDoList.getCompleted())
-                .category(toDoList.getCategory().getCategoryName())
-                .endDate(toDoList.getEndDate())
-                .startDate(toDoList.getStartDate())
-                .userName(user.getName())
-                .shared(toDoList.isShared())
-                .build();
+        ToDoListResponse response = toDoListResponseBuild(user, toDoList.getCategory(), toDoList);
+        sendToShare(toDoList, response, user);
+        return response;
     }
 
     //SSE
@@ -232,6 +167,8 @@ public class ToDoListServiceImpl implements ToDoListService {
         ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user,request.getTitle(),request.getEndDate());
         ToDoList changed = toDoList.toBuilder().shared(request.getShared()).build();
         toDoListRepository.save(changed);
+        ToDoListResponse response = toDoListResponseBuild(user, toDoList.getCategory(), changed);
+        sendToShare(changed, response, user);
     }
 
 
@@ -350,5 +287,33 @@ public class ToDoListServiceImpl implements ToDoListService {
         Share share = getShareByUser(user);
         ShareNumber shareNumber = share.getShareNumber();
         return shareNumber.getId();
+    }
+
+    ToDoListResponse toDoListResponseBuild(User user, Category category, ToDoList toDoList) {
+        return ToDoListResponse.builder()
+                .userName(user.getName())
+                .category(category.getCategoryName())
+                .shared(toDoList.isShared())
+                .title(toDoList.getTitle())
+                .endDate(toDoList.getEndDate())
+                .completed(toDoList.getCompleted())
+                .startDate(toDoList.getStartDate())
+                .build();
+    }
+
+    void sendToShare(ToDoList toDoList, ToDoListResponse response, User user)  {
+        Long shareNumber = getShareNum(user);
+        List<SseEmitter> emitters = shareEmitters.get(shareNumber);
+        if (toDoList.isShared()) {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("share")
+                            .data(response));
+                } catch (Exception e) {
+                    emitters.remove(emitter); // 전송 실패하면 제거
+                }
+            }
+        }
     }
 }
