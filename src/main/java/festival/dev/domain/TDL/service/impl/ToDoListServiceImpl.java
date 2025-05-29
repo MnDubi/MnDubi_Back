@@ -70,7 +70,7 @@ public class ToDoListServiceImpl implements ToDoListService {
 
         ToDoListResponse response = toDoListResponseBuild(user, category, toDoList);
 
-        sendToShare(toDoList, response, user);
+        sendToShare(toDoList, response, user,"shared");
         toDoListRepository.save(toDoList);
     }
 
@@ -98,7 +98,7 @@ public class ToDoListServiceImpl implements ToDoListService {
 
         ToDoListResponse response = toDoListResponseBuild(user, category, toDoList);
 
-        sendToShare(toDoList, response, user);
+        sendToShare(toDoList, response, user,"shared");
 
         toDoListRepository.save(toDoList);
     }
@@ -115,17 +115,19 @@ public class ToDoListServiceImpl implements ToDoListService {
         ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user, request.getChange(), request.getChangeDate());
 
         ToDoListResponse response = toDoListResponseBuild(user, toDoList.getCategory(), toDoList);
-        sendToShare(toDoList, response, user);
+        sendToShare(toDoList, response, user,"shared");
 
         return response;
     }
 
-    //SSE
     public void delete(DeleteRequest request,Long id) {
         User user = getUser(id);
         checkNotExist(user, request.getTitle(), request.getEndDate());
 
+        ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user, request.getTitle(), request.getEndDate());
         toDoListRepository.deleteByUserAndTitleAndEndDate(user,request.getTitle(), request.getEndDate());
+        ToDoListResponse response = toDoListResponseBuild(user, toDoList.getCategory(), toDoList);
+        sendToShare(toDoList, response, user,"deleted");
     }
 
     public List<ToDoListResponse> get(Long userID){
@@ -147,7 +149,6 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .collect(Collectors.toList());
     }
 
-    //SSE
     public ToDoListResponse success(SuccessRequest request, Long userID) {
         String yearMonthDay = toDay();
         User user = getUser(userID);
@@ -156,11 +157,10 @@ public class ToDoListServiceImpl implements ToDoListService {
         ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user,request.getTitle(), yearMonthDay);
 
         ToDoListResponse response = toDoListResponseBuild(user, toDoList.getCategory(), toDoList);
-        sendToShare(toDoList, response, user);
+        sendToShare(toDoList, response, user,"shared");
         return response;
     }
 
-    //SSE
     @Transactional
     public void shared(ShareRequest request, Long id){
         User user = getUser(id);
@@ -168,9 +168,8 @@ public class ToDoListServiceImpl implements ToDoListService {
         ToDoList changed = toDoList.toBuilder().shared(request.getShared()).build();
         toDoListRepository.save(changed);
         ToDoListResponse response = toDoListResponseBuild(user, toDoList.getCategory(), changed);
-        sendToShare(changed, response, user);
+        sendToShare(changed, response, user, "shared");
     }
-
 
     @Transactional
     @Scheduled(cron = "59 59 23 * * *")
@@ -301,14 +300,14 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .build();
     }
 
-    void sendToShare(ToDoList toDoList, ToDoListResponse response, User user)  {
+    void sendToShare(ToDoList toDoList, ToDoListResponse response, User user, String name)  {
         Long shareNumber = getShareNum(user);
         List<SseEmitter> emitters = shareEmitters.get(shareNumber);
         if (toDoList.isShared()) {
             for (SseEmitter emitter : emitters) {
                 try {
                     emitter.send(SseEmitter.event()
-                            .name("share")
+                            .name(name)
                             .data(response));
                 } catch (Exception e) {
                     emitters.remove(emitter); // 전송 실패하면 제거
