@@ -11,8 +11,11 @@ import festival.dev.domain.calendar.entity.CTdlKind;
 import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.category.entity.Category;
 import festival.dev.domain.category.repository.CategoryRepository;
+import festival.dev.domain.gorupTDL.presentation.dto.response.MemberDto;
 import festival.dev.domain.shareTDL.entity.Share;
 import festival.dev.domain.shareTDL.entity.ShareNumber;
+import festival.dev.domain.shareTDL.presentation.dto.request.ShareChoiceRequest;
+import festival.dev.domain.shareTDL.repository.ShareNumberRepo;
 import festival.dev.domain.shareTDL.repository.ShareRepository;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
@@ -40,11 +43,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ToDoListServiceImpl implements ToDoListService {
 
+    private final ShareNumberRepo shareNumberRepo;
     private final ToDoListRepository toDoListRepository;
     private final CalendarRepository calendarRepository;
     private final CategoryRepository categoryRepository;
     private final UserRepository userRepository;
-    private final Map<Long, CopyOnWriteArrayList<SseEmitter>> shareEmitters = new ConcurrentHashMap<>();
+    public final Map<Long, CopyOnWriteArrayList<SseEmitter>> shareEmitters = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final Logger log = LoggerFactory.getLogger(ToDoListServiceImpl.class);
     private final ShareRepository shareRepository;
@@ -214,6 +218,42 @@ public class ToDoListServiceImpl implements ToDoListService {
         return emitter;
     }
 
+
+    @Transactional
+    public void accept(Long userId, ShareChoiceRequest request){
+        User user = getUserByID(userId);
+        Share share = getShareByShareNumber(shareNumberRepo.findById(request.getShareNumber()).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 shareNumber입니다.")),user);
+
+        Share change = share.toBuilder().accepted(true).build();
+        shareRepository.save(change);
+
+        MemberDto response = MemberDto.builder()
+                .userCode(user.getUserCode())
+                .email(user.getEmail())
+                .name(user.getName())
+                .build();
+
+        List<SseEmitter> emitters = shareEmitters.get(share.getShareNumber().getId());
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("share-member")
+                        .data(response));
+            } catch (IOException e) {
+                log.error("SSE 전송 실패: {}", e.getMessage());
+                emitters.remove(emitter); // 전송 실패하면 제거
+            }
+        }
+    }
+
+    @Transactional
+    public void refuse(Long userId,ShareChoiceRequest request){
+        User user = getUserByID(userId);
+        Share share = getShareByShareNumber(shareNumberRepo.findById(request.getShareNumber()).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 shareNumber입니다.")),user);
+
+        shareRepository.deleteById(share.getId());
+    }
+
     public String toDay(){
         LocalDateTime createAt = ZonedDateTime.now(ZoneId.of("Asia/Seoul")).toLocalDateTime();
         DateTimeFormatter yearMonthDayFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
@@ -315,4 +355,12 @@ public class ToDoListServiceImpl implements ToDoListService {
             }
         }
     }
+    User getUserByID(Long userID){
+        return userRepository.findById(userID).orElseThrow(()-> new IllegalArgumentException("없는 유저입니다.(ID)"));
+    }
+    Share getShareByShareNumber(ShareNumber shareNumber, User user){
+        return shareRepository.findByShareNumberAndUserAndAcceptedFalse(shareNumber,user).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 공유 방입니다."));
+    }
+
+
 }
