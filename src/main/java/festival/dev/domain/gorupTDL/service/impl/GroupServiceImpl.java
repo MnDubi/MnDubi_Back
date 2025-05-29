@@ -22,7 +22,6 @@ import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +38,7 @@ import java.util.concurrent.*;
 @RequiredArgsConstructor
 public class GroupServiceImpl implements GroupService {
     private final Map<Long, CopyOnWriteArrayList<SseEmitter>> groupEmitters = new ConcurrentHashMap<>();
+    private final Map<String, CopyOnWriteArrayList<SseEmitter>> groupInviteEmitters = new ConcurrentHashMap<>();
     private final FriendshipRepository friendshipRepository;
     private final UserRepository userRepository;
     private final GroupRepository groupRepository;
@@ -48,7 +48,7 @@ public class GroupServiceImpl implements GroupService {
     private final GroupJoinRepo groupJoinRepo;
     private final CalendarRepository calendarRepository;
     private final Logger logger = LoggerFactory.getLogger(GroupServiceImpl.class);
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 
     @Transactional
     public GInsertRes invite(GCreateRequest request, Long userID){
@@ -85,6 +85,22 @@ public class GroupServiceImpl implements GroupService {
 
             groupJoinRepo.save(groupJoin);
         }
+        List<SseEmitter> emitters = groupEmitters.get(groupNum.getId());
+        MemberDto response = MemberDto.builder()
+                .userCode(receiver.getUserCode())
+                .email(receiver.getEmail())
+                .name(receiver.getName())
+                .build();
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("group-member")
+                        .data(response));
+            } catch (IOException e) {
+                emitters.remove(emitter);
+            }
+        }
+
     }
 
     // SSE 필요
@@ -92,13 +108,13 @@ public class GroupServiceImpl implements GroupService {
     public void refuseInvite(Long userID, GChoiceReq req){
         User receiver = getUser(userID);
         GroupList groupList = getGroupListByUser(receiver);
-        GroupNumber group = groupNumberRepo.findById(req.getGroupNumber()).orElseThrow(()-> new IllegalArgumentException("없는 그룹방입니다."));
-        checkInvite(group,receiver);
-        groupListRepo.findByGroupNumberAndUserAndAccept(group, receiver, true)
+        GroupNumber groupNumber = groupNumberRepo.findById(req.getGroupNumber()).orElseThrow(()-> new IllegalArgumentException("없는 그룹방입니다."));
+        checkInvite(groupNumber,receiver);
+        groupListRepo.findByGroupNumberAndUserAndAccept(groupNumber, receiver, true)
                 .ifPresent(GroupList -> {
                     throw new IllegalArgumentException("이미 수락한 요청입니다.");
                 });
-        groupListRepo.deleteByGroupNumberAndUser(group,receiver);
+        groupListRepo.deleteByGroupNumberAndUser(groupNumber,receiver);
     }
 
     @Transactional
@@ -121,7 +137,7 @@ public class GroupServiceImpl implements GroupService {
         for (SseEmitter emitter : emitters) {
             try {
                 emitter.send(SseEmitter.event()
-                        .name("group-message")
+                        .name("group")
                         .data(response));
             } catch (IOException e) {
                 emitters.remove(emitter); // 전송 실패하면 제거
@@ -131,16 +147,32 @@ public class GroupServiceImpl implements GroupService {
         return  response;
     }
 
-    // SSE 필요
     @Transactional
     public void delete(GDeleteRequest request, Long userID){
         User user = getUser(userID);
         checkNotExist(user, request.getTitle());
         Group group = getGroupByTitleUser(request.getTitle(),user);
+        Long groupNumber = group.getGroupNumber().getId();
         groupRepository.deleteByUserAndTitle(user, request.getTitle());
+        GToDoListResponse response = GToDoListResponse.builder()
+                .title(group.getTitle())
+                .category(group.getCategory().getCategoryName())
+                .ownerName(user.getName())
+                .groupNumber(groupNumber)
+                .build();
+
+        List<SseEmitter> emitters = groupEmitters.get(groupNumber);
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("delete")
+                        .data(response));
+            } catch (IOException e) {
+                emitters.remove(emitter); // 전송 실패하면 제거
+            }
+        }
     }
 
-    // SSE 필요
     @Transactional
     public GResponse success(GSuccessRequest request, Long userID){
         User sender = userRepository.findByUserCode(request.getOwnerID()).orElseThrow(()->new IllegalArgumentException("그 유저는 없는 유저입니다."));
@@ -159,10 +191,19 @@ public class GroupServiceImpl implements GroupService {
                 .completed(groupJoin.isCompleted())
                 .memberName(user.getName())
                 .build();
+        List<SseEmitter> emitters = groupEmitters.get(groupNumber.getId());
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("group-detail")
+                        .data(response));
+            } catch (IOException e) {
+                emitters.remove(emitter);
+            }
+        }
         return response;
     }
 
-    // SSE 필요
     @Transactional
     public Long insert(GInsertRequest request, Long userID){
         User user = getUser(userID);
@@ -194,6 +235,16 @@ public class GroupServiceImpl implements GroupService {
                 .memberName(user.getName())
                 .completed(false)
                 .build();
+        List<SseEmitter> emitters = groupEmitters.get(groupNumber.getId());
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("group-detail")
+                        .data(response));
+            } catch (IOException e) {
+                emitters.remove(emitter);
+            }
+        }
         return groupNumber.getId();
     }
 
@@ -276,7 +327,6 @@ public class GroupServiceImpl implements GroupService {
         }
     }
 
-    // SSE 필요
     @Transactional
     public void deleteAll(Long userID){
         User user = getUser(userID);
@@ -284,6 +334,17 @@ public class GroupServiceImpl implements GroupService {
         GroupNumber groupNumber = getGroupNum(groupList.getGroupNumber().getId());
         groupNumberRepo.deleteById(groupNumber.getId());
         groupRepository.deleteAllByGroupNumberAndUser(groupNumber,user);
+
+        List<SseEmitter> emitters = groupEmitters.get(groupNumber.getId());
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event()
+                        .name("delete-all")
+                        .data(groupNumber.getId()));
+            } catch (IOException e) {
+                emitters.remove(emitter);
+            }
+        }
     }
 
     public List<GInviteGet> inviteGet(Long userID){
@@ -330,7 +391,7 @@ public class GroupServiceImpl implements GroupService {
     }
 
     public SseEmitter sseConnect(Long groupNumber){
-        SseEmitter emitter = new SseEmitter(60 * 1000L);
+        SseEmitter emitter = new SseEmitter(300 * 1000L);
         groupEmitters.putIfAbsent(groupNumber, new CopyOnWriteArrayList<>());
         groupEmitters.get(groupNumber).add(emitter);
 
@@ -407,24 +468,48 @@ public class GroupServiceImpl implements GroupService {
         for (String req_receiver : receivers){
             User receiver = userRepository.findByUserCode(req_receiver).orElseThrow(() -> new IllegalArgumentException("없는 유저 입니다."));
             logger.info(receiver.getName());
-            if (!friendshipRepository.existsByRequesterAndAddressee(sender, receiver) && !friendshipRepository.existsByRequesterAndAddressee(receiver, sender)) {
-                throw new IllegalArgumentException("친구로 추가가 안 되어있습니다.");
-            }
 
-            if (groupListRepo.existsByGroupNumberAndUser(groupNumber,receiver)){
-                throw new IllegalArgumentException("이미 초대한 사람은 초대가 불가합니다.");
-            }
+//            if (!friendshipRepository.existsByRequesterAndAddressee(sender, receiver) && !friendshipRepository.existsByRequesterAndAddressee(receiver, sender)) {
+//                throw new IllegalArgumentException("친구로 추가가 안 되어있습니다.");
+//            }
+//
+//            if (groupListRepo.existsByGroupNumberAndUser(groupNumber,receiver)){
+//                throw new IllegalArgumentException("이미 초대한 사람은 초대가 불가합니다.");
+//            }
+//
+//            if (groupListRepo.existsByAcceptTrueAndUser(receiver)){
+//                throw new IllegalArgumentException("이미 그룹에 포함된 사람은 초대가 불가합니다.");
+//            }
 
-            if (groupListRepo.existsByAcceptTrueAndUser(receiver)){
-                throw new IllegalArgumentException("이미 그룹에 포함된 사람은 초대가 불가합니다.");
-            }
+            validateInviteConditions(sender, receiver, groupNumber);
+
+            SseEmitter emitter = new SseEmitter(300 * 1000L);
+            groupInviteEmitters.putIfAbsent(req_receiver, new CopyOnWriteArrayList<>());
+            groupInviteEmitters.get(req_receiver).add(emitter);
+
+            emitter.onCompletion(() -> groupInviteEmitters.get(req_receiver).remove(emitter));
+            emitter.onTimeout(() -> groupInviteEmitters.get(req_receiver).remove(emitter));
+            emitter.onError(e -> groupInviteEmitters.get(req_receiver).remove(emitter));
 
             GroupList groupList = GroupList.builder()
-                    //false로 바꿔야함
                     .accept(false)
                     .groupNumber(groupNumber)
                     .user(receiver)
                     .build();
+            GroupInviteDto groupInviteDto = GroupInviteDto.builder()
+                    .userName(sender.getName())
+                    .groupNumber(groupNumber.getId())
+                    .accept(false)
+                    .build();
+
+            try {
+                emitter.send(SseEmitter.event().name("connected").data("SSE 연결됨 (유저 코드 : " + req_receiver + ")"));
+                emitter.send(SseEmitter.event()
+                        .name("group_invite")
+                        .data(groupInviteDto));
+            } catch (IOException e) {
+                groupInviteEmitters.get(req_receiver).remove(emitter);
+            }
             groupListRepo.save(groupList);
         }
     }
@@ -460,11 +545,27 @@ public class GroupServiceImpl implements GroupService {
         }
     }
 
-
     @PostConstruct
     public void startPingTask() {
         scheduler.scheduleAtFixedRate(() -> {
             for (Map.Entry<Long, CopyOnWriteArrayList<SseEmitter>> entry : groupEmitters.entrySet()) {
+                List<SseEmitter> emitters = entry.getValue();
+                for (SseEmitter emitter : emitters) {
+                    try {
+                        emitter.send(SseEmitter.event()
+                                .name("ping")
+                                .data("keepalive"));
+                    } catch (IOException e) {
+                        logger.info("Ping 실패로 emitter 제거: {}", e.getMessage());
+                        emitter.completeWithError(e);
+                        emitters.remove(emitter);
+                    }
+                }
+            }
+        }, 10, 30, TimeUnit.SECONDS);
+
+        scheduler.scheduleAtFixedRate(() -> {
+            for (Map.Entry<String, CopyOnWriteArrayList<SseEmitter>> entry : groupInviteEmitters.entrySet()) {
                 List<SseEmitter> emitters = entry.getValue();
                 for (SseEmitter emitter : emitters) {
                     try {
@@ -484,5 +585,20 @@ public class GroupServiceImpl implements GroupService {
     @PreDestroy
     public void shutdown() {
         scheduler.shutdown();
+    }
+
+    private void validateInviteConditions(User sender, User receiver, GroupNumber groupNumber) {
+        if (!friendshipRepository.existsByRequesterAndAddressee(sender, receiver) &&
+                !friendshipRepository.existsByRequesterAndAddressee(receiver, sender)) {
+            throw new IllegalArgumentException("친구로 추가가 안 되어있습니다.");
+        }
+
+        if (groupListRepo.existsByGroupNumberAndUser(groupNumber, receiver)) {
+            throw new IllegalArgumentException("이미 초대한 사람은 초대가 불가합니다.");
+        }
+
+        if (groupListRepo.existsByAcceptTrueAndUser(receiver)) {
+            throw new IllegalArgumentException("이미 그룹에 포함된 사람은 초대가 불가합니다.");
+        }
     }
 }

@@ -13,7 +13,4 @@ public interface ShareService {
     ShareNumberRes inviteShare(Long userID, ShareInviteReq request);
     List<ShareGetRes> get(Long userId);
     List<ShareUserList> getUserList(Long userId);
-    void accept(Long userId,ShareChoiceRequest request);
-    void refuse(Long userId,ShareChoiceRequest request);
-    SseEmitter sseConnect(Long shareNumber);
 }

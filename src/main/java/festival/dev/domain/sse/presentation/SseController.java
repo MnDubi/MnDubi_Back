@@ -1,5 +1,6 @@
 package festival.dev.domain.sse.presentation;
 
+import festival.dev.domain.TDL.service.ToDoListService;
 import festival.dev.domain.gorupTDL.service.GroupService;
 import festival.dev.domain.shareTDL.service.ShareService;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public class SseController {
     private final Logger logger = LoggerFactory.getLogger(SseController.class);
     private final GroupService groupService;
-    private final ShareService shareService;
+//    private final ShareService shareService;
+    private final ToDoListService toDoListService;
 
     @GetMapping("/group")
     public SseEmitter group(@RequestParam Long groupNum) {
@@ -23,7 +25,7 @@ public class SseController {
 
     @GetMapping("/share")
     public SseEmitter share(@RequestParam Long shareNum) {
-        return shareService.sseConnect(shareNum);
+        return toDoListService.sseConnect(shareNum);
     }
 
 }
