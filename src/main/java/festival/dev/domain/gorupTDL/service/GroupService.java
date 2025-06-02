@@ -20,4 +20,5 @@ public interface GroupService {
     List<GInviteGet> inviteGet(Long userid);
     List<GCreateWsRes> userList(Long userid);
     SseEmitter sseConnect(Long groupNum);
+    SseEmitter groupInviteSseConnect(String userCode);
 }

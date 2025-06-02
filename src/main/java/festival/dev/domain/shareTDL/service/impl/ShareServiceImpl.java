@@ -23,6 +23,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.yaml.snakeyaml.emitter.Emitter;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -92,14 +93,8 @@ public class ShareServiceImpl implements ShareService {
         User user = getUserByID(userID);
         Share share = getShareByUser(user);
         ShareNumber shareNumber = share.getShareNumber();
-        SseEmitter emitter = new SseEmitter(300 * 1000L);
         String code = user.getUserCode();
-        shareInviteEmitters.putIfAbsent(user.getUserCode(), new CopyOnWriteArrayList<>());
-        shareInviteEmitters.get(user.getUserCode()).add(emitter);
 
-        emitter.onCompletion(() -> shareInviteEmitters.get(code).remove(emitter));
-        emitter.onTimeout(() -> shareInviteEmitters.get(code).remove(emitter));
-        emitter.onError(e -> shareInviteEmitters.get(code).remove(emitter));
         for (String userCode : request.getUserCodes()){
             User receiver = getUserByCode(userCode);
             checkFriendship(user,receiver);
@@ -113,19 +108,19 @@ public class ShareServiceImpl implements ShareService {
                             .showShared(share.isShowShared())
                     .build());
         }
-        try {
-            ShareInviteDto shareInviteDto = ShareInviteDto.builder()
-                    .accept(false)
-                    .shareNumber(shareNumber.getId())
-                    .userName(user.getName())
-                    .build();
 
-            emitter.send(SseEmitter.event().name("connected").data("SSE 연결됨 (유저 코드 : " + code + ")"));
-            emitter.send(SseEmitter.event()
-                    .name("share_invite")
-                    .data(shareInviteDto));
-        } catch (IOException e) {
-            shareInviteEmitters.get(code).remove(emitter);
+        List<SseEmitter> emitters = shareInviteEmitters.getOrDefault(code, new CopyOnWriteArrayList<>());
+        ShareInviteDto shareInviteDto = ShareInviteDto.builder()
+                .accept(false)
+                .shareNumber(shareNumber.getId())
+                .userName(user.getName())
+                .build();
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event().name("share_invite").data(shareInviteDto));
+            } catch (IOException e) {
+                shareInviteEmitters.get(code).remove(emitter);
+            }
         }
 
         return ShareNumberRes.builder()
@@ -221,6 +216,19 @@ public class ShareServiceImpl implements ShareService {
             shareUserLists.add(shareUserList);
         }
         return shareUserLists;
+    }
+
+    public SseEmitter shareInviteSseConnect(String userCode) {
+        SseEmitter emitter = new SseEmitter(300 * 1000L);
+
+        shareInviteEmitters.putIfAbsent(userCode, new CopyOnWriteArrayList<>());
+        shareInviteEmitters.get(userCode).add(emitter);
+
+        emitter.onCompletion(() -> shareInviteEmitters.get(userCode).remove(emitter));
+        emitter.onTimeout(() -> shareInviteEmitters.get(userCode).remove(emitter));
+        emitter.onError(e -> shareInviteEmitters.get(userCode).remove(emitter));
+
+        return emitter;
     }
     //---------------------
 
