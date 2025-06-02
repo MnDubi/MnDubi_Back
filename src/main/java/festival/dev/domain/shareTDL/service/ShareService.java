@@ -13,4 +13,5 @@ public interface ShareService {
     ShareNumberRes inviteShare(Long userID, ShareInviteReq request);
     List<ShareGetRes> get(Long userId);
     List<ShareUserList> getUserList(Long userId);
+    SseEmitter shareInviteSseConnect(String userCode);
 }

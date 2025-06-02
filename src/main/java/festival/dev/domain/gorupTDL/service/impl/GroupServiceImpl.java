@@ -461,7 +461,6 @@ public class GroupServiceImpl implements GroupService {
         return response.getGroupNumber().getId();
     }
 
-    // SSE 필요
     void inviteFor(User sender, Long groupNum, List<String> receivers){
         GroupNumber groupNumber = getGroupNum(groupNum);
 
@@ -483,14 +482,6 @@ public class GroupServiceImpl implements GroupService {
 
             validateInviteConditions(sender, receiver, groupNumber);
 
-            SseEmitter emitter = new SseEmitter(300 * 1000L);
-            groupInviteEmitters.putIfAbsent(req_receiver, new CopyOnWriteArrayList<>());
-            groupInviteEmitters.get(req_receiver).add(emitter);
-
-            emitter.onCompletion(() -> groupInviteEmitters.get(req_receiver).remove(emitter));
-            emitter.onTimeout(() -> groupInviteEmitters.get(req_receiver).remove(emitter));
-            emitter.onError(e -> groupInviteEmitters.get(req_receiver).remove(emitter));
-
             GroupList groupList = GroupList.builder()
                     .accept(false)
                     .groupNumber(groupNumber)
@@ -502,13 +493,15 @@ public class GroupServiceImpl implements GroupService {
                     .accept(false)
                     .build();
 
-            try {
-                emitter.send(SseEmitter.event().name("connected").data("SSE 연결됨 (유저 코드 : " + req_receiver + ")"));
-                emitter.send(SseEmitter.event()
-                        .name("group_invite")
-                        .data(groupInviteDto));
-            } catch (IOException e) {
-                groupInviteEmitters.get(req_receiver).remove(emitter);
+            List<SseEmitter> emitters = groupInviteEmitters.get(req_receiver);
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("group-invite")
+                            .data(groupInviteDto));
+                } catch (IOException e) {
+                    emitters.remove(emitter);
+                }
             }
             groupListRepo.save(groupList);
         }
@@ -526,6 +519,23 @@ public class GroupServiceImpl implements GroupService {
         if (!groupRepository.existsByUserAndTitle(user,title)){
             throw new IllegalArgumentException("존재하지 않는 TDL입니다.");
         }
+    }
+
+    public SseEmitter groupInviteSseConnect(String userCode) {
+        SseEmitter emitter = new SseEmitter(300 * 1000L);
+        groupInviteEmitters.putIfAbsent(userCode, new CopyOnWriteArrayList<>());
+        groupInviteEmitters.get(userCode).add(emitter);
+
+        emitter.onCompletion(() -> groupInviteEmitters.get(userCode).remove(emitter));
+        emitter.onTimeout(() -> groupInviteEmitters.get(userCode).remove(emitter));
+        emitter.onError(e -> groupInviteEmitters.get(userCode).remove(emitter));
+
+        try {
+            emitter.send(SseEmitter.event().name("connected").data("SSE 연결됨 (유저 코드: " + userCode + ")"));
+        } catch (IOException e) {
+            groupInviteEmitters.get(userCode).remove(emitter);
+        }
+        return emitter;
     }
 
     void checkExist(User user, String title){

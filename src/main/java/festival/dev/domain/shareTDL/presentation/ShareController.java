@@ -27,7 +27,6 @@ public class ShareController {
         }
     }
 
-    //websocket으로 보내기
     @PostMapping("/invite")
     public ResponseEntity<?> invite(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody ShareInviteReq request) {
         try{
