@@ -20,10 +20,10 @@ public class JwtUtil {
     private String secret;
 
     @Value("${jwt.access}")
-    private long expirationTime;
+    private long accessTokenValidity;
 
     @Value("${jwt.refresh}")
-    private long refreshExpirationTime;
+    private long refreshTokenValidity;
 
     @PostConstruct
     public void init() {
@@ -36,7 +36,7 @@ public class JwtUtil {
                 .withClaim("role", role)
                 .withClaim("userId", userId)
                 .withIssuedAt(new Date())
-                .withExpiresAt(new Date(System.currentTimeMillis() + expirationTime))
+                .withExpiresAt(new Date(System.currentTimeMillis() + accessTokenValidity))
                 .sign(algorithm);
     }
 
@@ -44,7 +44,7 @@ public class JwtUtil {
         return JWT.create()
                 .withSubject(email)
                 .withIssuedAt(new Date())
-                .withExpiresAt(new Date(System.currentTimeMillis() + refreshExpirationTime))
+                .withExpiresAt(new Date(System.currentTimeMillis() + refreshTokenValidity))
                 .sign(algorithm);
     }
 

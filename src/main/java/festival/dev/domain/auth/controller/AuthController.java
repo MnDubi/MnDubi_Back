@@ -21,17 +21,15 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
     private final OAuthCodeStore codeStore;
     private final JwtUtil jwtUtil;
 
-    public AuthController(AuthService authService, OAuthCodeStore codeStore, JwtUtil jwtUtil) {
-        this.authService = authService;
-        this.codeStore = codeStore;
-        this.jwtUtil = jwtUtil;
-    }
+
+
 
     // 자체 회원가입
     @PostMapping("/register")

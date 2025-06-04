@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +22,13 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final CookieProperties cookieProperties;
+
+    @Value("${jwt.access}")
+    private long accessTokenValidity;
+
+    @Value("${jwt.refresh}")
+    private long refreshTokenValidity;
+
     // 자체 회원가입
     public void register(String email, String password, String name, HttpServletResponse response) {
         if (userRepository.findByEmail(email).isPresent()) {
@@ -72,7 +80,7 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
         String newAccessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
-        setJwtCookie(response, "access_token", newAccessToken, 3600);
+        setJwtCookie(response, "access_token", newAccessToken, (int) accessTokenValidity);
     }
 
     public void logout(HttpServletResponse response) {
@@ -84,8 +92,8 @@ public class AuthService {
         String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
         String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
 
-        setJwtCookie(response, "access_token", accessToken, 3600);
-        setJwtCookie(response, "refresh_token", refreshToken, 604800);
+        setJwtCookie(response, "access_token", accessToken, (int) accessTokenValidity);
+        setJwtCookie(response, "refresh_token", refreshToken, (int) refreshTokenValidity);
     }
 
     private void setJwtCookie(HttpServletResponse response, String name, String value, int maxAge) {

@@ -23,6 +23,12 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     @Value("${frontend.url}")
     private String frontendUrl;
 
+    @Value("${jwt.access}")
+    private long accessTokenValidity;
+
+    @Value("${jwt.refresh}")
+    private long refreshTokenValidity;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
@@ -45,8 +51,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String accessToken = jwtUtil.generateAccessToken(email, role, userId);
         String refreshToken = jwtUtil.generateRefreshToken(email);
 
-        setJwtCookie(response, "access_token", accessToken, 3600);
-        setJwtCookie(response, "refresh_token", refreshToken, 604800);
+        setJwtCookie(response, "access_token", accessToken, (int) accessTokenValidity);
+        setJwtCookie(response, "refresh_token", refreshToken, (int) refreshTokenValidity);
 
 
         response.sendRedirect(frontendUrl + "/oauth/success");

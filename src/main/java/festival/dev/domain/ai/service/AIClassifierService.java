@@ -1,5 +1,6 @@
 package festival.dev.domain.ai.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -12,13 +13,10 @@ import java.util.Map;
 
 
 @Service
+@RequiredArgsConstructor
 public class AIClassifierService {
 
     private final RestTemplate restTemplate;
-
-    public AIClassifierService(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
-    }
 
     @Value("${ai.server.url}")
     private String aiServerUrl;  // ex) http://localhost:5001
