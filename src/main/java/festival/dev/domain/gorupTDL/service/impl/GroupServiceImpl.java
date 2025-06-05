@@ -165,7 +165,7 @@ public class GroupServiceImpl implements GroupService {
         for (SseEmitter emitter : emitters) {
             try {
                 emitter.send(SseEmitter.event()
-                        .name("delete")
+                        .name("group-delete")
                         .data(response));
             } catch (IOException e) {
                 emitters.remove(emitter); // 전송 실패하면 제거
@@ -339,7 +339,7 @@ public class GroupServiceImpl implements GroupService {
         for (SseEmitter emitter : emitters) {
             try {
                 emitter.send(SseEmitter.event()
-                        .name("delete-all")
+                        .name("group-delete-all")
                         .data(groupNumber.getId()));
             } catch (IOException e) {
                 emitters.remove(emitter);
