@@ -131,7 +131,7 @@ public class CalendarServiceImpl implements CalendarService {
                     startDate = tdl.getStartDate();
                     endDate = tdl.getEndDate();
                     completed = tdl.getCompleted();
-                    category = tdl.getCategory().getCategoryName();
+                    category = tdl.getCategory().getName();
 
                     response.add(CalendarDtoAsis.builder()
                             .title(title)
@@ -151,7 +151,7 @@ public class CalendarServiceImpl implements CalendarService {
                         .collect(Collectors.toList());
 
                 Map<Long, String> categoryMap = categoryRepository.findAllById(categoryIds).stream()
-                        .collect(Collectors.toMap(Category::getId, Category::getCategoryName));
+                        .collect(Collectors.toMap(Category::getId, Category::getName));
 
                 for (GroupCalendar tdl : tdlIds) {
                     title = tdl.getTitle();

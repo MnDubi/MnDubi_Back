@@ -8,5 +8,5 @@ public class GInsertUntilRequest {
     @NotNull
     private String title;
     @NotNull
-    private String category;
+    private String endDate;
 }

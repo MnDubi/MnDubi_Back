@@ -10,6 +10,7 @@ import festival.dev.domain.calendar.entity.Calendar_tdl_ids;
 import festival.dev.domain.calendar.entity.CTdlKind;
 import festival.dev.domain.calendar.repository.CalendarRepository;
 import festival.dev.domain.category.entity.Category;
+import festival.dev.domain.category.service.CategoryService;
 import festival.dev.domain.category.repository.CategoryRepository;
 import festival.dev.domain.gorupTDL.presentation.dto.response.MemberDto;
 import festival.dev.domain.shareTDL.entity.Share;
@@ -25,6 +26,11 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.http.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import festival.dev.domain.ai.service.AIClassifierService;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -47,16 +53,32 @@ public class ToDoListServiceImpl implements ToDoListService {
     private final ToDoListRepository toDoListRepository;
     private final CalendarRepository calendarRepository;
     private final CategoryRepository categoryRepository;
+//    private final RestTemplate restTemplate;
+    private final CategoryService categoryService;
     private final UserRepository userRepository;
     public final Map<Long, CopyOnWriteArrayList<SseEmitter>> shareEmitters = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final Logger log = LoggerFactory.getLogger(ToDoListServiceImpl.class);
     private final ShareRepository shareRepository;
+    private final AIClassifierService aiClassifierService;
 
-    public void input(InsertRequest request, Long id) {
+    public void input(InsertRequest request, Long userId) {
         String title = request.getTitle();
-        User user = getUser(id);
-        Category category = categoryRepository.findByCategoryName(request.getCategory());
+        User user = getUser(userId);
+
+        Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        Category::getName,
+                        c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                ));
+
+        String categoryName = aiClassifierService.classifyCategoryWithAI(title, categoryMap);
+
+        Category category = categoryService.findOrCreateByName(categoryName,
+                categoryMap.containsKey(categoryName)
+                        ? categoryMap.get(categoryName)
+                        : categoryService.getEmbeddingFromText(categoryName)
+        );
 
         inputSetting(title, user, request.getEndDate(), category);
 
@@ -81,7 +103,6 @@ public class ToDoListServiceImpl implements ToDoListService {
     public void input(InsertUntilRequest request, Long id) {
         String title = request.getTitle();
         User user = getUser(id);
-        Category category = categoryRepository.findByCategoryName(request.getCategory());
 
         if (request.getStartDate().compareTo(request.getEndDate()) > 0) {
             throw new IllegalArgumentException("시작하는 날짜가 끝나는 날짜보다 늦을 수 없습니다.");
@@ -89,6 +110,30 @@ public class ToDoListServiceImpl implements ToDoListService {
 
         checkEndDate(request.getEndDate());
 
+        Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        Category::getName,
+                        c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                ));
+
+        String categoryName = aiClassifierService.classifyCategoryWithAI(title, categoryMap);
+
+        Category category = categoryService.findOrCreateByName(categoryName,
+                categoryMap.containsKey(categoryName)
+                        ? categoryMap.get(categoryName)
+                        : categoryService.getEmbeddingFromText(categoryName)
+        );
+
+        checkExist(user, title, request.getEndDate());
+
+        toDoListRepository.save(ToDoList.builder()
+                        .title(title)
+                        .completed(false)
+                        .user(user)
+                        .startDate(request.getStartDate())
+                        .endDate(request.getEndDate())
+                        .category(category)
+                .build());
         inputSetting(title, user, request.getEndDate(), category);
         ToDoList toDoList = ToDoList.builder()
                 .title(title)
@@ -111,18 +156,46 @@ public class ToDoListServiceImpl implements ToDoListService {
         User user = getUser(userID);
         checkNotExist(user, request.getTitle(), request.getEndDate());
         checkExist(user, request.getChange(), request.getChangeDate());
-        if(toDay().compareTo(request.getEndDate()) > 0)
+
+        if (toDay().compareTo(request.getEndDate()) > 0)
             throw new IllegalArgumentException("이미 끝난 TDL은 변경이 불가능합니다.");
 
-        toDoListRepository.changeTitle(request.getChange(), request.getTitle(), userID, request.getChangeDate(), request.getEndDate());
+        // 제목 변경
+        toDoListRepository.changeTitle(
+                request.getChange(), request.getTitle(), userID,
+                request.getChangeDate(), request.getEndDate()
+        );
 
-        ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user, request.getChange(), request.getChangeDate());
+        ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(
+                user, request.getChange(), request.getChangeDate()
+        );
 
-        ToDoListResponse response = toDoListResponseBuild(user, toDoList.getCategory(), toDoList);
-        sendToShare(toDoList, response, user,"shared");
+        // AI 카테고리 분류 적용
+        Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        Category::getName,
+                        c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                ));
+
+        String newCategoryName = aiClassifierService.classifyCategoryWithAI(request.getChange(), categoryMap);
+
+        Category newCategory = categoryService.findOrCreateByName(
+                newCategoryName,
+                categoryMap.containsKey(newCategoryName)
+                        ? categoryMap.get(newCategoryName)
+                        : categoryService.getEmbeddingFromText(newCategoryName)
+        );
+
+        toDoList.setCategory(newCategory); // 카테고리 업데이트
+        toDoListRepository.save(toDoList); // 변경 사항 저장
+
+        // 응답 객체 생성 및 SSE 공유
+        ToDoListResponse response = toDoListResponseBuild(user, newCategory, toDoList);
+        sendToShare(toDoList, response, user, "shared");
 
         return response;
     }
+
 
     public void delete(DeleteRequest request,Long id) {
         User user = getUser(id);
@@ -144,7 +217,7 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .map(tdl -> ToDoListResponse.builder()
                         .title(tdl.getTitle())
                         .completed(tdl.getCompleted())
-                        .category(tdl.getCategory().getCategoryName())  // 카테고리 이름을 포함
+                        .category(tdl.getCategory().getName())  // 카테고리 이름을 포함
                         .endDate(tdl.getEndDate())
                         .startDate(tdl.getStartDate())
                         .userName(user.getName())
@@ -331,7 +404,7 @@ public class ToDoListServiceImpl implements ToDoListService {
     ToDoListResponse toDoListResponseBuild(User user, Category category, ToDoList toDoList) {
         return ToDoListResponse.builder()
                 .userName(user.getName())
-                .category(category.getCategoryName())
+                .category(category.getName())
                 .shared(toDoList.isShared())
                 .title(toDoList.getTitle())
                 .endDate(toDoList.getEndDate())

@@ -5,25 +5,32 @@ import festival.dev.domain.auth.dto.AuthResponseDto;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import festival.dev.global.security.jwt.JwtUtil;
+import festival.dev.global.security.config.CookieProperties;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.RandomStringUtils;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final CookieProperties cookieProperties;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
-    }
+    @Value("${jwt.access}")
+    private long accessTokenValidity;
+
+    @Value("${jwt.refresh}")
+    private long refreshTokenValidity;
 
     // 자체 회원가입
-    public User registerUser(String email, String password, String name) {
+    public void register(String email, String password, String name, HttpServletResponse response) {
         if (userRepository.findByEmail(email).isPresent()) {
             throw new RuntimeException("이미 존재하는 이메일입니다.");
         }
@@ -32,16 +39,19 @@ public class AuthService {
                 .email(email)
                 .password(passwordEncoder.encode(password))
                 .name(name)
-                .provider("LOCAL") // 자체 회원가입은 "LOCAL"
+                .provider("LOCAL")
                 .userCode(generateUserCode())
                 .role("USER")
                 .build();
 
-        return userRepository.save(newUser);
+        userRepository.save(newUser);
+
+
     }
 
+
     // 자체 로그인
-    public AuthResponseDto login(AuthRequestDto request) {
+    public void login(AuthRequestDto request, HttpServletResponse response) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 이메일입니다."));
 
@@ -49,7 +59,7 @@ public class AuthService {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
 
-        return generateTokenResponse(user);
+        issueJwtCookies(response, user);
     }
 
     // JWT 생성
@@ -60,7 +70,7 @@ public class AuthService {
     }
 
     // Refresh 토큰을 통한 재발급
-    public AuthResponseDto refreshAccessToken(String refreshToken) {
+    public void refreshTokenFromCookie(String refreshToken, HttpServletResponse response) {
         if (!jwtUtil.isRefreshTokenValid(refreshToken)) {
             throw new RuntimeException("유효하지 않은 Refresh Token입니다.");
         }
@@ -70,7 +80,35 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
         String newAccessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
-        return new AuthResponseDto(newAccessToken, refreshToken);
+        setJwtCookie(response, "access_token", newAccessToken, (int) accessTokenValidity);
+    }
+
+    public void logout(HttpServletResponse response) {
+        expireJwtCookie(response, "access_token");
+        expireJwtCookie(response, "refresh_token");
+    }
+
+    private void issueJwtCookies(HttpServletResponse response, User user) {
+        String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
+
+        setJwtCookie(response, "access_token", accessToken, (int) accessTokenValidity);
+        setJwtCookie(response, "refresh_token", refreshToken, (int) refreshTokenValidity);
+    }
+
+    private void setJwtCookie(HttpServletResponse response, String name, String value, int maxAge) {
+        String cookie = name + "=" + value +
+                "; Path=/; Max-Age=" + maxAge +
+                "; HttpOnly; Secure; SameSite=None; Domain=" + cookieProperties.getDomain();
+
+        response.addHeader("Set-Cookie", cookie);
+    }
+
+    private void expireJwtCookie(HttpServletResponse response, String name) {
+        String cookie = name + "=; Path=/; Max-Age=0" +
+                "; HttpOnly; Secure; SameSite=None; Domain=" + cookieProperties.getDomain();
+
+        response.addHeader("Set-Cookie", cookie);
     }
 
     private String generateUserCode() {
@@ -80,4 +118,15 @@ public class AuthService {
         } while (userRepository.existsByUserCode(code));
         return code;
     }
+
+//    //로그아웃
+//    public void logout(String refreshToken) {
+//        if (!jwtUtil.isRefreshTokenValid(refreshToken)) {
+//            throw new RuntimeException("유효하지 않은 Refresh Token입니다.");
+//        }
+//        String email = jwtUtil.validateToken(refreshToken);
+//        jwtUtil.invalidateToken(refreshToken);
+//
+//
+//    }
 }
