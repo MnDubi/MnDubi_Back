@@ -6,6 +6,7 @@ import festival.dev.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import festival.dev.global.security.jwt.JwtUtil;
 import com.auth0.jwt.JWT;
 
 @RestController
@@ -14,6 +15,7 @@ import com.auth0.jwt.JWT;
 public class UserController {
 
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
 
 //    @GetMapping("/{id}")
@@ -23,8 +25,8 @@ public class UserController {
 
 
     @GetMapping("/profile")
-    public ResponseEntity<UserDto> getProfile(@RequestHeader("Authorization") String authorization) {
-        Long userId = JWT.decode(authorization.replace("Bearer ", "")).getClaim("userId").asLong();
+    public ResponseEntity<UserDto> getProfile(@CookieValue("access_token") String token) {
+        Long userId = jwtUtil.getUserIdFromToken(token); // or validateToken()
         return ResponseEntity.ok(userService.getUserById(userId));
     }
 
@@ -33,6 +35,7 @@ public class UserController {
     public UserDto getUser(@PathVariable String email) {
         return userService.getUserByEmail(email);
     }
+
 
 
 

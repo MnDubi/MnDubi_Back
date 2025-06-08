@@ -73,4 +73,17 @@ public class JwtUtil {
         }
     }
 
+    public Long getUserIdFromToken(String token) {
+        try {
+            return JWT.require(algorithm)
+                    .build()
+                    .verify(token)
+                    .getClaim("userId").asLong();
+        } catch (JWTVerificationException e) {
+            log.warn("userId 추출 실패: {}", e.getMessage());
+            throw new RuntimeException("Invalid JWT token: " + e.getMessage());
+        }
+    }
+
+
 }
