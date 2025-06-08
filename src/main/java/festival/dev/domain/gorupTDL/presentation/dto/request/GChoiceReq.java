@@ -6,5 +6,5 @@ import lombok.Getter;
 @Getter
 public class GChoiceReq {
     @NotNull
-    private Long groupNum;
+    private Long groupNumber;
 }

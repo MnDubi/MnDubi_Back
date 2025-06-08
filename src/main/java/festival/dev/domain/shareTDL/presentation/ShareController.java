@@ -1,5 +1,6 @@
 package festival.dev.domain.shareTDL.presentation;
 
+import festival.dev.domain.TDL.service.ToDoListService;
 import festival.dev.domain.shareTDL.presentation.dto.request.*;
 import festival.dev.domain.shareTDL.service.ShareService;
 import festival.dev.domain.user.entity.CustomUserDetails;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/share/toDoList")
 public class ShareController {
     private final ShareService shareService;
+    private final ToDoListService toDoListService;
 
     @PostMapping("/create")
     public ResponseEntity<?> create(@Valid @RequestBody ShareCreateReq request, @AuthenticationPrincipal CustomUserDetails user) {
@@ -25,7 +27,6 @@ public class ShareController {
         }
     }
 
-    //websocket으로 보내기
     @PostMapping("/invite")
     public ResponseEntity<?> invite(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody ShareInviteReq request) {
         try{
@@ -59,7 +60,7 @@ public class ShareController {
     @PutMapping("/accept")
     public ResponseEntity<?> accept(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody ShareChoiceRequest request){
         try{
-            shareService.accept(user.getUserID(),request);
+            toDoListService.accept(user.getUserID(),request);
             return ResponseEntity.ok("success");
         }
         catch (Exception e){
@@ -70,7 +71,7 @@ public class ShareController {
     @DeleteMapping("refuse")
     public ResponseEntity<?> refuse(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody ShareChoiceRequest request){
         try{
-            shareService.refuse(user.getUserID(),request);
+            toDoListService.refuse(user.getUserID(),request);
             return ResponseEntity.ok("success");
         }
         catch (Exception e){

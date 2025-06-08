@@ -10,5 +10,5 @@ public class GInviteReq {
     @NotNull
     private List<String> receivers;
     @NotNull
-    private Long groupID;
+    private Long groupNumber;
 }

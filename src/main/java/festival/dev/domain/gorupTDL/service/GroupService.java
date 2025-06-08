@@ -2,6 +2,7 @@ package festival.dev.domain.gorupTDL.service;
 
 import festival.dev.domain.gorupTDL.presentation.dto.request.*;
 import festival.dev.domain.gorupTDL.presentation.dto.response.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 
@@ -17,8 +18,9 @@ public interface GroupService {
     GGetRes get(Long userID);
     void deleteAll(Long userID);
     List<GInviteGet> inviteGet(Long userid);
-    void createWs(GCreateWsReq request);
     List<GCreateWsRes> userList(Long userid);
     boolean isGroupMember(Long userId);
 
+    SseEmitter sseConnect(Long groupNum);
+    SseEmitter groupInviteSseConnect(String userCode);
 }

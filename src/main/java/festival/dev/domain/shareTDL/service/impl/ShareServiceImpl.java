@@ -10,10 +10,7 @@ import festival.dev.domain.friendship.repository.FriendshipRepository;
 import festival.dev.domain.shareTDL.entity.Share;
 import festival.dev.domain.shareTDL.entity.ShareNumber;
 import festival.dev.domain.shareTDL.presentation.dto.request.*;
-import festival.dev.domain.shareTDL.presentation.dto.response.ShareGetRes;
-import festival.dev.domain.shareTDL.presentation.dto.response.ShareJoinRes;
-import festival.dev.domain.shareTDL.presentation.dto.response.ShareNumberRes;
-import festival.dev.domain.shareTDL.presentation.dto.response.ShareUserList;
+import festival.dev.domain.shareTDL.presentation.dto.response.*;
 import festival.dev.domain.shareTDL.repository.ShareNumberRepo;
 import festival.dev.domain.shareTDL.repository.ShareRepository;
 import festival.dev.domain.shareTDL.service.ShareService;
@@ -23,20 +20,24 @@ import festival.dev.domain.ai.service.AIClassifierService;
 import festival.dev.domain.category.service.CategoryService;
 import festival.dev.domain.category.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.yaml.snakeyaml.emitter.Emitter;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,7 +49,10 @@ public class ShareServiceImpl implements ShareService {
     private final FriendshipRepository friendshipRepository;
     private final ToDoListRepository toDoListRepository;
     private final CalendarRepository calendarRepository;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final Logger log = LoggerFactory.getLogger(ShareServiceImpl.class);
+    private final Map<String, CopyOnWriteArrayList<SseEmitter>> shareInviteEmitters = new ConcurrentHashMap<>();
+
+//    private final SimpMessagingTemplate messagingTemplate;
     private final CategoryRepository categoryRepository;
     private final CategoryService categoryService;
     private final AIClassifierService aiClassifierService;
@@ -97,6 +101,8 @@ public class ShareServiceImpl implements ShareService {
         User user = getUserByID(userID);
         Share share = getShareByUser(user);
         ShareNumber shareNumber = share.getShareNumber();
+        String code = user.getUserCode();
+
         for (String userCode : request.getUserCodes()){
             User receiver = getUserByCode(userCode);
             checkFriendship(user,receiver);
@@ -110,6 +116,21 @@ public class ShareServiceImpl implements ShareService {
                             .showShared(share.isShowShared())
                     .build());
         }
+
+        List<SseEmitter> emitters = shareInviteEmitters.getOrDefault(code, new CopyOnWriteArrayList<>());
+        ShareInviteDto shareInviteDto = ShareInviteDto.builder()
+                .accept(false)
+                .shareNumber(shareNumber.getId())
+                .userName(user.getName())
+                .build();
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event().name("share_invite").data(shareInviteDto));
+            } catch (IOException e) {
+                shareInviteEmitters.get(code).remove(emitter);
+            }
+        }
+
         return ShareNumberRes.builder()
                 .shareNumber(shareNumber.getId())
                 .build();
@@ -205,21 +226,17 @@ public class ShareServiceImpl implements ShareService {
         return shareUserLists;
     }
 
-    public void accept(Long userId,ShareChoiceRequest request){
-        User user = getUserByID(userId);
-        Share share = getShareByShareNumber(shareNumberRepo.findById(request.getShareNumber()).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 shareNumber입니다.")),user);
+    public SseEmitter shareInviteSseConnect(String userCode) {
+        SseEmitter emitter = new SseEmitter(300 * 1000L);
 
-        Share change = share.toBuilder().accepted(true).build();
-        shareRepository.save(change);
-        messagingTemplate.convertAndSend("/topic/share/accept",share.getShareNumber().getId());
-    }
+        shareInviteEmitters.putIfAbsent(userCode, new CopyOnWriteArrayList<>());
+        shareInviteEmitters.get(userCode).add(emitter);
 
-    public void refuse(Long userId,ShareChoiceRequest request){
-        User user = getUserByID(userId);
-        Share share = getShareByShareNumber(shareNumberRepo.findById(request.getShareNumber()).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 shareNumber입니다.")),user);
+        emitter.onCompletion(() -> shareInviteEmitters.get(userCode).remove(emitter));
+        emitter.onTimeout(() -> shareInviteEmitters.get(userCode).remove(emitter));
+        emitter.onError(e -> shareInviteEmitters.get(userCode).remove(emitter));
 
-        shareRepository.deleteById(share.getId());
-        messagingTemplate.convertAndSend("/topic/share/refuse",share.getShareNumber().getId());
+        return emitter;
     }
     //---------------------
 
