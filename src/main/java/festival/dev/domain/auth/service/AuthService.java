@@ -112,15 +112,15 @@ public class AuthService {
 
         ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
                 .httpOnly(true)
-                .sameSite("None")
-                .path("/**")
+                // 개발환경(localhost)일 땐 secure false, 배포환경일 땐 true
+                .secure(!cookieProperties.getDomain().equals("localhost"))
+                // SameSite 옵션도 환경에 따라 분기 처리
+                .sameSite(cookieProperties.getDomain().equals("localhost") ? "Lax" : "None")
+                .path("/")
                 .maxAge(Duration.ofMillis(maxAgeMs));
 
         if (!cookieProperties.getDomain().equals("localhost")) {
             builder.domain(cookieProperties.getDomain());
-            builder.secure(true);
-        } else {
-            builder.secure(false);
         }
 
         ResponseCookie cookie = builder.build();
