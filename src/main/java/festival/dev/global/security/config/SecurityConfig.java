@@ -49,7 +49,7 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**", "/oauth2/**", "/ws/**", "/sse/**").permitAll()
                         .requestMatchers("/user/**").authenticated()
                         .requestMatchers("/friends/**").authenticated()
-//                        .requestMatchers("/toDoList/**").authenticated()
+                        .requestMatchers("/toDoList/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex

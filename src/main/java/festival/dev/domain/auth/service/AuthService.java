@@ -110,17 +110,17 @@ public class AuthService {
     private void setJwtCookie(HttpServletResponse response, String name, String value, long maxAgeMs) {
         System.out.println("🔐 쿠키 발급 시도됨 → 이름: " + name + ", 길이: " + value.length());
 
-        // 도메인 지정은 실제 배포 도메인과 맞지 않으면 저장 안 됨 (로컬에서는 생략)
         ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
                 .httpOnly(true)
-                .secure(true) // HTTPS 환경 필수, 로컬 개발 중이면 false로 변경
-                .sameSite("None") // 크로스 도메인 대응
-                .path("/")
+                .sameSite("None")
+                .path("/**")
                 .maxAge(Duration.ofMillis(maxAgeMs));
 
-        // 배포 환경인 경우에만 domain 설정
         if (!cookieProperties.getDomain().equals("localhost")) {
             builder.domain(cookieProperties.getDomain());
+            builder.secure(true);
+        } else {
+            builder.secure(false);
         }
 
         ResponseCookie cookie = builder.build();
@@ -132,7 +132,7 @@ public class AuthService {
         ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, "")
                 .path("/")
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)
                 .sameSite("None")
                 .maxAge(0); // 즉시 만료
 
