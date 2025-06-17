@@ -239,6 +239,7 @@ public class GroupServiceImpl implements GroupService {
     @Transactional
     public Long insert(GInsertRequest request, Long userID){
         User user = getUser(userID);
+
         checkExist(user, request.getTitle());
         GroupList groupList = getGroupListByUser(user);
         GroupNumber groupNumber = getGroupNum(groupList.getGroupNumber().getId());
@@ -246,6 +247,7 @@ public class GroupServiceImpl implements GroupService {
         Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
                 .collect(Collectors.toMap(
                         Category::getName,
+
                         c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
                 ));
 

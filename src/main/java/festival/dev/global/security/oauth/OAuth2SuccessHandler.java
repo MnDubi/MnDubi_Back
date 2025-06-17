@@ -61,15 +61,19 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     }
 
     private void setJwtCookie(HttpServletResponse response, String name, String value, long maxAgeMs) {
+
+        System.out.println("🔐 쿠키 발급 시도됨 → 이름: " + name + ", 길이: " + value.length());
+
         ResponseCookie cookie = ResponseCookie.from(name, value)
                 .httpOnly(true)
                 .secure(true)
                 .sameSite("None")
                 .path("/")
-                .domain(cookieProperties.getDomain())
+                .domain("endlessly-cuddly-salmon.ngrok-free.app")
                 .maxAge(Duration.ofMillis(maxAgeMs))
                 .build();
 
         response.addHeader("Set-Cookie", cookie.toString());
     }
+
 }

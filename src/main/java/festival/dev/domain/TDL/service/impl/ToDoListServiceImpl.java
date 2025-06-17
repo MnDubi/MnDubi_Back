@@ -95,8 +95,9 @@ public class ToDoListServiceImpl implements ToDoListService {
                 .build();
 
         ToDoListResponse response = toDoListResponseBuild(user, category, toDoList);
-
-        sendToShare(toDoList, response, user,"shared");
+        if(shareRepository.findByUser(user).isPresent()){
+            sendToShare(toDoList, response, user,"shared");
+        }
         toDoListRepository.save(toDoList);
     }
 
@@ -147,7 +148,9 @@ public class ToDoListServiceImpl implements ToDoListService {
 
         ToDoListResponse response = toDoListResponseBuild(user, category, toDoList);
 
-        sendToShare(toDoList, response, user,"shared");
+        if(shareRepository.findByUser(user).isPresent()) {
+            sendToShare(toDoList, response, user, "shared");
+        }
 
         toDoListRepository.save(toDoList);
     }
@@ -191,8 +194,9 @@ public class ToDoListServiceImpl implements ToDoListService {
 
         // 응답 객체 생성 및 SSE 공유
         ToDoListResponse response = toDoListResponseBuild(user, newCategory, toDoList);
-        sendToShare(toDoList, response, user, "shared");
-
+        if(shareRepository.findByUser(user).isPresent()) {
+            sendToShare(toDoList, response, user, "shared");
+        }
         return response;
     }
 
@@ -204,7 +208,9 @@ public class ToDoListServiceImpl implements ToDoListService {
         ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user, request.getTitle(), request.getEndDate());
         toDoListRepository.deleteByUserAndTitleAndEndDate(user,request.getTitle(), request.getEndDate());
         ToDoListResponse response = toDoListResponseBuild(user, toDoList.getCategory(), toDoList);
-        sendToShare(toDoList, response, user,"deleted");
+        if(shareRepository.findByUser(user).isPresent()) {
+            sendToShare(toDoList, response, user, "deleted");
+        }
     }
 
     public List<ToDoListResponse> get(Long userID){
@@ -234,7 +240,9 @@ public class ToDoListServiceImpl implements ToDoListService {
         ToDoList toDoList = toDoListRepository.findByUserAndTitleAndEndDate(user,request.getTitle(), yearMonthDay);
 
         ToDoListResponse response = toDoListResponseBuild(user, toDoList.getCategory(), toDoList);
-        sendToShare(toDoList, response, user,"shared");
+        if(shareRepository.findByUser(user).isPresent()) {
+            sendToShare(toDoList, response, user, "shared");
+        }
         return response;
     }
 
@@ -245,7 +253,9 @@ public class ToDoListServiceImpl implements ToDoListService {
         ToDoList changed = toDoList.toBuilder().shared(request.getShared()).build();
         toDoListRepository.save(changed);
         ToDoListResponse response = toDoListResponseBuild(user, toDoList.getCategory(), changed);
-        sendToShare(changed, response, user, "shared");
+        if(shareRepository.findByUser(user).isPresent()) {
+            sendToShare(changed, response, user, "shared");
+        }
     }
 
     @Transactional
@@ -256,7 +266,7 @@ public class ToDoListServiceImpl implements ToDoListService {
             List<ToDoList> tdls = toDoListRepository.findByUserAndEndDate(user, toDay());
             int part = toDoListRepository.findByUserAndEndDateAndCompleted(user, toDay(), true).size();
             List<Calendar_tdl_ids> tdlIDs = tdls.stream()
-                    .map(tdl -> Calendar_tdl_ids.builder()
+                    .map(tdl ->  Calendar_tdl_ids.builder()
                             .tdlID(tdl.getId())
                             .kind(CTdlKind.PRIVATE)
                             .build())
