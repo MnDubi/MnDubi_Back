@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
+import java.time.Duration;
 
 @Service
 @RequiredArgsConstructor
@@ -51,7 +53,7 @@ public class AuthService {
 
 
     // 자체 로그인
-    public void login(AuthRequestDto request, HttpServletResponse response) {
+    public AuthResponseDto login(AuthRequestDto request, HttpServletResponse response) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 이메일입니다."));
 
@@ -59,15 +61,24 @@ public class AuthService {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
 
+        // JWT는 HttpOnly 쿠키로 발급
         issueJwtCookies(response, user);
+
+        return new AuthResponseDto(
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                user.getUserCode()
+        );
     }
 
-    // JWT 생성
-    private AuthResponseDto generateTokenResponse(User user) {
-        String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
-        return new AuthResponseDto(accessToken, refreshToken);
-    }
+
+//    // JWT 생성
+//    private AuthResponseDto generateTokenResponse(User user) {
+//        String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
+//        String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
+//        return new AuthResponseDto(accessToken, refreshToken);
+//    }
 
     // Refresh 토큰을 통한 재발급
     public void refreshTokenFromCookie(String refreshToken, HttpServletResponse response) {
@@ -96,20 +107,44 @@ public class AuthService {
         setJwtCookie(response, "refresh_token", refreshToken, (int) refreshTokenValidity);
     }
 
-    private void setJwtCookie(HttpServletResponse response, String name, String value, int maxAge) {
-        String cookie = name + "=" + value +
-                "; Path=/; Max-Age=" + maxAge +
-                "; HttpOnly; Secure; SameSite=None; Domain=" + cookieProperties.getDomain();
+    private void setJwtCookie(HttpServletResponse response, String name, String value, long maxAgeMs) {
+        System.out.println("🔐 쿠키 발급 시도됨 → 이름: " + name + ", 길이: " + value.length());
 
-        response.addHeader("Set-Cookie", cookie);
+        // 도메인 지정은 실제 배포 도메인과 맞지 않으면 저장 안 됨 (로컬에서는 생략)
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
+                .httpOnly(true)
+                .secure(true) // HTTPS 환경 필수, 로컬 개발 중이면 false로 변경
+                .sameSite("None") // 크로스 도메인 대응
+                .path("/")
+                .maxAge(Duration.ofMillis(maxAgeMs));
+
+        // 배포 환경인 경우에만 domain 설정
+        if (!cookieProperties.getDomain().equals("localhost")) {
+            builder.domain(cookieProperties.getDomain());
+        }
+
+        ResponseCookie cookie = builder.build();
+        response.addHeader("Set-Cookie", cookie.toString());
     }
+
 
     private void expireJwtCookie(HttpServletResponse response, String name) {
-        String cookie = name + "=; Path=/; Max-Age=0" +
-                "; HttpOnly; Secure; SameSite=None; Domain=" + cookieProperties.getDomain();
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, "")
+                .path("/")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("None")
+                .maxAge(0); // 즉시 만료
 
-        response.addHeader("Set-Cookie", cookie);
+        // 도메인 설정도 발급할 때와 일치하게 설정
+        if (!cookieProperties.getDomain().equals("localhost")) {
+            builder.domain(cookieProperties.getDomain());
+        }
+
+        ResponseCookie expiredCookie = builder.build();
+        response.addHeader("Set-Cookie", expiredCookie.toString());
     }
+
 
     private String generateUserCode() {
         String code;
@@ -119,14 +154,5 @@ public class AuthService {
         return code;
     }
 
-//    //로그아웃
-//    public void logout(String refreshToken) {
-//        if (!jwtUtil.isRefreshTokenValid(refreshToken)) {
-//            throw new RuntimeException("유효하지 않은 Refresh Token입니다.");
-//        }
-//        String email = jwtUtil.validateToken(refreshToken);
-//        jwtUtil.invalidateToken(refreshToken);
-//
-//
-//    }
+
 }

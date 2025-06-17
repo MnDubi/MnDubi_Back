@@ -41,9 +41,14 @@ public class AuthController {
     // 자체 로그인 (이메일 & 비밀번호)
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequestDto request, HttpServletResponse response) {
-        authService.login(request, response);
-        return ResponseEntity.ok("로그인 성공");
+        try {
+            AuthResponseDto dto = authService.login(request, response);
+            return ResponseEntity.ok(dto);
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(403).body(Map.of("error", ex.getMessage()));
+        }
     }
+
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refresh(HttpServletRequest request, HttpServletResponse response) {

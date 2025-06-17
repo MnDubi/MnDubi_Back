@@ -8,9 +8,8 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class AuthResponseDto {
-    @JsonProperty("access_token")
-    private String accessToken;
-
-    @JsonProperty("refresh_token")
-    private String refreshToken;
+    private Long id;
+    private String email;
+    private String name;
+    private String userCode;
 }
