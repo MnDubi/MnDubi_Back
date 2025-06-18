@@ -3,6 +3,7 @@ package festival.dev.domain.auth.controller;
 import festival.dev.domain.auth.dto.AuthRequestDto;
 import festival.dev.domain.auth.dto.AuthResponseDto;
 import festival.dev.domain.auth.dto.OAuthUserInfoDto;
+import festival.dev.domain.auth.dto.PasswordChangeDto;
 import festival.dev.global.security.oauth.CustomOAuth2User;
 import festival.dev.domain.auth.service.AuthService;
 import festival.dev.global.security.oauth.dto.OAuthCodeInfo;
@@ -62,6 +63,14 @@ public class AuthController {
         authService.logout(response);
         return ResponseEntity.ok("로그아웃 완료");
     }
+
+    @PostMapping("/change-password")
+    public void changePassword(@RequestBody PasswordChangeDto dto,
+                               @CookieValue("access_token") String accessToken) {
+        Long userId = jwtUtil.getUserIdFromToken(accessToken);
+        authService.changePassword(userId, dto.getCurrentPassword(), dto.getNewPassword());
+    }
+
 
 
     @PostMapping("/token")

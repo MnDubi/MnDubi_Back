@@ -99,6 +99,18 @@ public class AuthService {
         expireJwtCookie(response, "refresh_token");
     }
 
+    public void changePassword(Long userId, String currentPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("기존 비밀번호가 일치하지 않습니다.");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
     private void issueJwtCookies(HttpServletResponse response, User user) {
         String accessToken = jwtUtil.generateAccessToken(user.getEmail(), user.getRole(), user.getId());
         String refreshToken = jwtUtil.generateRefreshToken(user.getEmail());
@@ -108,7 +120,7 @@ public class AuthService {
     }
 
     private void setJwtCookie(HttpServletResponse response, String name, String value, long maxAgeMs) {
-        System.out.println("🔐 쿠키 발급 시도됨 → 이름: " + name + ", 길이: " + value.length());
+        System.out.println(" 쿠키 발급 시도됨 → 이름: " + name + ", 길이: " + value.length());
 
         ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(name, value)
                 .httpOnly(true)
