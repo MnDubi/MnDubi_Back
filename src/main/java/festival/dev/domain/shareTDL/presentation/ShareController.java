@@ -37,6 +37,17 @@ public class ShareController {
         }
     }
 
+    @DeleteMapping("/delete")
+    public ResponseEntity<?> delete(@AuthenticationPrincipal CustomUserDetails user, @Valid @RequestBody ShareChoiceRequest request) {
+        try{
+            toDoListService.deleteShare(user.getUserID(),request);
+            return ResponseEntity.ok("success");
+        }
+        catch (Exception e){
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @GetMapping("/get")
     public ResponseEntity<?> get(@AuthenticationPrincipal CustomUserDetails user){
         try{

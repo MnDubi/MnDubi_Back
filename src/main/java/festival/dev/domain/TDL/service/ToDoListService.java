@@ -18,4 +18,5 @@ public interface ToDoListService {
     SseEmitter sseConnect(Long shareNumber);
     void refuse(Long userId, ShareChoiceRequest request);
     void accept(Long userId, ShareChoiceRequest request);
+    void deleteShare(Long userId, ShareChoiceRequest request);
 }

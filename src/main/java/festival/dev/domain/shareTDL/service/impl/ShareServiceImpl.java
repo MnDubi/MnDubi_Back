@@ -23,7 +23,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import org.yaml.snakeyaml.emitter.Emitter;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -48,7 +47,6 @@ public class ShareServiceImpl implements ShareService {
     private final CalendarRepository calendarRepository;
     private final Logger log = LoggerFactory.getLogger(ShareServiceImpl.class);
     private final Map<String, CopyOnWriteArrayList<SseEmitter>> shareInviteEmitters = new ConcurrentHashMap<>();
-
 
     @Transactional
     public ShareNumberRes createShare(ShareCreateReq request, Long userID) {

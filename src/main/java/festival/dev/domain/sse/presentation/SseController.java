@@ -10,6 +10,10 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RestController
 @RequestMapping("/sse")
 @RequiredArgsConstructor
+@CrossOrigin(
+        origins = "http://localhost:3000",
+        allowCredentials = "true"
+)
 public class SseController {
     private final GroupService groupService;
     private final ToDoListService toDoListService;
@@ -34,5 +38,4 @@ public class SseController {
     public SseEmitter shareInvite(@RequestParam String userCode) {
         return shareService.shareInviteSseConnect(userCode);
     }
-
 }
