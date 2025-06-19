@@ -16,6 +16,10 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("group/toDoList")
 @RequiredArgsConstructor
+@CrossOrigin(
+        origins = "http://localhost:3000",
+        allowCredentials = "true"
+)
 public class GroupController {
     private static final Logger log = LoggerFactory.getLogger(GroupController.class);
     private final GroupService groupService;
