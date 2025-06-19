@@ -541,12 +541,20 @@ public class GroupServiceImpl implements GroupService {
     public void findByUsername(Long userID, String friendUsername) {
         List<User> friends = userRepository.findByName(friendUsername);
         User user = getUser(userID);
-        List<String> userCodes = new ArrayList<>();
+        List<GCreateWsRes> userCodes = new ArrayList<>();
         for (User friend : friends) {
             if (friendshipRepository.existsByRequesterAndAddressee(user, friend)) {
-                userCodes.add(friend.getUserCode());
+                userCodes.add(GCreateWsRes.builder()
+                        .name(friend.getName())
+                        .email(friend.getEmail())
+                        .userCode(friend.getUserCode())
+                        .build());
             } else if (friendshipRepository.existsByRequesterAndAddressee(friend, user)) {
-                userCodes.add(friend.getUserCode());
+                userCodes.add(GCreateWsRes.builder()
+                        .name(friend.getName())
+                        .email(friend.getEmail())
+                        .userCode(friend.getUserCode())
+                        .build());
             }
         }
         List<SseEmitter> emitters = groupInviteEmitters.get(user.getUserCode());
