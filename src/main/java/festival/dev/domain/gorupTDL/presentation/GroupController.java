@@ -85,8 +85,7 @@ public class GroupController {
     @PutMapping("success")
     public ResponseEntity<?> success(@Valid @RequestBody GSuccessRequest request, @AuthenticationPrincipal CustomUserDetails user) {
         try{
-            GResponse response = groupService.success(request,user.getUserID());
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(groupService.success(request,user.getUserID()));
         }
         catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

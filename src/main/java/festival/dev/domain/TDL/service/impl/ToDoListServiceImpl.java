@@ -445,5 +445,26 @@ public class ToDoListServiceImpl implements ToDoListService {
         return shareRepository.findByShareNumberAndUserAndAcceptedFalse(shareNumber,user).orElseThrow(()-> new IllegalArgumentException("존재하지 않는 공유 방입니다."));
     }
 
-
+    @Transactional
+    public void deleteShare(Long userId, ShareChoiceRequest request) {
+        User user = getUserByID(userId);
+        Share share = getShareByShareNumber(ShareNumber.builder().id(request.getShareNumber()).build(), user);
+        if (share.isOwner()) {
+            shareRepository.deleteAllByShareNumber(share.getShareNumber());
+            shareNumberRepo.delete(share.getShareNumber());
+            List<SseEmitter> emitters = shareEmitters.get(share.getShareNumber().getId());
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("share-delete-all")
+                            .data(share.getShareNumber().getId()));
+                } catch (IOException e) {
+                    log.error("SSE 전송 실패: {}", e.getMessage());
+                    emitters.remove(emitter); // 전송 실패하면 제거
+                }
+            }
+        } else {
+            throw new IllegalArgumentException("공유 방의 방장이 아닙니다.");
+        }
+    }
 }

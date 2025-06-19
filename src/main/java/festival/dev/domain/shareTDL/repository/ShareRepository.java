@@ -18,4 +18,5 @@ public interface ShareRepository extends JpaRepository<Share, Long> {
     Optional<Share> findByUserAndAcceptedTrue(User user);
     List<Share> findByUserAndAcceptedFalse(User user);
     List<Share> findByShareNumberAndAcceptedTrue(ShareNumber shareNumber);
+    void deleteAllByShareNumber(ShareNumber shareNumber);
 }
