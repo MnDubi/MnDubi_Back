@@ -538,9 +538,9 @@ public class GroupServiceImpl implements GroupService {
         return emitter;
     }
 
-    public void findByUsername(String userCode, String friendUsername) {
+    public void findByUsername(Long userID, String friendUsername) {
         List<User> friends = userRepository.findByName(friendUsername);
-        User user = userRepository.findByUserCode(userCode).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+        User user = getUser(userID);
         List<String> userCodes = new ArrayList<>();
         for (User friend : friends) {
             if (friendshipRepository.existsByRequesterAndAddressee(user, friend)) {
@@ -549,7 +549,7 @@ public class GroupServiceImpl implements GroupService {
                 userCodes.add(friend.getUserCode());
             }
         }
-        List<SseEmitter> emitters = groupInviteEmitters.get(userCode);
+        List<SseEmitter> emitters = groupInviteEmitters.get(user.getUserCode());
 
         if (userCodes.isEmpty()) {
             for (SseEmitter emitter : emitters) {

@@ -21,5 +21,5 @@ public interface GroupService {
     List<GCreateWsRes> userList(Long userid);
     SseEmitter sseConnect(Long groupNum);
     SseEmitter groupInviteSseConnect(String userCode);
-    void findByUsername(String username,String friendUsername);
+    void findByUsername(Long userID,String friendUsername);
 }
