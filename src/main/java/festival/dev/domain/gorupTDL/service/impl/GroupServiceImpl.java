@@ -538,6 +538,42 @@ public class GroupServiceImpl implements GroupService {
         return emitter;
     }
 
+    public void findByUsername(String userCode, String friendUsername) {
+        List<User> friends = userRepository.findByName(friendUsername);
+        User user = userRepository.findByUserCode(userCode).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+        List<String> userCodes = new ArrayList<>();
+        for (User friend : friends) {
+            if (friendshipRepository.existsByRequesterAndAddressee(user, friend)) {
+                userCodes.add(friend.getUserCode());
+            } else if (friendshipRepository.existsByRequesterAndAddressee(friend, user)) {
+                userCodes.add(friend.getUserCode());
+            }
+        }
+        List<SseEmitter> emitters = groupInviteEmitters.get(userCode);
+
+        if (userCodes.isEmpty()) {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("error")
+                            .data("그런 친구는 존재하지 않습니다."));
+                } catch (IOException e) {
+                    emitters.remove(emitter);
+                }
+            }        }
+        else {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("friend-list")
+                            .data(userCodes));
+                } catch (IOException e) {
+                    emitters.remove(emitter);
+                }
+            }
+        }
+    }
+
     void checkExist(User user, String title){
         if (groupRepository.existsByUserAndTitle(user,title)){
             throw new IllegalArgumentException("이미 존재하는 TDL입니다.");
