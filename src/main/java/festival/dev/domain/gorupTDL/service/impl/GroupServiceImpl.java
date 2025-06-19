@@ -538,6 +538,50 @@ public class GroupServiceImpl implements GroupService {
         return emitter;
     }
 
+    public void findByUsername(Long userID, String friendUsername) {
+        List<User> friends = userRepository.findByName(friendUsername);
+        User user = getUser(userID);
+        List<GCreateWsRes> userCodes = new ArrayList<>();
+        for (User friend : friends) {
+            if (friendshipRepository.existsByRequesterAndAddressee(user, friend)) {
+                userCodes.add(GCreateWsRes.builder()
+                        .name(friend.getName())
+                        .email(friend.getEmail())
+                        .userCode(friend.getUserCode())
+                        .build());
+            } else if (friendshipRepository.existsByRequesterAndAddressee(friend, user)) {
+                userCodes.add(GCreateWsRes.builder()
+                        .name(friend.getName())
+                        .email(friend.getEmail())
+                        .userCode(friend.getUserCode())
+                        .build());
+            }
+        }
+        List<SseEmitter> emitters = groupInviteEmitters.get(user.getUserCode());
+
+        if (userCodes.isEmpty()) {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("error")
+                            .data("그런 친구는 존재하지 않습니다."));
+                } catch (IOException e) {
+                    emitters.remove(emitter);
+                }
+            }        }
+        else {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("friend-list")
+                            .data(userCodes));
+                } catch (IOException e) {
+                    emitters.remove(emitter);
+                }
+            }
+        }
+    }
+
     void checkExist(User user, String title){
         if (groupRepository.existsByUserAndTitle(user,title)){
             throw new IllegalArgumentException("이미 존재하는 TDL입니다.");

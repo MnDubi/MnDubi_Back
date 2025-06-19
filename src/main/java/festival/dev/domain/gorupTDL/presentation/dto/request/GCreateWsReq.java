@@ -6,6 +6,5 @@ import lombok.Getter;
 @Getter
 @Builder
 public class GCreateWsReq {
-    private String email;
     private String friend;
 }
