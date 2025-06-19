@@ -146,7 +146,7 @@ public class GroupController {
     }
 
     @PostMapping("/find")
-    public ResponseEntity<?> find(@AuthenticationPrincipal CustomUserDetails user, @RequestBody GCreateWsReq req) {
+    public ResponseEntity<?> find(@AuthenticationPrincipal CustomUserDetails user,@Valid @RequestBody GCreateWsReq req) {
         try {
             groupService.findByUsername(user.getUserID(), req.getFriend());
             return ResponseEntity.ok("success");
