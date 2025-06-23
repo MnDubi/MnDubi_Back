@@ -102,13 +102,15 @@ public class GroupServiceImpl implements GroupService {
                 .email(receiver.getEmail())
                 .name(receiver.getName())
                 .build();
-        for (SseEmitter emitter : emitters) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .name("group-member")
-                        .data(response));
-            } catch (IOException e) {
-                emitters.remove(emitter);
+        if (emitters != null) {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("group-member")
+                            .data(response));
+                } catch (IOException e) {
+                    emitters.remove(emitter);
+                }
             }
         }
 
@@ -194,13 +196,15 @@ public class GroupServiceImpl implements GroupService {
                 .build();
 
         List<SseEmitter> emitters = groupEmitters.get(groupNumber);
-        for (SseEmitter emitter : emitters) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .name("group-delete")
-                        .data(response));
-            } catch (IOException e) {
-                emitters.remove(emitter); // 전송 실패하면 제거
+        if (emitters != null) {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("group-delete")
+                            .data(response));
+                } catch (IOException e) {
+                    emitters.remove(emitter); // 전송 실패하면 제거
+                }
             }
         }
     }
@@ -283,13 +287,15 @@ public class GroupServiceImpl implements GroupService {
                 .completed(false)
                 .build();
         List<SseEmitter> emitters = groupEmitters.get(groupNumber.getId());
-        for (SseEmitter emitter : emitters) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .name("group-detail")
-                        .data(response));
-            } catch (IOException e) {
-                emitters.remove(emitter);
+        if(emitters != null) {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("group-detail")
+                            .data(response));
+                } catch (IOException e) {
+                    emitters.remove(emitter);
+                }
             }
         }
         return groupNumber.getId();
@@ -560,13 +566,15 @@ public class GroupServiceImpl implements GroupService {
                     .build();
 
             List<SseEmitter> emitters = groupInviteEmitters.get(req_receiver);
-            for (SseEmitter emitter : emitters) {
-                try {
-                    emitter.send(SseEmitter.event()
-                            .name("group-invite")
-                            .data(groupInviteDto));
-                } catch (IOException e) {
-                    emitters.remove(emitter);
+            if (emitters != null) {
+                for (SseEmitter emitter : emitters) {
+                    try {
+                        emitter.send(SseEmitter.event()
+                                .name("group-invite")
+                                .data(groupInviteDto));
+                    } catch (IOException e) {
+                        emitters.remove(emitter);
+                    }
                 }
             }
             groupListRepo.save(groupList);
@@ -639,7 +647,7 @@ public class GroupServiceImpl implements GroupService {
             for (SseEmitter emitter : emitters) {
                 try {
                     emitter.send(SseEmitter.event()
-                            .name("friend-list")
+                            .name("friendList")
                             .data(userCodes));
                 } catch (IOException e) {
                     emitters.remove(emitter);

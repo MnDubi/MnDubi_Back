@@ -64,7 +64,7 @@ public class AuthController {
         return ResponseEntity.ok("로그아웃 완료");
     }
 
-    @PostMapping("/change-password")
+    @PostMapping("/changePassword")
     public void changePassword(@RequestBody PasswordChangeDto dto,
                                @CookieValue("access_token") String accessToken) {
         Long userId = jwtUtil.getUserIdFromToken(accessToken);
