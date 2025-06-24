@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -47,13 +48,27 @@ public class FriendshipService {
 
         return Stream.concat(asRequester.stream(), asAddressee.stream())
                 .map(f -> {
-                    User friend = f.getRequester().equals(currentUser)
-                            ? f.getAddressee()
-                            : f.getRequester();
-                    return new FriendInfoResponse(friend.getId(), friend.getName(), friend.getEmail(), friend.getUserCode());
+                    User requester = f.getRequester();
+                    User addressee = f.getAddressee();
+
+                    // requester, addressee 둘 중 currentUser가 아닌 쪽을 친구로 간주
+                    User friend = requester.getId().equals(currentUser.getId()) ? addressee : requester;
+
+                    // 혹시라도 자기 자신일 경우 방지
+                    if (friend.getId().equals(currentUser.getId())) return null;
+
+                    return new FriendInfoResponse(
+                            friend.getId(),
+                            friend.getName(),
+                            friend.getEmail(),
+                            friend.getUserCode()
+                    );
                 })
+                .filter(Objects::nonNull)
+                .distinct()
                 .collect(Collectors.toList());
     }
+
 
 
 }
