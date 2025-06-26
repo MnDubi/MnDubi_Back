@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import java.util.concurrent.*;
@@ -120,7 +119,7 @@ public class GroupServiceImpl implements GroupService {
     @Transactional
     public void refuseInvite(Long userID, GChoiceReq req){
         User receiver = getUser(userID);
-        GroupList groupList = getGroupListByUser(receiver);
+//        GroupList groupList = getGroupListByUser(receiver);
         GroupNumber groupNumber = groupNumberRepo.findById(req.getGroupNumber()).orElseThrow(()-> new IllegalArgumentException("없는 그룹방입니다."));
         checkInvite(groupNumber,receiver);
         groupListRepo.findByGroupNumberAndUserAndAccept(groupNumber, receiver, true)
@@ -167,22 +166,25 @@ public class GroupServiceImpl implements GroupService {
                 .build();
 
         List<SseEmitter> emitters = groupEmitters.getOrDefault(groupNum, new CopyOnWriteArrayList<>());
-        emitters.removeIf(emitter -> {
-            try {
-                emitter.send(SseEmitter.event().name("group").data(response));
-                return false;
-            } catch (IOException e) {
-                return true;
+        if(emitters != null) {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("group")
+                            .data(response));
+                } catch (IOException e) {
+                    emitters.remove(emitter); // 전송 실패하면 제거
+                }
             }
-        });
+        }
 
         messagingTemplate.convertAndSend("/topic/group/" + groupNum + "/update", response);
 
-        return response;
+        return  response;
     }
 
     @Transactional
-    public void delete(GDeleteRequest request, Long userID){
+    public void delete(GDeleteRequest request, Long userID) {
         User user = getUser(userID);
         checkNotExist(user, request.getTitle());
         Group group = getGroupByTitleUser(request.getTitle(),user);
@@ -539,18 +541,6 @@ public class GroupServiceImpl implements GroupService {
         for (String req_receiver : receivers){
             User receiver = userRepository.findByUserCode(req_receiver).orElseThrow(() -> new IllegalArgumentException("없는 유저 입니다."));
             logger.info(receiver.getName());
-
-//            if (!friendshipRepository.existsByRequesterAndAddressee(sender, receiver) && !friendshipRepository.existsByRequesterAndAddressee(receiver, sender)) {
-//                throw new IllegalArgumentException("친구로 추가가 안 되어있습니다.");
-//            }
-//
-//            if (groupListRepo.existsByGroupNumberAndUser(groupNumber,receiver)){
-//                throw new IllegalArgumentException("이미 초대한 사람은 초대가 불가합니다.");
-//            }
-//
-//            if (groupListRepo.existsByAcceptTrueAndUser(receiver)){
-//                throw new IllegalArgumentException("이미 그룹에 포함된 사람은 초대가 불가합니다.");
-//            }
 
             validateInviteConditions(sender, receiver, groupNumber);
 
