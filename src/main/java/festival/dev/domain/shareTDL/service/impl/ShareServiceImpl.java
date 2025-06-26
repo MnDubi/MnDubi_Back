@@ -16,6 +16,9 @@ import festival.dev.domain.shareTDL.repository.ShareRepository;
 import festival.dev.domain.shareTDL.service.ShareService;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
+import festival.dev.domain.ai.service.AIClassifierService;
+import festival.dev.domain.category.service.CategoryService;
+import festival.dev.domain.category.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +50,12 @@ public class ShareServiceImpl implements ShareService {
     private final CalendarRepository calendarRepository;
     private final Logger log = LoggerFactory.getLogger(ShareServiceImpl.class);
     private final Map<String, CopyOnWriteArrayList<SseEmitter>> shareInviteEmitters = new ConcurrentHashMap<>();
+
+//    private final SimpMessagingTemplate messagingTemplate;
+    private final CategoryRepository categoryRepository;
+    private final CategoryService categoryService;
+    private final AIClassifierService aiClassifierService;
+
 
     @Transactional
     public ShareNumberRes createShare(ShareCreateReq request, Long userID) {
@@ -139,7 +148,7 @@ public class ShareServiceImpl implements ShareService {
             for(ToDoList tdl : tdls) {
                 ShareJoinRes shareJoinRes = ShareJoinRes.builder()
                         .title(tdl.getTitle())
-                        .category(tdl.getCategory().getCategoryName())
+                        .category(tdl.getCategory().getName())
                         .shareNumber(shareNumber.getId())
                         .user_code(member.getUserCode())
                         .completed(tdl.getCompleted())

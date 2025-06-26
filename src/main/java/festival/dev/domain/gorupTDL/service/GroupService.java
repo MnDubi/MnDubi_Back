@@ -19,6 +19,8 @@ public interface GroupService {
     void deleteAll(Long userID);
     List<GInviteGet> inviteGet(Long userid);
     List<GCreateWsRes> userList(Long userid);
+    boolean isGroupMember(Long userId);
+
     SseEmitter sseConnect(Long groupNum);
     SseEmitter groupInviteSseConnect(String userCode);
     void findByUsername(Long userID,String friendUsername);

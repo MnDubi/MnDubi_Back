@@ -17,11 +17,14 @@ import festival.dev.domain.gorupTDL.repository.GroupRepository;
 import festival.dev.domain.gorupTDL.service.GroupService;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
+import festival.dev.domain.ai.service.AIClassifierService;
+import festival.dev.domain.category.service.CategoryService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +35,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import java.util.concurrent.*;
 
 @Service
@@ -46,9 +52,14 @@ public class GroupServiceImpl implements GroupService {
     private final CategoryRepository categoryRepository;
     private final GroupNumberRepo groupNumberRepo;
     private final GroupJoinRepo groupJoinRepo;
+    private final SimpMessagingTemplate messagingTemplate;
     private final CalendarRepository calendarRepository;
     private final Logger logger = LoggerFactory.getLogger(GroupServiceImpl.class);
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+
+    private final AIClassifierService aiClassifierService;
+    private final CategoryService categoryService;
+
 
     @Transactional
     public GInsertRes invite(GCreateRequest request, Long userID){
@@ -91,13 +102,15 @@ public class GroupServiceImpl implements GroupService {
                 .email(receiver.getEmail())
                 .name(receiver.getName())
                 .build();
-        for (SseEmitter emitter : emitters) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .name("group-member")
-                        .data(response));
-            } catch (IOException e) {
-                emitters.remove(emitter);
+        if (emitters != null) {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("group-member")
+                            .data(response));
+                } catch (IOException e) {
+                    emitters.remove(emitter);
+                }
             }
         }
 
@@ -117,6 +130,7 @@ public class GroupServiceImpl implements GroupService {
         groupListRepo.deleteByGroupNumberAndUser(groupNumber,receiver);
     }
 
+    //바뀐 TDL이랑 관련된 모든 데이터를 보내야 할 듯? web socket으로
     @Transactional
     public GToDoListResponse update(GUpdateRequest request, Long userID) {
         User user = getUser(userID);
@@ -127,24 +141,44 @@ public class GroupServiceImpl implements GroupService {
         Group toDoList = getGroupByTitleUser(request.getChange(), user);
         Long groupNum = toDoList.getGroupNumber().getId();
 
-        List<SseEmitter> emitters = groupEmitters.get(groupNum);
+        Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        Category::getName,
+                        c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                ));
+
+        String newCategoryName = aiClassifierService.classifyCategoryWithAI(request.getChange(), categoryMap);
+
+        Category newCategory = categoryService.findOrCreateByName(
+                newCategoryName,
+                categoryMap.containsKey(newCategoryName)
+                        ? categoryMap.get(newCategoryName)
+                        : categoryService.getEmbeddingFromText(newCategoryName)
+        );
+
+        toDoList.setCategory(newCategory);
+        groupRepository.save(toDoList);
+
         GToDoListResponse response = GToDoListResponse.builder()
                 .title(toDoList.getTitle())
-                .category(toDoList.getCategory().getCategoryName())
+                .category(toDoList.getCategory().getName())
                 .ownerName(user.getName())
                 .groupNumber(groupNum)
                 .build();
-        for (SseEmitter emitter : emitters) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .name("group")
-                        .data(response));
-            } catch (IOException e) {
-                emitters.remove(emitter); // 전송 실패하면 제거
-            }
-        }
 
-        return  response;
+        List<SseEmitter> emitters = groupEmitters.getOrDefault(groupNum, new CopyOnWriteArrayList<>());
+        emitters.removeIf(emitter -> {
+            try {
+                emitter.send(SseEmitter.event().name("group").data(response));
+                return false;
+            } catch (IOException e) {
+                return true;
+            }
+        });
+
+        messagingTemplate.convertAndSend("/topic/group/" + groupNum + "/update", response);
+
+        return response;
     }
 
     @Transactional
@@ -156,19 +190,21 @@ public class GroupServiceImpl implements GroupService {
         groupRepository.deleteByUserAndTitle(user, request.getTitle());
         GToDoListResponse response = GToDoListResponse.builder()
                 .title(group.getTitle())
-                .category(group.getCategory().getCategoryName())
+                .category(group.getCategory().getName())
                 .ownerName(user.getName())
                 .groupNumber(groupNumber)
                 .build();
 
         List<SseEmitter> emitters = groupEmitters.get(groupNumber);
-        for (SseEmitter emitter : emitters) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .name("group-delete")
-                        .data(response));
-            } catch (IOException e) {
-                emitters.remove(emitter); // 전송 실패하면 제거
+        if (emitters != null) {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("group-delete")
+                            .data(response));
+                } catch (IOException e) {
+                    emitters.remove(emitter); // 전송 실패하면 제거
+                }
             }
         }
     }
@@ -185,7 +221,7 @@ public class GroupServiceImpl implements GroupService {
 
         GResponse response = GResponse.builder()
                 .groupNumber(groupJoin.getGroupNumber().getId())
-                .category(groupJoin.getGroup().getCategory().getCategoryName())
+                .category(groupJoin.getGroup().getCategory().getName())
                 .ownerName(groupJoin.getGroup().getUser().getName())
                 .title(groupJoin.getGroup().getTitle())
                 .completed(groupJoin.isCompleted())
@@ -207,10 +243,25 @@ public class GroupServiceImpl implements GroupService {
     @Transactional
     public Long insert(GInsertRequest request, Long userID){
         User user = getUser(userID);
+
         checkExist(user, request.getTitle());
         GroupList groupList = getGroupListByUser(user);
         GroupNumber groupNumber = getGroupNum(groupList.getGroupNumber().getId());
-        Category category = categoryRepository.findByCategoryName(request.getCategory());
+        // AI 카테고리 이름을 가져오는 부분
+        Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                .collect(Collectors.toMap(
+                        Category::getName,
+
+                        c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                ));
+
+        String categoryName = aiClassifierService.classifyCategoryWithAI(request.getTitle(), categoryMap);
+
+        Category category = categoryService.findOrCreateByName(categoryName,
+                categoryMap.containsKey(categoryName)
+                        ? categoryMap.get(categoryName)
+                        : categoryService.getEmbeddingFromText(categoryName));
+
         List<GroupList> GroupLists = groupListRepo.findByGroupNumberAndAccept(groupNumber,true);
         Group group = Group.builder()
                 .user(user)
@@ -230,19 +281,21 @@ public class GroupServiceImpl implements GroupService {
         }
         GResponse response = GResponse.builder()
                 .title(group.getTitle())
-                .category(group.getCategory().getCategoryName())
+                .category(group.getCategory().getName())
                 .ownerName(user.getName())
                 .memberName(user.getName())
                 .completed(false)
                 .build();
         List<SseEmitter> emitters = groupEmitters.get(groupNumber.getId());
-        for (SseEmitter emitter : emitters) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .name("group-detail")
-                        .data(response));
-            } catch (IOException e) {
-                emitters.remove(emitter);
+        if(emitters != null) {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("group-detail")
+                            .data(response));
+                } catch (IOException e) {
+                    emitters.remove(emitter);
+                }
             }
         }
         return groupNumber.getId();
@@ -268,7 +321,7 @@ public class GroupServiceImpl implements GroupService {
             Long tdlPart = groupJoinRepo.countByCompletedAndGroup(true,group);
             GetSup getSup = GetSup.builder()
                     .title(group.getTitle())
-                    .category(group.getCategory().getCategoryName())
+                    .category(group.getCategory().getName())
                     .completed(groupJoin.isCompleted())
                     .groupNumber(groupNumber.getId())
                     .all(tdlAll)
@@ -407,6 +460,13 @@ public class GroupServiceImpl implements GroupService {
         return emitter;
     }
 
+
+    @Override
+    public boolean isGroupMember(Long userId) {
+        User user = getUser(userId);
+        return groupListRepo.findByUserAndAcceptTrue(user).isPresent();
+    }
+
     //----------------------------------------------------------------------------------------------------------------------------------------------비즈니스 로직을 위한 메소드들
     GroupList getGroupListByUser(User user){
         return groupListRepo.findByUser(user).orElseThrow(()-> new IllegalArgumentException("GroupList에 없습니다."));
@@ -439,7 +499,19 @@ public class GroupServiceImpl implements GroupService {
 
         groupNumberRepo.save(groupNumberBuild);
         for (String title: request.getTitles()) {
-            Category category = categoryRepository.findByCategoryName(request.getCategory());
+            Map<String, List<Double>> categoryMap = categoryRepository.findAll().stream()
+                    .collect(Collectors.toMap(
+                            Category::getName,
+                            c -> categoryService.convertJsonToEmbedding(c.getEmbeddingJson())
+                    ));
+
+            String categoryName = aiClassifierService.classifyCategoryWithAI(title, categoryMap);
+
+            Category category = categoryService.findOrCreateByName(categoryName,
+                    categoryMap.containsKey(categoryName)
+                            ? categoryMap.get(categoryName)
+                            : categoryService.getEmbeddingFromText(categoryName));
+
             inputSetting(title, user, category);
 
             Group group = Group.builder()
@@ -494,13 +566,15 @@ public class GroupServiceImpl implements GroupService {
                     .build();
 
             List<SseEmitter> emitters = groupInviteEmitters.get(req_receiver);
-            for (SseEmitter emitter : emitters) {
-                try {
-                    emitter.send(SseEmitter.event()
-                            .name("group-invite")
-                            .data(groupInviteDto));
-                } catch (IOException e) {
-                    emitters.remove(emitter);
+            if (emitters != null) {
+                for (SseEmitter emitter : emitters) {
+                    try {
+                        emitter.send(SseEmitter.event()
+                                .name("group-invite")
+                                .data(groupInviteDto));
+                    } catch (IOException e) {
+                        emitters.remove(emitter);
+                    }
                 }
             }
             groupListRepo.save(groupList);
@@ -573,7 +647,7 @@ public class GroupServiceImpl implements GroupService {
             for (SseEmitter emitter : emitters) {
                 try {
                     emitter.send(SseEmitter.event()
-                            .name("friend-list")
+                            .name("friendList")
                             .data(userCodes));
                 } catch (IOException e) {
                     emitters.remove(emitter);

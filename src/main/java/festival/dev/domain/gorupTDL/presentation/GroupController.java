@@ -145,6 +145,16 @@ public class GroupController {
         }
     }
 
+    @GetMapping("/isMember")
+    public ResponseEntity<?> isGroupMember(@AuthenticationPrincipal CustomUserDetails user) {
+        try {
+            boolean isMember = groupService.isGroupMember(user.getUserID());
+            return ResponseEntity.ok(isMember);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @PostMapping("/find")
     public ResponseEntity<?> find(@AuthenticationPrincipal CustomUserDetails user,@Valid @RequestBody GCreateWsReq req) {
         try {
@@ -154,4 +164,5 @@ public class GroupController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
 }

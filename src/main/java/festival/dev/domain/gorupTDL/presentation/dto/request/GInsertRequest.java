@@ -6,7 +6,7 @@ import lombok.Getter;
 @Getter
 public class GInsertRequest {
     @NotNull
-    private String category;
+    private String endDate;
     @NotNull
     private String title;
 }

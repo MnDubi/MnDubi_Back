@@ -3,6 +3,7 @@ package festival.dev.domain.TDL.presentation.dto.request;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -10,13 +11,14 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Getter
+@Setter
 public class InsertRequest {
     @NotNull
     private String title;
 //    @NotNull
 //    private String userID;
-    @NotNull
-    private String category;
+//    @NotNull
+//    private String category;
     @NotNull
     private String endDate;
 

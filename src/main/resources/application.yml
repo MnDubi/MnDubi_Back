@@ -7,6 +7,7 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -38,7 +39,7 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
             redirect-uri: "${baseUrl}/oauth2/callback/google"
-            scope: email, profile
+            scope: openid, email, profile  # ← 여기에 openid 추가!
             authorization-grant-type: authorization_code
           naver:
             client-id: ${NAVER_CLIENT_ID}
@@ -55,12 +56,16 @@ spring:
             authorization-grant-type: authorization_code
             scope: # https://developers.kakao.com/docs/latest/ko/kakaologin/common#user-info
               - profile_nickname
-              - profile_image
+#              - profile_image
               - account_email
             redirect-uri: "${baseUrl}/oauth2/callback/kakao"
             client-name: Kakao
 
         provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v2/userinfo
           naver:
             authorization-uri: https://nid.naver.com/oauth2.0/authorize
             token-uri: https://nid.naver.com/oauth2.0/token
@@ -81,7 +86,16 @@ jwt:
 
 
 frontend:
-  url: "${baseUrl}" # 프론트엔드 URL(ngork 주소)
+  url: "http://localhost:3000" # 프론트엔드 URL(ngork 주소)
+
+ai:
+  server:
+    url: http://localhost:5001
+
+custom:
+  cookie:
+    domain: endlessly-cuddly-salmon.ngrok-free.app
+
 
 server:
   port: 8090

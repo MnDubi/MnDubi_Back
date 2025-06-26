@@ -28,6 +28,7 @@ public class Group {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
+    @Setter
     private Category category;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -36,6 +37,8 @@ public class Group {
 
     @OneToMany(fetch = FetchType.LAZY,mappedBy = "group",cascade = CascadeType.ALL,orphanRemoval = true)
     private List<GroupJoin> TDL_joins;
+
+
 }
 
 
