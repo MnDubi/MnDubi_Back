@@ -626,9 +626,7 @@ public class GroupServiceImpl implements GroupService {
         if (userCodes.isEmpty()) {
             for (SseEmitter emitter : emitters) {
                 try {
-                    emitter.send(SseEmitter.event()
-                            .name("error")
-                            .data("그런 친구는 존재하지 않습니다."));
+                    emitter.send(SseEmitter.event().name("error").data("그런 친구는 존재하지 않습니다."));
                 } catch (IOException e) {
                     emitters.remove(emitter);
                 }
@@ -636,9 +634,7 @@ public class GroupServiceImpl implements GroupService {
         else {
             for (SseEmitter emitter : emitters) {
                 try {
-                    emitter.send(SseEmitter.event()
-                            .name("friendList")
-                            .data(userCodes));
+                    emitter.send(SseEmitter.event().name("friendList").data(userCodes));
                 } catch (IOException e) {
                     emitters.remove(emitter);
                 }
