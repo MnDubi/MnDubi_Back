@@ -39,6 +39,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
         Object principal = Objects.requireNonNull(auth).getPrincipal();
         String code;
+        String path = request.getRequestURI();
 
         if(principal instanceof CustomUserDetails userDetails){
             code = userDetails.getUserCode();
@@ -49,13 +50,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
             response.getWriter().write("Unauthorized");
             return;
         }
+        String key = code + ":" + path;
 
-        Bucket bucket = buckets.computeIfAbsent(code, k -> newBucket());
+        Bucket bucket = buckets.computeIfAbsent(key, k -> newBucket());
         if (bucket.tryConsume(1)) {
             logger.info("RateLimitFilter : doFilterInternal() - Request allowed for user code : {}", code);
             chain.doFilter(request, response);
         } else {
-            logger.warn("RateLimitFilter : doFilterInternal() - Too many requests from user ID: {}", chain);
+            logger.warn("RateLimitFilter : doFilterInternal() - Too many requests from user code : {}", code);
             response.setStatus(429);
             response.getWriter().write("Too many requests : Rate limit exceeded");
         }

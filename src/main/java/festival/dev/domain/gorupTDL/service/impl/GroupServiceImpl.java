@@ -230,13 +230,15 @@ public class GroupServiceImpl implements GroupService {
                 .memberName(user.getName())
                 .build();
         List<SseEmitter> emitters = groupEmitters.get(groupNumber.getId());
-        for (SseEmitter emitter : emitters) {
-            try {
-                emitter.send(SseEmitter.event()
-                        .name("group-detail")
-                        .data(response));
-            } catch (IOException e) {
-                emitters.remove(emitter);
+        if(emitters != null) {
+            for (SseEmitter emitter : emitters) {
+                try {
+                    emitter.send(SseEmitter.event()
+                            .name("group-detail")
+                            .data(response));
+                } catch (IOException e) {
+                    emitters.remove(emitter);
+                }
             }
         }
         return response;

@@ -69,8 +69,8 @@ public class SecurityConfig {
                         .successHandler(oAuth2SuccessHandler)
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(new RateLimitFilter(), JwtAuthenticationFilter.class)
-                .addFilterAfter(new SpikeArrestFilter(), RateLimitFilter.class)
+                .addFilterAfter(new SpikeArrestFilter(), JwtAuthenticationFilter.class)
+                .addFilterAfter(new RateLimitFilter(), SpikeArrestFilter.class)
         ;
 
         return http.build();
