@@ -30,6 +30,7 @@ public class SpikeArrestFilter extends OncePerRequestFilter {
 
         if (auth == null || !auth.isAuthenticated()){
             chain.doFilter(request, response);
+            return;
         }
 
         Object principal = Objects.requireNonNull(auth).getPrincipal();
