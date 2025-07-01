@@ -61,16 +61,23 @@ public class AuthService {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
 
-        // JWT는 HttpOnly 쿠키로 발급
         issueJwtCookies(response, user);
+
+        // 그룹 참여 여부 확인 후 groupNumberId 추출
+        Long groupNumberId = null;
+        if (user.getGroup_joins() != null && !user.getGroup_joins().isEmpty()) {
+            groupNumberId = user.getGroup_joins().get(0).getGroupNumber().getId();
+        }
 
         return new AuthResponseDto(
                 user.getId(),
                 user.getEmail(),
                 user.getName(),
-                user.getUserCode()
+                user.getUserCode(),
+                groupNumberId
         );
     }
+
 
 
 //    // JWT 생성
