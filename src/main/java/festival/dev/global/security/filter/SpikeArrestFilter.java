@@ -50,13 +50,13 @@ public class SpikeArrestFilter extends OncePerRequestFilter {
         long currentTime = System.currentTimeMillis();
         Long lastRequestTime = lastRequestTimeMap.get(key);
         if (lastRequestTime != null && (currentTime - lastRequestTime < MIN_INTERVAL_MS)) {
-            logger.warn("SpikeArrestFilter : doFilterInternal() - Too many requests from user ID : {}", code);
+            logger.warn("SpikeArrestFilter : doFilterInternal() - Too many requests from user code : {}", code);
             response.setStatus(492);
             response.getWriter().write("Too many requests : Spike arrest triggered");
             return;
         }
         lastRequestTimeMap.put(key, currentTime);
-        logger.info("SpikeArrestFilter : doFilterInternal() - Request allowed for user ID: {}", code);
+        logger.info("SpikeArrestFilter : doFilterInternal() - Request allowed for user code : {}", code);
         chain.doFilter(request, response);
     }
 }
