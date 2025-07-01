@@ -604,7 +604,7 @@ public class GroupServiceImpl implements GroupService {
         return emitter;
     }
 
-    public void findByUsername(Long userID, String friendUsername) {
+    public List<GCreateWsRes> findByUsername(Long userID, String friendUsername) {
         List<User> friends = userRepository.findByName(friendUsername);
         User user = getUser(userID);
         List<GCreateWsRes> userCodes = new ArrayList<>();
@@ -642,6 +642,7 @@ public class GroupServiceImpl implements GroupService {
                 }
             }
         }
+        return userCodes;
     }
 
     void checkExist(User user, String title){

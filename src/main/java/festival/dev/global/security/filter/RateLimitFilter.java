@@ -36,6 +36,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()){
             chain.doFilter(request, response);
+            return;
         }
         Object principal = Objects.requireNonNull(auth).getPrincipal();
         String code;
