@@ -41,4 +41,12 @@ public class CustomUserDetails implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(user.getRole())); // ROLE_USER 같은 거
     }
+
+    public String getEmail() {
+        return user.getEmail();
+    }
+
+    public String getUserCode() {
+        return user.getUserCode();
+    }
 }

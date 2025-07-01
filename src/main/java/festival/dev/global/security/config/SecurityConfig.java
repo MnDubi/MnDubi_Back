@@ -1,6 +1,8 @@
 package festival.dev.global.security.config;
 
 import festival.dev.domain.user.service.UserService;
+import festival.dev.global.security.filter.RateLimitFilter;
+import festival.dev.global.security.filter.SpikeArrestFilter;
 import festival.dev.global.security.jwt.JwtAuthenticationFilter;
 import festival.dev.global.security.oauth.CustomOAuth2UserService;
 import festival.dev.global.security.oauth.OAuth2SuccessHandler;
@@ -66,7 +68,10 @@ public class SecurityConfig {
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                         .successHandler(oAuth2SuccessHandler)
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(new RateLimitFilter(), JwtAuthenticationFilter.class)
+                .addFilterAfter(new SpikeArrestFilter(), RateLimitFilter.class)
+        ;
 
         return http.build();
     }
