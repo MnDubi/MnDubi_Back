@@ -548,7 +548,9 @@ public class GroupServiceImpl implements GroupService {
             logger.info(receiver.getName());
 
             validateInviteConditions(sender, receiver, groupNumber);
-
+            if(groupListRepo.existsByGroupNumberAndUser(groupNumber, receiver)) {
+                throw new IllegalArgumentException("이미 초대한 사람은 초대가 불가합니다.");
+            }
             GroupList groupList = GroupList.builder()
                     .accept(false)
                     .groupNumber(groupNumber)
