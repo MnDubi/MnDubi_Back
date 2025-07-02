@@ -406,6 +406,9 @@ public class GroupServiceImpl implements GroupService {
 
     public List<GInviteGet> inviteGet(Long userID){
         User user = getUser(userID);
+        if(groupListRepo.findByUserAndAcceptTrue(user).isPresent()) {
+            throw new IllegalArgumentException("이미 그룹에 참가 중인 유저입니다.");
+        }
         List<GroupList> invitedList = groupListRepo.findByUserAndAcceptFalse(user);
         List<GInviteGet> response = new ArrayList<>();
         for(GroupList groupList: invitedList){
