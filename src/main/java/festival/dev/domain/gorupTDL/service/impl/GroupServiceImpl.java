@@ -614,6 +614,8 @@ public class GroupServiceImpl implements GroupService {
         User user = getUser(userID);
         List<GCreateWsRes> userCodes = new ArrayList<>();
         for (User friend : friends) {
+            if (groupListRepo.findByUserAndAcceptTrue(friend).isPresent())
+                continue; // 이미 그룹에 참가 중인 친구는 제외
             if (friendshipRepository.existsByRequesterAndAddressee(user, friend)) {
                 userCodes.add(GCreateWsRes.builder()
                         .name(friend.getName())
@@ -628,25 +630,25 @@ public class GroupServiceImpl implements GroupService {
                         .build());
             }
         }
-        List<SseEmitter> emitters = groupInviteEmitters.get(user.getUserCode());
-
-        if (userCodes.isEmpty()) {
-            for (SseEmitter emitter : emitters) {
-                try {
-                    emitter.send(SseEmitter.event().name("error").data("그런 친구는 존재하지 않습니다."));
-                } catch (IOException e) {
-                    emitters.remove(emitter);
-                }
-            }        }
-        else {
-            for (SseEmitter emitter : emitters) {
-                try {
-                    emitter.send(SseEmitter.event().name("friendList").data(userCodes));
-                } catch (IOException e) {
-                    emitters.remove(emitter);
-                }
-            }
-        }
+//        List<SseEmitter> emitters = groupInviteEmitters.get(user.getUserCode());
+//
+//        if (userCodes.isEmpty()) {
+//            for (SseEmitter emitter : emitters) {
+//                try {
+//                    emitter.send(SseEmitter.event().name("error").data("그런 친구는 존재하지 않습니다."));
+//                } catch (IOException e) {
+//                    emitters.remove(emitter);
+//                }
+//            }        }
+//        else {
+//            for (SseEmitter emitter : emitters) {
+//                try {
+//                    emitter.send(SseEmitter.event().name("friendList").data(userCodes));
+//                } catch (IOException e) {
+//                    emitters.remove(emitter);
+//                }
+//            }
+//        }
         return userCodes;
     }
 
