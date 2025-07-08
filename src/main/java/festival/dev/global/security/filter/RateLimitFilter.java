@@ -27,7 +27,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     // API 요청 횟수 제한하는 버킷 -> 1분에 10회 요청 가능(6초에 1회 충전)
     private Bucket newBucket() {
         return Bucket.builder()
-                .addLimit(Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1))))
+                .addLimit(Bandwidth.classic(30, Refill.greedy(30, Duration.ofMinutes(1))))
                 .build();
     }
 

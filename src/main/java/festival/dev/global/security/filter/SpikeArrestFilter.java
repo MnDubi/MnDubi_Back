@@ -22,7 +22,7 @@ public class SpikeArrestFilter extends OncePerRequestFilter {
 
     private final Map<String , Long> lastRequestTimeMap = new ConcurrentHashMap<>();
 
-    private static final long MIN_INTERVAL_MS = 1000;
+    private static final long MIN_INTERVAL_MS = 100;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain chain) throws ServletException, IOException {
