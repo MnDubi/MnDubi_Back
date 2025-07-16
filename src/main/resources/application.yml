@@ -90,7 +90,7 @@ frontend:
 
 ai:
   server:
-    url: http://localhost:5001
+    url: https://anteater-modern-basilisk.ngrok-free.app
 
 custom:
   cookie:

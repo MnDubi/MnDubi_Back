@@ -310,7 +310,9 @@ public class GroupServiceImpl implements GroupService {
         String ownerName = "";
         String ownerCode = "";
         GroupList GroupList = groupListRepo.findByUserAndAcceptTrue(user).orElseThrow(()-> new IllegalArgumentException("그룹에 참가하지 않은 유저입니다."));
+        logger.info("GroupList");
         GroupNumber groupNumber = GroupList.getGroupNumber();
+        logger.info("GroupNumber");
         Long all = groupJoinRepo.countByUserAndGroupNumber(user,groupNumber);
         Long part = groupJoinRepo.countByCompletedAndUserAndGroupNumber(true,user,groupNumber);
         List<Group> groups = groupRepository.findByGroupNumber(groupNumber);
@@ -321,6 +323,7 @@ public class GroupServiceImpl implements GroupService {
         List<GetSup> getSups = new ArrayList<>();
         for(Group group: groups){
             GroupJoin groupJoin = groupJoinRepo.findByGroupAndGroupNumberAndUser(group,groupNumber,user).orElseThrow(()-> new IllegalArgumentException("없는 TDL입니다."));
+            logger.info("GroupJoin");
             Long tdlAll = groupJoinRepo.countByGroup(group);
             Long tdlPart = groupJoinRepo.countByCompletedAndGroup(true,group);
             GetSup getSup = GetSup.builder()

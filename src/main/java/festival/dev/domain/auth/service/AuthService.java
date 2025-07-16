@@ -2,6 +2,8 @@ package festival.dev.domain.auth.service;
 
 import festival.dev.domain.auth.dto.AuthRequestDto;
 import festival.dev.domain.auth.dto.AuthResponseDto;
+import festival.dev.domain.gorupTDL.repository.GroupListRepo;
+import festival.dev.domain.gorupTDL.repository.GroupNumberRepo;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import festival.dev.global.security.jwt.JwtUtil;
@@ -24,6 +26,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final CookieProperties cookieProperties;
+    private final GroupListRepo groupListRepo;
 
     @Value("${jwt.access}")
     private long accessTokenValidity;
@@ -68,7 +71,8 @@ public class AuthService {
                 user.getId(),
                 user.getEmail(),
                 user.getName(),
-                user.getUserCode()
+                user.getUserCode(),
+                groupListRepo.findByUserAndAcceptTrue(user).orElseThrow(()-> new RuntimeException("유저가 존재하지 않습니다.")).getGroupNumber().getId()
         );
     }
 
