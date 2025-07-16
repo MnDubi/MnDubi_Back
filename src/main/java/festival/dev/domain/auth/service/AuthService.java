@@ -2,8 +2,6 @@ package festival.dev.domain.auth.service;
 
 import festival.dev.domain.auth.dto.AuthRequestDto;
 import festival.dev.domain.auth.dto.AuthResponseDto;
-import festival.dev.domain.gorupTDL.repository.GroupListRepo;
-import festival.dev.domain.gorupTDL.repository.GroupNumberRepo;
 import festival.dev.domain.user.entity.User;
 import festival.dev.domain.user.repository.UserRepository;
 import festival.dev.global.security.jwt.JwtUtil;
@@ -26,7 +24,6 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final CookieProperties cookieProperties;
-    private final GroupListRepo groupListRepo;
 
     @Value("${jwt.access}")
     private long accessTokenValidity;
@@ -67,14 +64,21 @@ public class AuthService {
         // JWT는 HttpOnly 쿠키로 발급
         issueJwtCookies(response, user);
 
+        // 그룹 참여 여부 확인 후 groupNumberId 추출
+        Long groupNumberId = null;
+        if (user.getGroup_joins() != null && !user.getGroup_joins().isEmpty()) {
+            groupNumberId = user.getGroup_joins().get(0).getGroupNumber().getId();
+        }
+
         return new AuthResponseDto(
                 user.getId(),
                 user.getEmail(),
                 user.getName(),
                 user.getUserCode(),
-                groupListRepo.findByUserAndAcceptTrue(user).orElseThrow(()-> new RuntimeException("유저가 존재하지 않습니다.")).getGroupNumber().getId()
+                groupNumberId
         );
     }
+
 
 
 //    // JWT 생성
